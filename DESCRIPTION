@@ -1,0 +1,20 @@
+Package: datalink
+Type: Package
+Title: Providing a simple and accessible medium between analysts and data linkage.
+Version: 0.1.1
+Authors@R: c(
+            person(given=c("Cole", "D."), family="Chuchmach", email="Cole.Chuchmach@umanitoba.ca", role=c("aut", "cre")),
+            person(given=c("Barret", "A."), family="Monchka", email="Barret.Monchka@umanitoba.ca", role="aut")
+          )
+Author: Cole Chuchmach [aut, cre],
+            Barret Monchka [aut]
+Maintainer: Cole Chuchmach <Cole.Chuchmach@umanitoba.ca>
+Description: The automatic data linkage package is built to help facilitate quicker linkage tests and iterations by preventing the
+  user from needing to manually make changes to existing code and instead only require tweaks through an accessible user interface
+  provided through the package.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends: DBI, dplyr, stringi, stringr, data.table, readr, haven, openxlsx, writexl, tidyverse, splitstackshape, shiny, tools, shinyBS, DT, shinyjs, RSQLite
+RoxygenNote: 7.3.1
+URL: https://github.com/CHIMB/datalink
