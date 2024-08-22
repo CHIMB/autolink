@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 `datalink` provides an easy and user friendly way for data analysts to develop linkage algorithms and use them to perform data linkage tests. With the
 package allowing for testing out multiple algorithms per dataset, to help data analysts achieve an ideal and successful linkage rate.
 
-This package would be most beneficial in the field of data science, specifically data-linkage and data analysis as the `datalink` package would help make algorithm design and the testing process more streamlined, as the end-user of the package would not be required to make any programmatic changes to an R script and instead would only need to mix-and-match different blocking and matching variables, and what rules they would like for each. Doing so until a desired linkage rate is acheived.
+This package would be most beneficial in the field of data science, specifically data-linkage and data analysis as the `datalink` package would help make algorithm design and the testing process more streamlined, as the end-user of the package would not be required to make any programmatic changes to an R script and instead would only need to mix-and-match different blocking and matching variables, and what rules they would like for each. Doing so until a desired linkage rate is achieved.
 
 # Installation
 

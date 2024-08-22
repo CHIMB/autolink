@@ -15,11 +15,12 @@ rate.
 
 This package would be most beneficial in the field of data science,
 specifically data-linkage and data analysis as the `datalink` package
-would help make algorithm design and testing process more streamlined as
-the end-user of the package would not be required to make programmatic
-changes to an R script and instead would only need to mix-and-match
-different blocking and matching variables, and what rules they would
-like for each.
+would help make algorithm design and the testing process more
+streamlined, as the end-user of the package would not be required to
+make any programmatic changes to an R script and instead would only need
+to mix-and-match different blocking and matching variables, and what
+rules they would like for each. Doing so until a desired linkage rate is
+achieved.
 
 # Installation
 
