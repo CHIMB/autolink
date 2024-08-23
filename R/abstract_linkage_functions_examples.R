@@ -84,4 +84,4 @@ run_main_linkage <- function(class_name, left_dataset, right_dataset, blocking_k
   return(result)
 }
 
-# result <- run_main_linkage(FastLinkLinkage, left_dataset, right_dataset, blocking_keys, matching_vars, thresholds, "det")
+# result <- run_main_linkage("FastLinkLinkage", left_dataset, right_dataset, blocking_keys, matching_vars, thresholds, "det")
