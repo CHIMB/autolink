@@ -67,8 +67,16 @@ FastLinkLinkage <- R6::R6Class("FastLinkLinkage",
 )
 
 run_main_linkage <- function(class_name, left_dataset, right_dataset, blocking_keys, matching_vars, thresholds, linkage_technique) {
-  # Instantiate the class dynamically
-  linkage_obj <- do.call(class_name$new, list())
+  # Retrieve the class definition from the class name string
+  if (!exists(class_name)) {
+    stop(paste("Class", class_name, "does not exist."))
+  }
+
+  # Retrieve the class definition from the class name string
+  class_obj <- get(class_name)
+
+  # Instantiate the class object
+  linkage_obj <- class_obj$new()
 
   # Call the run_iteration method
   result <- linkage_obj$run_iteration(left_dataset, right_dataset, blocking_keys, matching_vars, thresholds, linkage_technique)
