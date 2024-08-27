@@ -6,10 +6,11 @@
 #' file will be output.
 #' @param file_name The file name for what the new .sqlite metadata file will be called.
 #' @param output_folder A path to the output folder, where the new metadata file will be output.
+#' @param datastan_file A path to an existing datastan SQLite file which is an optional parameter which will import the existing datasets to avoid needing to recreate them.
 #' @examples
 #' create_new_metadata("my_new_metadata", "path/to/folder")
 #' @export
-create_new_metadata <- function(file_name, output_folder){
+create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   # Error handling to ensure the file name and output folder is all valid
   #----
   if(is.null(file_name) || is.null(output_folder) || is.na(file_name) || is.na(output_folder)){
@@ -19,812 +20,827 @@ create_new_metadata <- function(file_name, output_folder){
 
   # Create the metadata connection
   my_db <- dbConnect(RSQLite::SQLite(), paste0(output_folder, "/", file_name, ".sqlite"))
+  dbExecute(my_db, "PRAGMA foreign_keys = ON;")
+
 
   # Run the CREATE TABLE queries so that the metadata file has all that it needs
-  # for the metadata UI and data standardization.
-  #----
-  dbExecute(my_db, "
-  CREATE TABLE file_formats (
-    file_format_id INTEGER PRIMARY KEY,
-    file_format_label VARCHAR(255),
-    file_extension_code VARCHAR(255)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE datasets (
-    dataset_id INTEGER PRIMARY KEY,
-    dataset_code VARCHAR(255),
-    dataset_name VARCHAR(255),
-    has_header INTEGER,
-    file_format_id INTEGER REFERENCES file_formats(file_format_id),
-    enabled_for_standardization INTEGER
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE destination_fields (
-    destination_field_id INTEGER PRIMARY KEY,
-    destination_field_name VARCHAR(255),
-    destination_field_description VARCHAR(255)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE standardizing_modules (
-    standardizing_module_id INTEGER PRIMARY KEY,
-    standardizing_module_name VARCHAR(255),
-    description VARCHAR(255),
-    destination_field_id INTEGER REFERENCES destination_fields(destination_field_id),
-    output_program_data INTEGER,
-    standardizing_module_type INTEGER
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE source_fields (
-    dataset_id INTEGER REFERENCES datasets(dataset_id),
-    source_field_id INTEGER PRIMARY KEY,
-    source_field_name VARCHAR(255),
-    field_order INTEGER,
-    fixed_width_length INTEGER,
-    standardizing_module_id INTEGER REFERENCES standardizing_modules(standardizing_module_id)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE record_priority_fields (
-    source_field_id INTEGER REFERENCES source_fields(source_field_id),
-    source_value VARCHAR(255),
-    priority INTEGER,
-    PRIMARY KEY (source_field_id, source_value)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE categorical_fields (
-    source_field_id INTEGER REFERENCES source_fields(source_field_id),
-    source_value VARCHAR(255),
-    standardized_value_id INTEGER,
-    PRIMARY KEY (source_field_id, source_value)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE categorical_values (
-    standardized_value_id INTEGER REFERENCES categorical_fields(standardized_value_id),
-    standardized_value VARCHAR(255),
-    PRIMARY KEY (standardized_value_id)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE numeric_date_formats (
-    numeric_date_format_id INTEGER PRIMARY KEY,
-    numeric_date_format_label VARCHAR(255),
-    origin_date VARCHAR(255),
-    units_label VARCHAR(255)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE numeric_date_destinations (
-    numeric_destination_type INTEGER,
-    destination_mapping_order INTEGER,
-    destination_field_id INTEGER REFERENCES destination_fields(destination_field_id),
-    PRIMARY KEY (numeric_destination_type, destination_mapping_order)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE numeric_date_fields (
-    source_field_id INTEGER REFERENCES source_fields(source_field_id),
-    numeric_date_format_id INTEGER REFERENCES numeric_date_formats(numeric_date_format_id),
-    numeric_destination_type INTEGER,
-    PRIMARY KEY (source_field_id)
-  );
-")
-
-
-  dbExecute(my_db, "
-  CREATE TABLE compound_field_formats (
-    compound_field_format_id INTEGER PRIMARY KEY,
-    compound_format VARCHAR(255),
-    format_description VARCHAR(255)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE compound_fields (
-    source_field_id INTEGER REFERENCES source_fields(source_field_id),
-    compound_field_format_id INTEGER REFERENCES compound_field_formats(compound_field_format_id),
-    PRIMARY KEY (source_field_id)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE compound_field_separators (
-    compound_field_format_id INTEGER REFERENCES compound_field_formats(compound_field_format_id),
-    separator_order INTEGER,
-    separator VARCHAR(255),
-    substring_index INTEGER,
-    PRIMARY KEY (compound_field_format_id, separator_order)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE compound_field_destinations (
-    compound_field_format_id INTEGER REFERENCES compound_field_formats(compound_field_format_id),
-    destination_mapping_order INTEGER,
-    destination_field_id INTEGER REFERENCES destination_fields(destination_field_id),
-    PRIMARY KEY (compound_field_format_id, destination_mapping_order)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE linkage_tests (
-    dataset_id INTEGER REFERENCES datasets(dataset_id),
-    test_id INTEGER,
-    PRIMARY KEY (dataset_id, test_id)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE linkage_iterations (
-    test_id INTEGER REFERENCES linkage_tests(test_id),
-    iteration_id INTEGER,
-    iteration_num INTEGER,
-    iteration_method VARCHAR(255),
-    PRIMARY KEY (test_id, iteration_id)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE blocking_variables (
-    iteration_id INTEGER REFERENCES linkage_iterations(iteration_id),
-    linkage_field_id INTEGER REFERENCES destination_fields(destination_field_id),
-    PRIMARY KEY (iteration_id, linkage_field_id)
-  );
-")
-
-  dbExecute(my_db, "
-  CREATE TABLE matching_variables (
-    iteration_id INTEGER REFERENCES linkage_iterations(iteration_id),
-    registry_field_id INTEGER REFERENCES destination_fields(destination_field_id),
-    linkage_field_id INTEGER REFERENCES destination_fields(destination_field_id),
-    PRIMARY KEY (iteration_id, registry_field_id, linkage_field_id)
-  );
-")
+  # for the metadata UI and data linkage.
   #----
 
-  # Insert Statements for Standardizing File Formats
-  #----
-  new_entry_query <- paste('INSERT INTO file_formats (file_format_id, file_format_label, file_extension_code)',
-                           'VALUES(1, "SAS", "sas7bdat");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  ### DATASETS AND AUDITING
+  dbExecute(my_db, "
+    CREATE TABLE datasets (
+      dataset_id INTEGER PRIMARY KEY,
+      dataset_code VARCHAR(255),
+      dataset_name VARCHAR(255),
+      version VARCHAR(255),
+      enabled_for_linkage INTEGER
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO file_formats (file_format_id, file_format_label, file_extension_code)',
-                           'VALUES(2, "Fixed Width", "fwf");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  dbExecute(my_db, "
+    CREATE TABLE performance_measures_audit (
+      audit_id INTEGER PRIMARY KEY,
+      left_dataset_id INTEGER REFERENCES datasets(dataset_id),
+      right_dataset_id INTEGER REFERENCES datasets(dataset_id),
+      audit_date TEXT,
+      performance_measures_json TEXT
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO file_formats (file_format_id, file_format_label, file_extension_code)',
-                           'VALUES(3, "Regular Text", "txt");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  ### ACCEPTANCE METHODS
+  dbExecute(my_db, "
+    CREATE TABLE acceptance_methods (
+      acceptance_method_id INTEGER PRIMARY KEY,
+      method_name VARCHAR(255),
+      description VARCHAR(255)
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO file_formats (file_format_id, file_format_label, file_extension_code)',
-                           'VALUES(4, "Comma Seperated Values", "csv");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  dbExecute(my_db, "
+    CREATE TABLE acceptance_method_parameters (
+      acceptance_method_id INTEGER REFERENCES acceptance_methods(acceptance_method_id),
+      parameter_id INTEGER,
+      parameter_key VARCHAR(255),
+      description VARCHAR(255),
+      PRIMARY KEY (acceptance_method_id, parameter_id)
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO file_formats (file_format_id, file_format_label, file_extension_code)',
-                           'VALUES(5, "Database", "db");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-  #----
+  # V2
+  dbExecute(my_db, "
+    CREATE TABLE acceptance_rules (
+      acceptance_rule_id INTEGER,
+      acceptance_method_id INTEGER REFERENCES acceptance_methods(acceptance_method_id),
+      parameters TEXT
+    );
+  ")
 
-  # Insert Statements for Destination Fields
-  #----
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(1, "record_primary_key", "Uniquely identifies records");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  # V1
+  # dbExecute(my_db, "
+  #   CREATE TABLE acceptance_rules (
+  #     acceptance_rule_id INTEGER,
+  #     acceptance_method_id INTEGER,
+  #     parameter_id INTEGER,
+  #     parameter REAL,
+  #     PRIMARY KEY (acceptance_rule_id, acceptance_method_id, parameter_id),
+  #     FOREIGN KEY (acceptance_method_id, parameter_id)
+  #       REFERENCES acceptance_method_parameters(acceptance_method_id, parameter_id)
+  #   );
+  # ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(2, "individual_id", "Uniquely identifies individuals");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  ### LINKAGE RULES
+  dbExecute(my_db, "
+    CREATE TABLE linkage_rules (
+      linkage_rule_id INTEGER PRIMARY KEY,
+      alternate_field_value INTEGER,
+      integer_value_variance INTEGER,
+      substring_length INTEGER,
+      tokenized INTEGER
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(3, "phin", "Manitoba Health Personal Health Identification Number (PHIN)");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  ### STRING COMPARISON METHODS
+  dbExecute(my_db, "
+    CREATE TABLE comparison_methods (
+      comparison_method_id INTEGER PRIMARY KEY,
+      method_name VARCHAR(255),
+      description VARCHAR(255)
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(4, "registration_no", "Manitoba Health Registration Number");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  dbExecute(my_db, "
+    CREATE TABLE comparison_method_parameters (
+      comparison_method_id INTEGER REFERENCES comparison_methods(comparison_method_id),
+      parameter_id INTEGER,
+      parameter_key VARCHAR(255),
+      description VARCHAR(255),
+      PRIMARY KEY (comparison_method_id, parameter_id)
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(5, "primary_given_name", "Primary (first) given name");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  # V2
+  dbExecute(my_db, "
+    CREATE TABLE comparison_rules (
+      comparison_rule_id INTEGER PRIMARY KEY,
+      comparison_method_id INTEGER REFERENCES comparison_methods(comparison_method_id),
+      parameters TEXT  -- Store as JSON string
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(6, "secondary_given_names", "Secondary given names (i.e., middle name)");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(7, "primary_surname", "Primary last name / family name");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  # V1
+  # dbExecute(my_db, "
+  #   CREATE TABLE comparison_rules (
+  #     comparison_rule_id INTEGER,
+  #     comparison_method_id INTEGER,
+  #     parameter_id INTEGER,
+  #     parameter REAL,
+  #     PRIMARY KEY (comparison_rule_id, comparison_method_id, parameter_id),
+  #     FOREIGN KEY (comparison_method_id, parameter_id)
+  #       REFERENCES comparison_method_parameters(comparison_method_id, parameter_id)
+  #   );
+  # ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(8, "prior_surname", "Previous surname (e.g., maiden name)");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  ### LINKAGE METHODS, ALGORITHMS, AND ITERATIONS
+  dbExecute(my_db, "
+    CREATE TABLE linkage_methods (
+      linkage_method_id INTEGER PRIMARY KEY,
+      technique_label VARCHAR(255),
+      implementation_name VARCHAR(255),
+      version VARCHAR(255)
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(9, "secondary_surnames", "Secondary surnames not listed in prior_surname field");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  dbExecute(my_db, "
+    CREATE TABLE linkage_algorithms (
+      dataset_id_left INTEGER REFERENCES datasets(dataset_id),
+      dataset_id_right INTEGER REFERENCES datasets(dataset_id),
+      algorithm_id INTEGER PRIMARY KEY,
+      modified_date TEXT,
+      modified_by VARCHAR(255),
+      enabled INTEGER
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(10, "birth_year", "Birth year");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  dbExecute(my_db, "
+    CREATE TABLE linkage_iterations (
+      algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
+      iteration_id INTEGER PRIMARY KEY,
+      iteration_num INTEGER,
+      linkage_method_id INTEGER REFERENCES linkage_methods(linkage_method_id),
+      acceptance_rule_id INTEGER
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(11, "birth_month", "Birth month");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  ### BLOCKING AND MATCHING VARIABLES
+  dbExecute(my_db, "
+    CREATE TABLE blocking_variables (
+      iteration_id INTEGER REFERENCES linkage_iterations(iteration_id),
+      right_dataset_field VARCHAR(255),
+      left_dataset_field VARCHAR(255),
+      linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
+      PRIMARY KEY (iteration_id, right_dataset_field, left_dataset_field)
+    );
+  ")
 
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(12, "birth_day", "Birth day");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(13, "gender", "Gender");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(14, "address1", "Residential address 1");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(15, "address2", "Residential address 2");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(16, "city", "City, town, or village");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(17, "province", "Canadian province");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(18, "country", "Country");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(19, "postal_code", "Canadian postal code");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(20, "acquisition_year", "Year of capture");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(21, "acquisition_month", "Month of capture");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(22, "acquisition_day", "Day of capture");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO destination_fields (destination_field_id, destination_field_name, destination_field_description)',
-                           'VALUES(23, "record_priority", "Priority of record (1 being the highest)");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-  #----
-
-  # Insert Statements for Standardizing Modules
-  #----
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(1, "record_primary_key", "The key used to identify a specific record in the dataset.", 1, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(2, "individual_id", "The key used to identify a specific individual in the dataset.", 2, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(3, "phin", "The field containing the Personal Health Identification Number.", 3, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(4, "registration_no", "The field containing the Registration Number of a person.", 4, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(5, "primary_given_name", "The field containing a persons Primary Given name.", 5, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(6, "secondary_given_name", "The field containing a persons Secondary Given name.", 6, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(7, "primary_surname", "The field containing a persons Primary Surname.", 7, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(8, "prior_surname", "The field containing a persons Prior Surname.", 8, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(9, "secondary_surname", "The field containing a persons Secondary Surname.", 9, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(10, "birth_date", "The field containing the compounded birth date of a person. This will require additional information in the form of a compound format.", NULL, 1, 2);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(11, "birth_year", "The field containing the birth year of a person on its own.", 10, 1, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(12, "birth_month", "The field containing the birth month of a person on its own.", 11, 1, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(13, "birth_day", "The field containing the birth day of a person on its own.", 12, 1, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(14, "gender", "The field containing the gender of a person. This will require additional information in the form of categorical fields.", 13, 1, 3);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(15, "address1", "The field containing the primary address of a person.", 14, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(16, "address2", "The field containing the secondary addresses of a person.", 15, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(17, "city", "The field containing the city the person lives in.", 16, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(18, "province", "The field containing the province the person lives in.", 17, 0, 3);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(19, "country", "The field containing the country the person lives in.", 18, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(20, "postal_code", "The field containing a persons postal codes.", 19, 1, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(21, "acquisition_date", "The field containing the compounded acquisiton date of this record. This will require additional information in the form of a compound format.", NULL, 0, 2);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(22, "acquisition_year", "The field containing the acquisition year of the record on its own.", 20, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(23, "acquisition_month", "The field containing the acquisition month of the record on its own.", 21, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(24, "acquisition_day", "The field containing the acquisition day of the record on its own.", 22, 0, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(25, "compound_name", "The field containing the compounded name of a person. This will require additional information in the form of a compound format.", NULL, 0, 2);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(26, "numeric_date", "The field containing the birthdate of a person or acqusition date of the record in a date-time format. This will require additional information in the form of a numeric format.", NULL, 1, 4);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(27, "pass_through_field", "The field that is used to perform linkages in a way where the values of the field do not need to be standardized.", NULL, 1, 1);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO standardizing_modules (standardizing_module_id, standardizing_module_name, description, destination_field_id, output_program_data, standardizing_module_type)',
-                           'VALUES(28, "record_priority", "The field that is used to break ties, replaces values with priorities ranging from 1 -> N where 1 is the highest priority and N is lowest.", 23, 0, 5);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  dbExecute(my_db, "
+    CREATE TABLE matching_variables (
+      iteration_id INTEGER REFERENCES linkage_iterations(iteration_id),
+      right_dataset_field VARCHAR(255),
+      left_dataset_field VARCHAR(255),
+      linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
+      comparison_rule_id INTEGER REFERENCES comparison_rules(comparison_rule_id),
+      PRIMARY KEY (iteration_id, right_dataset_field, left_dataset_field)
+    );
+  ")
   #----
 
-  # Insert Statements for Categorical Values
-  #----
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(1, "M");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(2, "F");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(3, "X");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(4, "NL");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(5, "PE");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(6, "NS");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(7, "NB");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(8, "QC");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(9, "ON");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(10, "MB");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(11, "SK");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(12, "AB");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(13, "BC");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(14, "YT");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(15, "NT");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO categorical_values (standardized_value_id, standardized_value)',
-                           'VALUES(16, "NU");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  # Run insert queries to pre-populate the metadata with some starting linkage, acceptance, and
+  # string comparison rules so that linkage may begin a bit quicker.
   #----
 
-  # Insert Statements for Numeric Date Destinations
-  #----
-  new_entry_query <- paste('INSERT INTO numeric_date_destinations (numeric_destination_type, destination_mapping_order, destination_field_id)',
-                           'VALUES(1, 1, 10);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO numeric_date_destinations (numeric_destination_type, destination_mapping_order, destination_field_id)',
-                           'VALUES(1, 2, 11);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO numeric_date_destinations (numeric_destination_type, destination_mapping_order, destination_field_id)',
-                           'VALUES(1, 3, 12);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO numeric_date_destinations (numeric_destination_type, destination_mapping_order, destination_field_id)',
-                           'VALUES(2, 1, 20);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO numeric_date_destinations (numeric_destination_type, destination_mapping_order, destination_field_id)',
-                           'VALUES(2, 2, 21);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO numeric_date_destinations (numeric_destination_type, destination_mapping_order, destination_field_id)',
-                           'VALUES(2, 3, 22);')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  #----
-
-  # Insert Statements for Numeric Date Formats
-  #----
-  new_entry_query <- paste('INSERT INTO numeric_date_formats (numeric_date_format_id, numeric_date_format_label, origin_date, units_label)',
-                           'VALUES(1, "SAS/Stata", "1960-01-01", "Days");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO numeric_date_formats (numeric_date_format_id, numeric_date_format_label, origin_date, units_label)',
-                           'VALUES(2, "UNIX", "1970-01-01", "Seconds");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO numeric_date_formats (numeric_date_format_id, numeric_date_format_label, origin_date, units_label)',
-                           'VALUES(3, "SPSS", "1582-10-14", "Seconds");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-
-  new_entry_query <- paste('INSERT INTO numeric_date_formats (numeric_date_format_id, numeric_date_format_label, origin_date, units_label)',
-                           'VALUES(4, "Windows OLE", "1899-12-30", "Days");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
-  #----
-
-  # Insert Statements for Starter Compound Formats
-  #----
-
+  ### ACCEPTANCE METHOD INSERT STATEMENTS
   #~~~~
-  new_entry_query <- paste('INSERT INTO compound_field_formats (compound_field_format_id, compound_format, format_description)',
-                           'VALUES(1, "yyyy-mm-dd", "Birthdate separated by hyphens in the order year, month, day.");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  acceptance_methods_insert <- function(){
+    new_entry_query <- paste('INSERT INTO acceptance_methods (acceptance_method_id, method_name, description)',
+                            'VALUES(1, "Posterior Thresholds", "A minimum threshold between 0 and 1 which a record must exceed to be considered a successful link.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(1, 1, "-", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
-
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(1, 2, "-", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(1, 1, 10);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(1, 2, 11);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(1, 3, 12);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO acceptance_methods (acceptance_method_id, method_name, description)',
+                             'VALUES(2, "Weighted Ranges", "A lower (X) and upper (Y) weight where anything less than (X) is considered unlinked, anything greater than (Y) is considered linked, anything between (X) and (Y) requires manual review.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  acceptance_methods_insert()
   #~~~~
 
+  ### ACCEPTANCE METHOD PARAMETERS INSERT STATEMENTS
   #~~~~
-  new_entry_query <- paste('INSERT INTO compound_field_formats (compound_field_format_id, compound_format, format_description)',
-                           'VALUES(2, "mm/dd/yyyy", "Birthdate separated by back slashes in the order month, day, year.");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  acceptance_methods_parameters_insert <- function(){
+    new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(1, 1, "posterior_threshold", "The minimum value for which a record will be considered successful link.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(2, 1, "/", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(2, 2, "lower_weight", "The lower bound weight for determining if a record should be rejected, or manually reviewed.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(2, 2, "/", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(2, 1, 11);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(2, 2, 12);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(2, 3, 10);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(2, 3, "upper_weight", "The upper bound weight for determining if a record should be linked, or manually reviewed.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  acceptance_methods_parameters_insert()
   #~~~~
 
+  ### ACCEPTANCE RULES INSERT STATEMENTS
   #~~~~
-  new_entry_query <- paste('INSERT INTO compound_field_formats (compound_field_format_id, compound_format, format_description)',
-                           'VALUES(3, "dd/mm/yyyy", "Birthdate separated by back slashes in the order day, month, year.");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  acceptance_rules_insert_v1 <- function(){
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(1, 1, 1, 0.6);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(3, 1, "/", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(2, 1, 1, 0.65);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(3, 2, "/", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(3, 1, 1, 0.7);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(3, 1, 12);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(4, 1, 1, 0.75);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(3, 2, 11);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(5, 1, 1, 0.80);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(3, 3, 10);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(6, 1, 1, 0.85);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(7, 1, 1, 0.9);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(8, 1, 1, 0.95);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(9, 1, 1, 0.97);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(10, 1, 1, 0.99);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(11, 2, 1, 8);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(11, 2, 2, 12);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(12, 2, 1, 13.7);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(12, 2, 2, 16.4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(13, 2, 1, 20);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(13, 2, 2, 21);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(14, 2, 1, 9.4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(14, 2, 2, 13.6);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(15, 2, 1, 15.8);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
+                             'VALUES(15, 2, 2, 17.4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  acceptance_rules_insert_v2 <- function(){
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.6)
+    ))
+    dbBind(new_entry, list(1, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.65)
+    ))
+    dbBind(new_entry, list(2, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.7)
+    ))
+    dbBind(new_entry, list(3, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.75)
+    ))
+    dbBind(new_entry, list(4, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.8)
+    ))
+    dbBind(new_entry, list(5, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.85)
+    ))
+    dbBind(new_entry, list(6, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.9)
+    ))
+    dbBind(new_entry, list(7, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.95)
+    ))
+    dbBind(new_entry, list(8, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.97)
+    ))
+    dbBind(new_entry, list(9, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.99)
+    ))
+    dbBind(new_entry, list(10, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 8),
+      list(parameter_key_id = 3, value = 12)
+    ))
+    dbBind(new_entry, list(11, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 13.7),
+      list(parameter_key_id = 3, value = 16.4)
+    ))
+    dbBind(new_entry, list(12, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 20),
+      list(parameter_key_id = 3, value = 21)
+    ))
+    dbBind(new_entry, list(13, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 9.4),
+      list(parameter_key_id = 3, value = 13.6)
+    ))
+    dbBind(new_entry, list(14, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 15.8),
+      list(parameter_key_id = 3, value = 17.4)
+    ))
+    dbBind(new_entry, list(15, 2, parameters))
+    dbClearResult(new_entry)
+  }
+  acceptance_rules_insert_v2()
   #~~~~
 
+  ### LINKAGE RULES INSERT STATEMENTS
   #~~~~
-  new_entry_query <- paste('INSERT INTO compound_field_formats (compound_field_format_id, compound_format, format_description)',
-                           'VALUES(4, "DDMMYYYY", "Birthdate without separators, in the form of a 2-digit day, 2-digit month and 4-digit year.");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  linkage_rules_insert <- function(){
+    #-- INTEGER VARIANCE --#
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(1, NULL, 1, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(4, 1, NULL, 2);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(2, NULL, 2, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(4, 2, NULL, 2);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(3, NULL, 3, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(4, 3, NULL, 4);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(4, NULL, 4, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(4, 1, 12);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(5, NULL, 5, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+    #----------------------#
 
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(4, 2, 11);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    #-- INITIALS OF PRIMARY AND ALT NAMES --#
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(6, NULL, NULL, 1, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(4, 3, 10);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(7, 2, NULL, 1, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(8, 3, NULL, 1, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(9, 4, NULL, 1, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(10, 5, NULL, 1, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+    #---------------------------------------#
+
+    #-- ALTERNATE FIELDS --#
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(11, NULL, NULL, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(12, 2, NULL, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(13, 3, NULL, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(14, 4, NULL, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(15, 5, NULL, NULL, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+    #----------------------#
+
+    #-- SUBSTRINGED FIELDS --#
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(16, NULL, NULL, 3, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(17, NULL, NULL, 4, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(18, NULL, NULL, 5, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(19, 2, NULL, 3, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(20, 2, NULL, 4, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(21, 2, NULL, 5, NULL);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+    #------------------------#
+
+    #-- TOKENIZED NAMES --#
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(22, NULL, NULL, NULL, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(23, 2, NULL, NULL, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(24, 3, NULL, NULL, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+                             'VALUES(25, 4, NULL, NULL, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+    #---------------------#
+  }
+  linkage_rules_insert()
   #~~~~
 
+  ### STRING COMPARISON METHODS INSERT STATEMENTS
   #~~~~
-  new_entry_query <- paste('INSERT INTO compound_field_formats (compound_field_format_id, compound_format, format_description)',
-                           'VALUES(5, "yyyy-mm-dd", "Acquisition date separated by hyphens in the order year, month, day, with a space separating hours and minutes.");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  comparison_methods_insert <- function(){
+    new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
+                             'VALUES(1, "Reclin-Jarowinkler", "Jaro-Winkler similarity from the Reclin2 package");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(5, 1, "-", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
+                             'VALUES(2, "Stringdist-OSA", "Optimal String Alignment distance");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(5, 2, "-", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
+                             'VALUES(3, "RecordLinkage-Levenshtein", "Levenshtein character distance");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(5, 1, 20);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(5, 2, 21);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(5, 3, 22);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
+                             'VALUES(4, "Soundex", "String Soundex from Phonics");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  comparison_methods_insert()
   #~~~~
 
+  ### STRING COMPARISON METHOD PARAMETERS INSERT STATEMENTS
   #~~~~
-  new_entry_query <- paste('INSERT INTO compound_field_formats (compound_field_format_id, compound_format, format_description)',
-                           'VALUES(6, "LN,FN MN", "Compound name separated by a comma, then space, in the form last name, first name, then middle.");')
-  new_entry <- dbSendStatement(my_db, new_entry_query)
-  dbClearResult(new_entry)
+  comparison_methods_parameters_insert <- function(){
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(1, 1, "min_score", "The floating point minimum value for which a jarowinkler comparison will be accepted (0 < X < 1).");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(6, 1, ",", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(2, 1, "max_cost", "The integer maximum number of replacements in a string before being rejected (X >= 1).");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_separator_query <- paste('INSERT INTO compound_field_separators (compound_field_format_id, separator_order, separator, substring_index)',
-                               'VALUES(6, 2, " ", NULL);')
-  new_entry <- dbSendStatement(my_db, new_separator_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(3, 1, "max_dist", "The maximum number of characters that a comparison can differ before being rejected (X >= 1).");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
 
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(6, 1, 7);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(6, 2, 5);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
-
-  new_destination_query <- paste('INSERT INTO compound_field_destinations (compound_field_format_id, destination_mapping_order, destination_field_id)',
-                                 'VALUES(6, 3, 6);')
-  new_entry <- dbSendStatement(my_db, new_destination_query)
-  dbClearResult(new_entry)
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(4, 1, "to_soundex", "Convert a name to soundex formatting.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  comparison_methods_parameters_insert()
   #~~~~
+
+  ### STRING COMPARISON RULES INSERT STATEMENTS
+  #~~~~
+  comparison_rules_insert_v1 <- function(){
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(1, 1, 1, 0.05);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(2, 1, 1, 0.1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(3, 1, 1, 0.15);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(4, 1, 1, 0.2);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(5, 1, 1, 0.25);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(6, 1, 1, 0.3);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(7, 1, 1, 0.35);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(8, 1, 1, 0.4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(9, 1, 1, 0.45);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(10, 1, 1, 0.5);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(11, 1, 1, 0.55);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(12, 1, 1, 0.6);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(13, 1, 1, 0.65);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(14, 1, 1, 0.7);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(15, 1, 1, 0.75);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(16, 1, 1, 0.8);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(17, 1, 1, 0.85);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(18, 1, 1, 0.9);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(19, 1, 1, 0.95);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(20, 1, 1, 0.99);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(21, 2, 1, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(22, 2, 1, 2);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(23, 2, 1, 3);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(24, 2, 1, 4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(25, 2, 1, 5);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(26, 3, 1, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(27, 3, 1, 2);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(28, 3, 1, 3);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(29, 3, 1, 4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(30, 3, 1, 5);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
+                             'VALUES(31, 4, 1, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  comparison_rules_insert_v2 <- function(){
+
+  }
+  comparison_rules_insert_v2()
+  #~~~~
+
   #----
 
   # Finally disconnect

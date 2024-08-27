@@ -15,6 +15,6 @@ Description: The automatic data linkage package is built to help facilitate quic
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: DBI, dplyr, stringi, stringr, data.table, readr, haven, openxlsx, writexl, tidyverse, splitstackshape, shiny, tools, shinyBS, DT, shinyjs, RSQLite
+Depends: DBI, dplyr, stringi, stringr, data.table, readr, haven, openxlsx, writexl, tidyverse, splitstackshape, shiny, tools, shinyBS, DT, shinyjs, RSQLite, jsonlite
 RoxygenNote: 7.3.1
 URL: https://github.com/CHIMB/datalink
