@@ -6,7 +6,7 @@
 #' file will be output.
 #' @param file_name The file name for what the new .sqlite metadata file will be called.
 #' @param output_folder A path to the output folder, where the new metadata file will be output.
-#' @param datastan_file A path to an existing datastan SQLite file which is an optional parameter which will import the existing datasets to avoid needing to recreate them.
+#' @param datastan_file A path to an existing `datastan` SQLite file which is an optional parameter which will import the existing datasets to avoid needing to recreate them.
 #' @examples
 #' create_new_metadata("my_new_metadata", "path/to/folder")
 #' @export
