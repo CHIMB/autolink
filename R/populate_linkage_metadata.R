@@ -60,34 +60,39 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   dbExecute(my_db, "
     CREATE TABLE acceptance_method_parameters (
       acceptance_method_id INTEGER REFERENCES acceptance_methods(acceptance_method_id),
-      parameter_id INTEGER,
+      parameter_id INTEGER PRIMARY KEY,
       parameter_key VARCHAR(255),
-      description VARCHAR(255),
-      PRIMARY KEY (acceptance_method_id, parameter_id)
+      description VARCHAR(255)
     );
   ")
 
-  # V2
-  dbExecute(my_db, "
-    CREATE TABLE acceptance_rules (
-      acceptance_rule_id INTEGER,
-      acceptance_method_id INTEGER REFERENCES acceptance_methods(acceptance_method_id),
-      parameters TEXT
-    );
-  ")
-
-  # V1
+  #-- V2 --#
   # dbExecute(my_db, "
   #   CREATE TABLE acceptance_rules (
   #     acceptance_rule_id INTEGER,
-  #     acceptance_method_id INTEGER,
-  #     parameter_id INTEGER,
-  #     parameter REAL,
-  #     PRIMARY KEY (acceptance_rule_id, acceptance_method_id, parameter_id),
-  #     FOREIGN KEY (acceptance_method_id, parameter_id)
-  #       REFERENCES acceptance_method_parameters(acceptance_method_id, parameter_id)
+  #     acceptance_method_id INTEGER REFERENCES acceptance_methods(acceptance_method_id),
+  #     parameters TEXT
   #   );
   # ")
+  #--------#
+
+  #-- V1 --#
+  dbExecute(my_db, "
+    CREATE TABLE acceptance_rules (
+      acceptance_rule_id INTEGER PRIMARY KEY,
+      acceptance_method_id INTEGER
+    );
+  ")
+
+  dbExecute(my_db, "
+    CREATE TABLE acceptance_rules_parameters (
+      acceptance_rule_id INTEGER REFERENCES acceptance_rules(acceptance_rule_id),
+      parameter_id INTEGER REFERENCES acceptance_method_parameters(parameter_id),
+      parameter REAL,
+      PRIMARY KEY (acceptance_rule_id, parameter_id)
+    );
+  ")
+  #--------#
 
   ### LINKAGE RULES
   dbExecute(my_db, "
@@ -112,35 +117,40 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   dbExecute(my_db, "
     CREATE TABLE comparison_method_parameters (
       comparison_method_id INTEGER REFERENCES comparison_methods(comparison_method_id),
-      parameter_id INTEGER,
+      parameter_id INTEGER PRIMARY KEY,
       parameter_key VARCHAR(255),
-      description VARCHAR(255),
-      PRIMARY KEY (comparison_method_id, parameter_id)
+      description VARCHAR(255)
     );
   ")
 
-  # V2
+  #-- V2 --#
+  # dbExecute(my_db, "
+  #   CREATE TABLE comparison_rules (
+  #     comparison_rule_id INTEGER PRIMARY KEY,
+  #     comparison_method_id INTEGER REFERENCES comparison_methods(comparison_method_id),
+  #     parameters TEXT  -- Store as JSON string
+  #   );
+  # ")
+  #--------#
+
+
+  #-- V1 --#
   dbExecute(my_db, "
     CREATE TABLE comparison_rules (
       comparison_rule_id INTEGER PRIMARY KEY,
-      comparison_method_id INTEGER REFERENCES comparison_methods(comparison_method_id),
-      parameters TEXT  -- Store as JSON string
+      comparison_method_id INTEGER
     );
   ")
 
-
-  # V1
-  # dbExecute(my_db, "
-  #   CREATE TABLE comparison_rules (
-  #     comparison_rule_id INTEGER,
-  #     comparison_method_id INTEGER,
-  #     parameter_id INTEGER,
-  #     parameter REAL,
-  #     PRIMARY KEY (comparison_rule_id, comparison_method_id, parameter_id),
-  #     FOREIGN KEY (comparison_method_id, parameter_id)
-  #       REFERENCES comparison_method_parameters(comparison_method_id, parameter_id)
-  #   );
-  # ")
+  dbExecute(my_db, "
+    CREATE TABLE comparison_rules_parameters (
+      comparison_rule_id INTEGER REFERENCES comparison_rules(comparison_rule_id),
+      parameter_id INTEGER,
+      parameter REAL,
+      PRIMARY KEY (comparison_rule_id, parameter_id)
+    );
+  ")
+  #--------#
 
   ### LINKAGE METHODS, ALGORITHMS, AND ITERATIONS
   dbExecute(my_db, "
@@ -169,7 +179,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       iteration_id INTEGER PRIMARY KEY,
       iteration_num INTEGER,
       linkage_method_id INTEGER REFERENCES linkage_methods(linkage_method_id),
-      acceptance_rule_id INTEGER
+      acceptance_rule_id INTEGER REFERENCES acceptance_rules(acceptance_rule_id)
     );
   ")
 
@@ -199,6 +209,22 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   # Run insert queries to pre-populate the metadata with some starting linkage, acceptance, and
   # string comparison rules so that linkage may begin a bit quicker.
   #----
+
+  ### LINKAGE METHODS INSERT STATEMENTS
+  #~~~~
+  linkage_methods_insert <- function(){
+    new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, version)',
+                             'VALUES(1, "D", "Reclin2Linkage", "v1");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, version)',
+                             'VALUES(2, "P", "Reclin2Linkage", "v1");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  linkage_methods_insert()
+  #~~~~
 
   ### ACCEPTANCE METHOD INSERT STATEMENTS
   #~~~~
@@ -240,105 +266,81 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   ### ACCEPTANCE RULES INSERT STATEMENTS
   #~~~~
   acceptance_rules_insert_v1 <- function(){
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(1, 1, 1, 0.6);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(1, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(2, 1, 1, 0.65);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(2, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(3, 1, 1, 0.7);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(3, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(4, 1, 1, 0.75);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(4, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(5, 1, 1, 0.80);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(5, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(6, 1, 1, 0.85);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(6, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(7, 1, 1, 0.9);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(7, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(8, 1, 1, 0.95);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(8, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(9, 1, 1, 0.97);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(9, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(10, 1, 1, 0.99);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(10, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(11, 2, 1, 8);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(11, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(11, 2, 2, 12);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(12, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(12, 2, 1, 13.7);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(13, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(12, 2, 2, 16.4);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(14, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(13, 2, 1, 20);')
+    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id)',
+                             'VALUES(15, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(13, 2, 2, 21);')
-    new_entry <- dbSendStatement(my_db, new_entry_query)
-    dbClearResult(new_entry)
-
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(14, 2, 1, 9.4);')
-    new_entry <- dbSendStatement(my_db, new_entry_query)
-    dbClearResult(new_entry)
-
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(14, 2, 2, 13.6);')
-    new_entry <- dbSendStatement(my_db, new_entry_query)
-    dbClearResult(new_entry)
-
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(15, 2, 1, 15.8);')
-    new_entry <- dbSendStatement(my_db, new_entry_query)
-    dbClearResult(new_entry)
-
-    new_entry_query <- paste('INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameter_id, parameter)',
-                             'VALUES(15, 2, 2, 17.4);')
-    new_entry <- dbSendStatement(my_db, new_entry_query)
-    dbClearResult(new_entry)
   }
   acceptance_rules_insert_v2 <- function(){
     new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_rule_id, acceptance_method_id, parameters)",
@@ -481,7 +483,114 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     dbBind(new_entry, list(15, 2, parameters))
     dbClearResult(new_entry)
   }
-  acceptance_rules_insert_v2()
+  acceptance_rules_insert_v1()
+  #acceptance_rules_insert_v2()
+  #~~~~
+
+  ### ACCEPTANCE RULES PARAMETERS INSERT STATEMENTS
+  #~~~~
+  acceptance_rules_parameters_insert <- function(){
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(1, 1, 0.6);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(2, 1, 0.65);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(3, 1, 0.7);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(4, 1, 0.75);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(5, 1, 0.80);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(6, 1, 0.85);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(7, 1, 0.9);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(8, 1, 0.95);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(9, 1, 0.97);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(10, 1, 0.99);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(11, 2, 8);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(11, 3, 12);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(12, 2, 13.7);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(12, 3, 16.4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(13, 2, 20);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(13, 3, 21);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(14, 2, 9.4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(14, 3, 13.6);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(15, 2, 15.8);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter)',
+                             'VALUES(15, 3, 17.4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  acceptance_rules_parameters_insert()
   #~~~~
 
   ### LINKAGE RULES INSERT STATEMENTS
@@ -660,17 +769,17 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(2, 1, "max_cost", "The integer maximum number of replacements in a string before being rejected (X >= 1).");')
+                             'VALUES(2, 2, "max_cost", "The integer maximum number of replacements in a string before being rejected (X >= 1).");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(3, 1, "max_dist", "The maximum number of characters that a comparison can differ before being rejected (X >= 1).");')
+                             'VALUES(3, 3, "max_dist", "The maximum number of characters that a comparison can differ before being rejected (X >= 1).");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(4, 1, "to_soundex", "Convert a name to soundex formatting.");')
+                             'VALUES(4, 4, "to_soundex", "Convert a name to soundex formatting.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
@@ -680,167 +789,604 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   ### STRING COMPARISON RULES INSERT STATEMENTS
   #~~~~
   comparison_rules_insert_v1 <- function(){
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(1, 1, 1, 0.05);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(1, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(2, 1, 1, 0.1);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(2, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(3, 1, 1, 0.15);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(3, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(4, 1, 1, 0.2);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(4, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(5, 1, 1, 0.25);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(5, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(6, 1, 1, 0.3);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(6, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(7, 1, 1, 0.35);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(7, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(8, 1, 1, 0.4);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(8, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(9, 1, 1, 0.45);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(9, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(10, 1, 1, 0.5);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(10, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(11, 1, 1, 0.55);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(11, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(12, 1, 1, 0.6);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(12, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(13, 1, 1, 0.65);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(13, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(14, 1, 1, 0.7);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(14, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(15, 1, 1, 0.75);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(15, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(16, 1, 1, 0.8);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(16, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(17, 1, 1, 0.85);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(17, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(18, 1, 1, 0.9);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(18, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(19, 1, 1, 0.95);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(19, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(20, 1, 1, 0.99);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(20, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(21, 2, 1, 1);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(21, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(22, 2, 1, 2);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(22, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(23, 2, 1, 3);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(23, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(24, 2, 1, 4);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(24, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(25, 2, 1, 5);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(25, 2);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(26, 3, 1, 1);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(26, 3);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(27, 3, 1, 2);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(27, 3);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(28, 3, 1, 3);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(28, 3);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(29, 3, 1, 4);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(29, 3);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(30, 3, 1, 5);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(30, 3);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameter_id, parameter)',
-                             'VALUES(31, 4, 1, 1);')
+    new_entry_query <- paste('INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id)',
+                             'VALUES(31, 4);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
   comparison_rules_insert_v2 <- function(){
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.05)
+    ))
+    dbBind(new_entry, list(1, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.1)
+    ))
+    dbBind(new_entry, list(2, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.15)
+    ))
+    dbBind(new_entry, list(3, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.20)
+    ))
+    dbBind(new_entry, list(4, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.25)
+    ))
+    dbBind(new_entry, list(5, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.30)
+    ))
+    dbBind(new_entry, list(6, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.35)
+    ))
+    dbBind(new_entry, list(7, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.40)
+    ))
+    dbBind(new_entry, list(8, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.45)
+    ))
+    dbBind(new_entry, list(9, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.50)
+    ))
+    dbBind(new_entry, list(10, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.55)
+    ))
+    dbBind(new_entry, list(11, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.60)
+    ))
+    dbBind(new_entry, list(12, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.65)
+    ))
+    dbBind(new_entry, list(13, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.70)
+    ))
+    dbBind(new_entry, list(14, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.75)
+    ))
+    dbBind(new_entry, list(15, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.80)
+    ))
+    dbBind(new_entry, list(16, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.85)
+    ))
+    dbBind(new_entry, list(17, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.90)
+    ))
+    dbBind(new_entry, list(18, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.95)
+    ))
+    dbBind(new_entry, list(19, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 1, value = 0.99)
+    ))
+    dbBind(new_entry, list(20, 1, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 1)
+    ))
+    dbBind(new_entry, list(21, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 2)
+    ))
+    dbBind(new_entry, list(22, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 3)
+    ))
+    dbBind(new_entry, list(23, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 4)
+    ))
+    dbBind(new_entry, list(24, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 2, value = 5)
+    ))
+    dbBind(new_entry, list(25, 2, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 3, value = 1)
+    ))
+    dbBind(new_entry, list(26, 3, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 3, value = 2)
+    ))
+    dbBind(new_entry, list(27, 3, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 3, value = 3)
+    ))
+    dbBind(new_entry, list(28, 3, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 3, value = 4)
+    ))
+    dbBind(new_entry, list(29, 3, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 3, value = 5)
+    ))
+    dbBind(new_entry, list(30, 3, parameters))
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste("INSERT INTO comparison_rules (comparison_rule_id, comparison_method_id, parameters)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    parameters <- toJSON(list(
+      list(parameter_key_id = 4, value = 1)
+    ))
+    dbBind(new_entry, list(31, 4, parameters))
+    dbClearResult(new_entry)
 
   }
-  comparison_rules_insert_v2()
+  comparison_rules_insert_v1()
+  #comparison_rules_insert_v2()
   #~~~~
 
+  ### STRING COMPARISON RULES PARAMETERS INSERT STATEMENTS
+  comparison_rules_parameters_insert <- function(){
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(1, 1, 0.05);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(2, 1, 0.1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(3, 1, 0.15);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(4, 1, 0.2);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(5, 1, 0.25);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(6, 1, 0.3);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(7, 1, 0.35);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(8, 1, 0.4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(9, 1, 0.45);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(10, 1, 0.5);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(11, 1, 0.55);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(12, 1, 0.6);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(13, 1, 0.65);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(14, 1, 0.7);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(15, 1, 0.75);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(16, 1, 0.8);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(17, 1, 0.85);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(18, 1, 0.9);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(19, 1, 0.95);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(20, 1, 0.99);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(21, 2, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(22, 2, 2);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(23, 2, 3);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(24, 2, 4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(25, 2, 5);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(26, 3, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(27, 3, 2);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(28, 3, 3);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(29, 3, 4);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(30, 3, 5);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter)',
+                             'VALUES(31, 4, 1);')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+  }
+  comparison_rules_parameters_insert()
   #----
 
   # Finally disconnect
