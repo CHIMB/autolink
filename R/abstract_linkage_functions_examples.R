@@ -274,6 +274,15 @@ run_main_linkage_v2 <- function(left_dataset, right_dataset, linkage_metadata_db
     # Get the current iteration_id
     curr_iteration_id <- row$iteration_id
 
+    # BEFORE EVERYTHING #
+
+    # Get the implementation class name to decide which linkage implementation to call
+    implementation_name <- get_implementation_name(db = linkage_metadata_db, iteration_id = curr_iteration_id)
+
+    #-------------------#
+
+    # IF PROB CALL THIS, OTHERWISE, DO SOMETHING ELSE, CALL DIFFERENT CLASS!!!
+
     # Get the blocking keys using the iteration ID
     blocking_keys <- get_blocking_keys(db = linkage_metadata_db, iteration_id = curr_iteration_id)
 
