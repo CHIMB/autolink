@@ -190,7 +190,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       right_dataset_field VARCHAR(255),
       left_dataset_field VARCHAR(255),
       linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
-      PRIMARY KEY (iteration_id, right_dataset_field, left_dataset_field)
+      PRIMARY KEY (iteration_id, right_dataset_field, left_dataset_field, linkage_rule_id) --added primary key linkage_rule_id
     );
   ")
 
@@ -201,7 +201,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       left_dataset_field VARCHAR(255),
       linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
       comparison_rule_id INTEGER REFERENCES comparison_rules(comparison_rule_id),
-      PRIMARY KEY (iteration_id, right_dataset_field, left_dataset_field)
+      PRIMARY KEY (iteration_id, right_dataset_field, left_dataset_field, linkage_rule_id, comparison_rule_id) --added primary keys linkage_rule_id and comparison_rule_id
     );
   ")
   #----
