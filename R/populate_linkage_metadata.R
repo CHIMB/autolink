@@ -188,7 +188,8 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     CREATE TABLE ground_truth_variables (
       algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
       parameter_id INTEGER,
-      ground_truth_field_name VARCHAR(255),
+      left_dataset_field VARCHAR(255),
+      right_dataset_field VARCHAR(255),
       linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
       PRIMARY KEY (algorithm_id, parameter_id)
     );

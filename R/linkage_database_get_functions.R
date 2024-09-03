@@ -219,7 +219,7 @@ get_implementation_name <- function(db, iteration_id){
 # Returns the ground truth variables and their respective error tolerance rules
 get_ground_truth_fields <- function(db, algorithm_id){
   # Start by getting all the rows from ground_truth_variables that match to a specific algorithm_id
-  ground_truth_df <- dbGetQuery(db, paste0('SELECT ground_truth_field_name, linkage_rule_id FROM ground_truth_variables
+  ground_truth_df <- dbGetQuery(db, paste0('SELECT left_dataset_field, right_dataset_field, linkage_rule_id FROM ground_truth_variables
                                   where algorithm_id = ', algorithm_id))
 
   # Prevent error in-case there are no blocking variables for this iteration
