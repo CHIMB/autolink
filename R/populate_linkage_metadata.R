@@ -164,9 +164,10 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
 
   dbExecute(my_db, "
     CREATE TABLE linkage_algorithms (
+      algorithm_id INTEGER PRIMARY KEY,
       dataset_id_left INTEGER REFERENCES datasets(dataset_id),
       dataset_id_right INTEGER REFERENCES datasets(dataset_id),
-      algorithm_id INTEGER PRIMARY KEY,
+      algorithm_name VARCHAR(255),
       modified_date TEXT,
       modified_by VARCHAR(255),
       enabled INTEGER

@@ -67,17 +67,39 @@ linkage_ui <- page_navbar(
         .modal-content {
           overflow-y: auto;  /* Add scrolling to the modal content */
         }"
+      ),
+      HTML("
+        .accordion .accordion-button {
+          background-color: #d3d3d3; /* Darker color for closed state */
+          color: #000000;
+        }
+        .accordion .accordion-button:not(.collapsed) {
+          background-color: #f8f9fa; /* Lighter color for open state */
+          color: #000000;
+        }"
       )
     )
   ),
   #----
   title = "Data Linkage UI",
+  id = "main_navbar",
   nav_panel(title = "Home", id = "home_page",
     fluidPage(
-     "You are on the Home page. Once complete, there will be a welcome message, followed by a breakdown of all the
-     tabs in the application, and what each of them will allow the user to do. From here, you can select one of the
-     above tabs to move to that page, or you may scroll down and see what each page provides before selecting
-     a new page."
+     HTML("<br><br>"),
+     accordion(
+        accordion_panel(title = "Welcome",
+          "You are on the Home page. Once complete, there will be a better welcome message, followed by a breakdown of all the
+           tabs in the application, and what each of them will allow the user to do. From here, you can select one of the
+           above tabs to move to that page, or you may scroll down and see what each page provides before selecting
+           a new page."
+        ),
+        accordion_panel(title = "Datasets"),
+        accordion_panel(title = "Linkage Data"),
+        accordion_panel(title = "Linkage Variables"),
+        accordion_panel(title = "Acceptance Methods & Rules"),
+        accordion_panel(title = "Comparison Methods & Rules"),
+        accordion_panel(title = "Linkage Rules"),
+     )
     )
   ),
   nav_panel(title = "Datasets", id = "datasets_page",
@@ -174,25 +196,33 @@ linkage_ui <- page_navbar(
   navbarMenu("Acceptance Methods & Rules",
     nav_panel(title = "Acceptance Methods", id = "acceptance_methods_page",
       "You are on the Acceptance Methods page. Here, you can enter information for creating a new/custom acceptance method that can
-      be used in custom linkage implementations. The user will be required to provide a method name and description, how many parameters
-      are required, and then the parameter names and description of each."
+      be used in custom linkage implementations. The user will be required to provide a method name and description to submit or
+      update."
+    ),
+    nav_panel(title = "Acceptance Parameters", id = "acceptance_parameters_page",
+      "You are on the Acceptance Parameters page. Here, you can select an exisiting acceptance method to add or update the acceptance
+      parameters of."
     ),
     nav_panel(title = "Acceptance Rules", id = "acceptance_rules_page",
       "You are on the Acceptance Rules page. Here, you can enter information for creating a new/custom acceptance rule that can
       be used in custom linkage implementations. The user will be required to provide a rule name and description, which will be
-      stored in the database. Additionally, users can select existing rules to disable or enable them."
+      stored in the database."
     )
   ),
   navbarMenu("Comparison Methods & Rules",
     nav_panel(title = "Comparison Methods", id = "comparison_methods_page",
       "You are on the Comparison Methods page. Here, you can enter information for creating a new/custom comparison method that can
-      be used in custom linkage implementations. The user will be required to provide a method name and description, how many parameters
-      are required, and then the parameter names and description of each."
+      be used in custom linkage implementations. The user will be required to provide a method name and description to submit or
+      update."
+    ),
+    nav_panel(title = "Comparison Parameters", id = "comparison_parameters_page",
+      "You are on the Comparison Parameters page. Here, you can select an exisiting comparison method to add or update the comparison
+      parameters of."
     ),
     nav_panel(title = "Comparison Rules", id = "comparison_rules_page",
       "You are on the Comparison Rules page. Here, you can enter information for creating a new/custom comparison rule that can
       be used in custom linkage implementations. The user will be required to provide a rule name and description, which will be
-      stored in the database. Additionally, users can select existing rules to disable or enable them."
+      stored in the database."
     )
   ),
   nav_panel(title = "Linkage Rules", id = "linkage_rules_page",
@@ -270,6 +300,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn){
     }
   })
   #----
+
+  observeEvent(input$to_methods, {
+    updateNavbarPage(session, "main_navbar", selected = "Linkage Methods")
+  })
 }
 
 #' Start Linkage Metadata UI
