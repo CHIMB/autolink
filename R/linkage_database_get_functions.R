@@ -3,8 +3,15 @@
 # right and left data set field names, and linkage rules
 get_blocking_keys <- function(db, iteration_id){
   # Start by getting all the rows from blocking_variables that match to a specific iteration_id
-  blocking_keys_df <- dbGetQuery(db, paste0('SELECT left_dataset_field, right_dataset_field, linkage_rule_id FROM blocking_variables
-                                where iteration_id = ', iteration_id))
+  blocking_keys_df <- dbGetQuery(db, paste0('
+    SELECT
+      dvf.field_name AS left_dataset_field,
+      dvf2.field_name AS right_dataset_field,
+      bv.linkage_rule_id
+    FROM blocking_variables bv
+    INNER JOIN dataset_fields dvf ON bv.left_dataset_field_id = dvf.field_id
+    INNER JOIN dataset_fields dvf2 ON bv.right_dataset_field_id = dvf2.field_id
+    WHERE bv.iteration_id = ', iteration_id))
 
   # Prevent error in-case there are no blocking variables for this iteration
   if(nrow(blocking_keys_df) <= 0){
@@ -58,8 +65,16 @@ get_blocking_keys <- function(db, iteration_id){
 # right and left data set field names, linkage rules, and comparison rules
 get_matching_keys <- function(db, iteration_id){
   # Start by getting all the rows from blocking_variables that match to a specific iteration_id
-  matching_keys_df <- dbGetQuery(db, paste0('SELECT left_dataset_field, right_dataset_field, linkage_rule_id, comparison_rule_id FROM matching_variables
-                                where iteration_id = ', iteration_id))
+  matching_keys_df <- dbGetQuery(db, paste0('
+    SELECT
+      dvf.field_name AS left_dataset_field,
+      dvf2.field_name AS right_dataset_field,
+      mv.linkage_rule_id,
+      mv.comparison_rule_id
+    FROM matching_variables mv
+    INNER JOIN dataset_fields dvf ON mv.left_dataset_field_id = dvf.field_id
+    INNER JOIN dataset_fields dvf2 ON mv.right_dataset_field_id = dvf2.field_id
+    WHERE mv.iteration_id = ', iteration_id))
 
   # Prevent error in-case there are no matching variables for this iteration
   if(nrow(matching_keys_df) <= 0){
@@ -105,29 +120,16 @@ get_matching_keys <- function(db, iteration_id){
     comparison_rule_id <- row$comparison_rule_id
     if(!is.na(comparison_rule_id)){
       # Get the linkage rule fields
-      parameters_df <- dbGetQuery(my_db, paste0('SELECT iteration_id, right_dataset_field, left_dataset_field, parameter_key, parameter FROM matching_variables mv
-                                    JOIN comparison_rules_parameters crp on crp.comparison_rule_id = mv.comparison_rule_id
-                                    JOIN comparison_method_parameters cmp on cmp.parameter_id = crp.parameter_id
-                                    WHERE iteration_id = ', iteration_id))
+      parameters_df <- dbGetQuery(db, paste0('
+        SELECT
+          crp.parameter_id,
+          crp.parameter,
+          cmp.parameter_key
+        FROM comparison_rules_parameters crp
+        JOIN comparison_method_parameters cmp ON crp.parameter_id = cmp.parameter_id
+        WHERE crp.comparison_rule_id = ', comparison_rule_id))
 
-      # Initialize an empty list to store key-value pairs
-      key_value_pairs <- list()
-
-      # For each row in our returned parameters query, if the fields match up with
-      # the row we're currently on, then its one of the key-value pairs.
-      for (parameter_row in 1:nrow(parameters_df)) {
-        left_field <- parameters_df$left_dataset_field[parameter_row]
-        right_field <- parameters_df$right_dataset_field[parameter_row]
-
-        # Check if the fields match the ones in the row
-        if (left_field == row$left_dataset_field && right_field == row$right_dataset_field) {
-          key <- parameters_df$parameter_key[parameter_row]
-          value <- parameters_df$parameter[parameter_row]
-
-          # Add the key-value pair to the linkage_rules list
-          key_value_pairs[[key]] <- value
-        }
-      }
+      key_value_pairs <- as.list(setNames(parameters_df$parameter, parameters_df$parameter_key))
 
       # Convert the list of key-value pairs to a JSON string
       comparison_rule_json <- jsonlite::toJSON(key_value_pairs, auto_unbox = TRUE)
@@ -219,8 +221,15 @@ get_implementation_name <- function(db, iteration_id){
 # Returns the ground truth variables and their respective error tolerance rules
 get_ground_truth_fields <- function(db, algorithm_id){
   # Start by getting all the rows from ground_truth_variables that match to a specific algorithm_id
-  ground_truth_df <- dbGetQuery(db, paste0('SELECT left_dataset_field, right_dataset_field, linkage_rule_id FROM ground_truth_variables
-                                  where algorithm_id = ', algorithm_id))
+  ground_truth_df <- dbGetQuery(db, paste0('
+    SELECT
+      dvf.field_name AS left_dataset_field,
+      dvf2.field_name AS right_dataset_field,
+      gtv.linkage_rule_id
+    FROM ground_truth_variables gtv
+    INNER JOIN dataset_fields dvf ON gtv.left_dataset_field_id = dvf.field_id
+    INNER JOIN dataset_fields dvf2 ON gtv.right_dataset_field_id = dvf2.field_id
+    WHERE gtv.algorithm_id = ', algorithm_id))
 
   # Prevent error in-case there are no blocking variables for this iteration
   if(nrow(ground_truth_df) <= 0){

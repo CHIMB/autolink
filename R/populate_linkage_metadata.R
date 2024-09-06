@@ -39,6 +39,14 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   ")
 
   dbExecute(my_db, "
+    CREATE TABLE dataset_fields (
+      dataset_id INTEGER REFERENCES datasets(dataset_id),
+      field_id INTEGER PRIMARY KEY,
+      field_name VARCHAR(255)
+    );
+  ")
+
+  dbExecute(my_db, "
     CREATE TABLE performance_measures_audit (
       audit_id INTEGER PRIMARY KEY,
       left_dataset_id INTEGER REFERENCES datasets(dataset_id),
@@ -178,9 +186,13 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     CREATE TABLE linkage_iterations (
       algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
       iteration_id INTEGER PRIMARY KEY,
+      iteration_name VARCHAR(255),
       iteration_num INTEGER,
       linkage_method_id INTEGER REFERENCES linkage_methods(linkage_method_id),
-      acceptance_rule_id INTEGER REFERENCES acceptance_rules(acceptance_rule_id)
+      acceptance_rule_id INTEGER REFERENCES acceptance_rules(acceptance_rule_id),
+      modified_date TEXT,
+      modified_by VARCHAR (255),
+      enabled INTEGER
     );
   ")
 
@@ -189,8 +201,8 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     CREATE TABLE ground_truth_variables (
       algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
       parameter_id INTEGER,
-      left_dataset_field VARCHAR(255),
-      right_dataset_field VARCHAR(255),
+      left_dataset_field_id REFERENCES dataset_fields(field_id),
+      right_dataset_field_id REFERENCES dataset_fields(field_id),
       linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
       PRIMARY KEY (algorithm_id, parameter_id)
     );
@@ -200,21 +212,21 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   dbExecute(my_db, "
     CREATE TABLE blocking_variables (
       iteration_id INTEGER REFERENCES linkage_iterations(iteration_id),
-      right_dataset_field VARCHAR(255),
-      left_dataset_field VARCHAR(255),
+      right_dataset_field_id REFERENCES dataset_fields(field_id),
+      left_dataset_field_id REFERENCES dataset_fields(field_id),
       linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
-      PRIMARY KEY (iteration_id, right_dataset_field, left_dataset_field, linkage_rule_id) --added primary key linkage_rule_id
+      PRIMARY KEY (iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id)
     );
   ")
 
   dbExecute(my_db, "
     CREATE TABLE matching_variables (
       iteration_id INTEGER REFERENCES linkage_iterations(iteration_id),
-      right_dataset_field VARCHAR(255),
-      left_dataset_field VARCHAR(255),
+      right_dataset_field_id REFERENCES dataset_fields(field_id),
+      left_dataset_field_id REFERENCES dataset_fields(field_id),
       linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
       comparison_rule_id INTEGER REFERENCES comparison_rules(comparison_rule_id),
-      PRIMARY KEY (iteration_id, right_dataset_field, left_dataset_field, linkage_rule_id, comparison_rule_id) --added primary keys linkage_rule_id and comparison_rule_id
+      PRIMARY KEY (iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id, comparison_rule_id)
     );
   ")
   #----

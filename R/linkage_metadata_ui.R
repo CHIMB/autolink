@@ -239,7 +239,7 @@ linkage_ui <- page_navbar(
 )
 
 # Script/Server
-linkage_server <- function(input, output, session, linkage_metadata_conn){
+linkage_server <- function(input, output, session, linkage_metadata_conn, username){
 
   # TEST FOR SELECTING AN ACCEPTANCE RULE FOR AN ITERATION
   # THIS CAN ALSO BE FOR HOW YOU SELECT MATCHING AND BLOCKING VARIABLES
@@ -376,7 +376,7 @@ startLinkageMetadataUI <- function(metadata_file_path, username){
   # Start the Shiny Application
   shinyApp(ui = linkage_ui,
            server = function(input, output, session){
-             linkage_server(input, output, session, linkage_metadata_conn)
+             linkage_server(input, output, session, linkage_metadata_conn, username)
            },
            onStart = function(){
              cat("Data Linkage App - OPENED")
