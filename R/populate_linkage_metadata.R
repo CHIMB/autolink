@@ -109,7 +109,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       alternate_field_value INTEGER,
       integer_value_variance INTEGER,
       substring_length INTEGER,
-      tokenized INTEGER
+      standardize_names INTEGER
     );
   ")
 
@@ -200,11 +200,10 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   dbExecute(my_db, "
     CREATE TABLE ground_truth_variables (
       algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
-      parameter_id INTEGER,
+      parameter_id INTEGER PRIMARY KEY,
       left_dataset_field_id REFERENCES dataset_fields(field_id),
       right_dataset_field_id REFERENCES dataset_fields(field_id),
-      linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id),
-      PRIMARY KEY (algorithm_id, parameter_id)
+      linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id)
     );
   ")
 
@@ -622,136 +621,131 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   #~~~~
   linkage_rules_insert <- function(){
     #-- INTEGER VARIANCE --#
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(1, NULL, 1, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(2, NULL, 2, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(3, NULL, 3, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(4, NULL, 4, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(5, NULL, 5, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
     #----------------------#
 
     #-- INITIALS OF PRIMARY AND ALT NAMES --#
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(6, NULL, NULL, 1, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(7, 2, NULL, 1, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(8, 3, NULL, 1, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(9, 4, NULL, 1, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
                              'VALUES(10, 5, NULL, 1, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
     #---------------------------------------#
 
     #-- ALTERNATE FIELDS --#
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(11, NULL, NULL, NULL, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(11, 2, NULL, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(12, 2, NULL, NULL, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(12, 3, NULL, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(13, 3, NULL, NULL, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(13, 4, NULL, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(14, 4, NULL, NULL, NULL);')
-    new_entry <- dbSendStatement(my_db, new_entry_query)
-    dbClearResult(new_entry)
-
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(15, 5, NULL, NULL, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(14, 5, NULL, NULL, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
     #----------------------#
 
     #-- SUBSTRINGED FIELDS --#
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(16, NULL, NULL, 3, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(15, NULL, NULL, 3, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(17, NULL, NULL, 4, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(16, NULL, NULL, 4, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(18, NULL, NULL, 5, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(17, NULL, NULL, 5, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(19, 2, NULL, 3, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(18, 2, NULL, 3, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(20, 2, NULL, 4, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(19, 2, NULL, 4, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(21, 2, NULL, 5, NULL);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(20, 2, NULL, 5, NULL);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
     #------------------------#
 
-    #-- TOKENIZED NAMES --#
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(22, NULL, NULL, NULL, 1);')
+    #-- standardize_namesIZED NAMES --#
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(21, NULL, NULL, NULL, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(23, 2, NULL, NULL, 1);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(22, 2, NULL, NULL, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(24, 3, NULL, NULL, 1);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(23, 3, NULL, NULL, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, tokenized)',
-                             'VALUES(25, 4, NULL, NULL, 1);')
+    new_entry_query <- paste('INSERT INTO linkage_rules (linkage_rule_id, alternate_field_value, integer_value_variance, substring_length, standardize_names)',
+                             'VALUES(24, 4, NULL, NULL, 1);')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
     #---------------------#

@@ -191,6 +191,13 @@ linkage_ui <- page_navbar(
         "Once submitted, the user may continue to add as many matching variables as they would like, viewing the currently added variables
         in a table on the same page."
       )
+    ),
+    nav_panel(title = "Ground Truth Variables", id = "ground_truth_variables_page",
+      fluidPage(
+        "You are on the ground truth variables page. Here, you can view, add, modify, and drop the ground truth variables used
+        in a specific linkage algorithm. Each algorithm has its own variables that can be added to, modified, or deleted, without
+        affecting the variables of any other algorithm.",
+      )
     )
   ),
   navbarMenu("Acceptance Methods & Rules",
