@@ -237,6 +237,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             blocking_keys_pairs[[paste0("blocking_pair_", row_num)]] <- blocking_pair
           }
         }
+        else{
+          # Save the pair to our list of blocking pairs
+          blocking_keys_pairs[["blocking_pair_1"]] <- blocking_keys
+        }
 
 
 
