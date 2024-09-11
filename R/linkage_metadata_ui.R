@@ -321,9 +321,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 #' @examples
 #' my_metadata_file <- file.choose() # Select .sqlite file
 #' my_username <- "John Doe"
-#' startLinkageMetadataUI(my_metadata_file, my_username)
+#' start_linkage_metadata_ui(my_metadata_file, my_username)
 #' @export
-startLinkageMetadataUI <- function(metadata_file_path, username){
+start_linkage_metadata_ui <- function(metadata_file_path, username){
   # Error handling to ensure passed an actual .sqlite file
   #----#
   if(is.null(metadata_file_path) || file_ext(metadata_file_path) != "sqlite"){

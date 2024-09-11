@@ -1,9 +1,21 @@
 #-- HELPER FUNCTIONS FOR GETTING IMPLEMENTATION PARAMETERS --#
-# Get the blocking keys for this iteration, returning a data frame consisting of
-# right and left data set field names, and linkage rules
-get_blocking_keys <- function(db, iteration_id){
+#' Get Iteration Blocking Keys
+#'
+#' The get_blocking_keys() function will take in a linkage database connection containing
+#' all the metadata, along with an iteration ID for the current iteration being run.
+#' A dataframe is returned which contains the left and right dataset fields + the linkage
+#' rules that should be applied to those fields.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param iteration_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' iteration_id <- 1
+#' get_blocking_keys(linkage_db, iteration_id)
+#' @export
+get_blocking_keys <- function(linkage_db, iteration_id){
   # Start by getting all the rows from blocking_variables that match to a specific iteration_id
-  blocking_keys_df <- dbGetQuery(db, paste0('
+  blocking_keys_df <- dbGetQuery(linkage_db, paste0('
     SELECT
       dvf.field_name AS left_dataset_field,
       dvf2.field_name AS right_dataset_field,
@@ -28,7 +40,7 @@ get_blocking_keys <- function(db, iteration_id){
     linkage_rule_id <- row$linkage_rule_id
     if(!is.na(linkage_rule_id)){
       # Get the linkage rule fields
-      parameters_df <- dbGetQuery(db, paste0('SELECT * from linkage_rules where linkage_rule_id = ', linkage_rule_id))
+      parameters_df <- dbGetQuery(linkage_db, paste0('SELECT * from linkage_rules where linkage_rule_id = ', linkage_rule_id))
 
       # Initialize an empty list to store key-value pairs
       key_value_pairs <- list()
@@ -61,11 +73,23 @@ get_blocking_keys <- function(db, iteration_id){
   return(blocking_keys_df)
 }
 
-# Get the matching keys for this iteration, returning a data frame consisting of
-# right and left data set field names, linkage rules, and comparison rules
-get_matching_keys <- function(db, iteration_id){
+#' Get Iteration Matching Keys
+#'
+#' The get_matching_keys() function will take in a linkage database connection containing
+#' all the metadata, along with an iteration ID for the current iteration being run.
+#' A dataframe is returned which contains the left and right dataset fields + the linkage
+#' rules that should be applied to those fields.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param iteration_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' iteration_id <- 1
+#' get_matching_keys(linkage_db, iteration_id)
+#' @export
+get_matching_keys <- function(linkage_db, iteration_id){
   # Start by getting all the rows from blocking_variables that match to a specific iteration_id
-  matching_keys_df <- dbGetQuery(db, paste0('
+  matching_keys_df <- dbGetQuery(linkage_db, paste0('
     SELECT
       dvf.field_name AS left_dataset_field,
       dvf2.field_name AS right_dataset_field,
@@ -91,7 +115,7 @@ get_matching_keys <- function(db, iteration_id){
     linkage_rule_id <- row$linkage_rule_id
     if(!is.na(linkage_rule_id)){
       # Get the linkage rule fields
-      parameters_df <- dbGetQuery(db, paste0('SELECT * from linkage_rules where linkage_rule_id = ', linkage_rule_id))
+      parameters_df <- dbGetQuery(linkage_db, paste0('SELECT * from linkage_rules where linkage_rule_id = ', linkage_rule_id))
 
       # Initialize an empty list to store key-value pairs
       key_value_pairs <- list()
@@ -120,7 +144,7 @@ get_matching_keys <- function(db, iteration_id){
     comparison_rule_id <- row$comparison_rule_id
     if(!is.na(comparison_rule_id)){
       # Get the linkage rule fields
-      parameters_df <- dbGetQuery(db, paste0('
+      parameters_df <- dbGetQuery(linkage_db, paste0('
         SELECT
           crp.parameter_id,
           crp.parameter,
@@ -150,11 +174,23 @@ get_matching_keys <- function(db, iteration_id){
   return(matching_keys_df)
 }
 
-# Get the acceptance thresholds used for this iteration, returning a list of
-# key-value pairs
-get_acceptence_thresholds <- function(db, iteration_id){
+#' Get Iteration Acceptance Threshold
+#'
+#' The get_acceptence_thresholds() function will take in a linkage database connection
+#' containing all the metadata, along with an iteration ID for the current iteration being run.
+#' A list of key-value pairs are returned containing all the necessary thresholds for the
+#' current iteration.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param iteration_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' iteration_id <- 1
+#' get_acceptence_thresholds(linkage_db, iteration_id)
+#' @export
+get_acceptence_thresholds <- function(linkage_db, iteration_id){
   # Perform a query that joins linkage_iterations with acceptance rules parameters and method parameters to get the keys and values
-  acceptance_rules_df <- dbGetQuery(my_db, paste0('SELECT iteration_id, parameter_key, parameter FROM linkage_iterations li
+  acceptance_rules_df <- dbGetQuery(linkage_db, paste0('SELECT iteration_id, parameter_key, parameter FROM linkage_iterations li
                                       JOIN acceptance_rules_parameters arp on arp.acceptance_rule_id = li.acceptance_rule_id
                                       JOIN acceptance_method_parameters amp on amp.parameter_id = arp.parameter_id
                                       WHERE iteration_id = ', iteration_id))
@@ -186,10 +222,23 @@ get_acceptence_thresholds <- function(db, iteration_id){
   return(key_value_pairs)
 }
 
-# Returns the linkage technique for the implementation that is to be run
-get_linkage_technique <- function(db, iteration_id){
+#' Get Iteration Linkage Technique
+#'
+#' The get_linkage_technique() function will take in a linkage database connection
+#' containing all the metadata, along with an iteration ID for the current iteration being run.
+#' A singular string is returned which is what linkage technique should be used by
+#' a specific linkage implementation.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param iteration_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' iteration_id <- 1
+#' get_linkage_technique(linkage_db, iteration_id)
+#' @export
+get_linkage_technique <- function(linkage_db, iteration_id){
   # Perform a query that joins linkage_iterations with linkage methods
-  linkage_technique_df <- dbGetQuery(my_db, paste0('SELECT technique_label FROM linkage_iterations li
+  linkage_technique_df <- dbGetQuery(linkage_db, paste0('SELECT technique_label FROM linkage_iterations li
                                        JOIN linkage_methods lm on lm.linkage_method_id = li.linkage_method_id
                                        WHERE iteration_id = ', iteration_id))
 
@@ -202,10 +251,23 @@ get_linkage_technique <- function(db, iteration_id){
   return(linkage_technique_df$technique_label)
 }
 
-# Returns the name of the implementation class that will be used for linkage
-get_implementation_name <- function(db, iteration_id){
+#' Get Iteration Implementation Name
+#'
+#' The get_implementation_name() function will take in a linkage database connection
+#' containing all the metadata, along with an iteration ID for the current iteration being run.
+#' A singular string is returned which is what linkage implementation should be used by
+#' the current running iteration.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param iteration_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' iteration_id <- 1
+#' get_implementation_name(linkage_db, iteration_id)
+#' @export
+get_implementation_name <- function(linkage_db, iteration_id){
   # Perform a query that joins linkage_iterations with linkage methods
-  implementation_name_df <- dbGetQuery(my_db, paste0('SELECT implementation_name FROM linkage_iterations li
+  implementation_name_df <- dbGetQuery(linkage_db, paste0('SELECT implementation_name FROM linkage_iterations li
                                        JOIN linkage_methods lm on lm.linkage_method_id = li.linkage_method_id
                                        WHERE iteration_id = ', iteration_id))
 
@@ -218,10 +280,23 @@ get_implementation_name <- function(db, iteration_id){
   return(implementation_name_df$implementation_name)
 }
 
-# Returns the ground truth variables and their respective error tolerance rules
-get_ground_truth_fields <- function(db, algorithm_id){
+#' Get Algorithm Ground Truth Keys
+#'
+#' The get_ground_truth_fields() function will take in a linkage database connection containing
+#' all the metadata, along with an iteration ID for the current iteration being run.
+#' A dataframe is returned which contains the left and right dataset fields + the linkage
+#' rules that should be applied to those fields.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param algorithm_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' algorithm_id <- 1
+#' get_ground_truth_fields(linkage_db, algorithm_id)
+#' @export
+get_ground_truth_fields <- function(linkage_db, algorithm_id){
   # Start by getting all the rows from ground_truth_variables that match to a specific algorithm_id
-  ground_truth_df <- dbGetQuery(db, paste0('
+  ground_truth_df <- dbGetQuery(linkage_db, paste0('
     SELECT
       dvf.field_name AS left_dataset_field,
       dvf2.field_name AS right_dataset_field,
@@ -246,7 +321,7 @@ get_ground_truth_fields <- function(db, algorithm_id){
     linkage_rule_id <- row$linkage_rule_id
     if(!is.na(linkage_rule_id)){
       # Get the linkage rule fields
-      parameters_df <- dbGetQuery(db, paste0('SELECT * from linkage_rules where linkage_rule_id = ', linkage_rule_id))
+      parameters_df <- dbGetQuery(linkage_db, paste0('SELECT * from linkage_rules where linkage_rule_id = ', linkage_rule_id))
 
       # Initialize an empty list to store key-value pairs
       key_value_pairs <- list()
@@ -279,3 +354,37 @@ get_ground_truth_fields <- function(db, algorithm_id){
   return(ground_truth_df)
 }
 #------------------------------------------------------------#
+
+#-- HELPER FUNCTIONS FOR LINKAGE RULES --#
+#' Get Standardized Names
+#'
+#' The get_standardized_names() function will take in a standardizing names file in
+#' the form of the csv which must contain the columns 'START' which indicates all possible
+#' forms of a common name, and a column 'LABEL' which is the most common spelling of that
+#' name which it will be standardized to. If no spelling is found, the name is replaced with
+#' NA
+#' @param file_path A path to the .csv file that will be read
+#' @param data_field A vector of names that will be standardized.
+#' @param lookupvector The vector of names we'll try to unname.
+#' @examples
+#' file_path <- choose.file() # Select the '.csv'
+#' data_field <- c("John", "Johnnie", "Johnny", "Jon")
+#' get_standardized_names(file_path, data_field)
+#' @export
+get_standardized_names <- function(file_path, data_field, lookupvector = common_standardized_names){
+  # Read in the standardization data frame
+  standardization_df <- fread(file_path, select = c("START","LABEL"))
+
+  # Get the common standardized names
+  common_standardized_names <- standardization_df$LABEL
+
+  # Determine if any of our passed names from our data_field have a common spelling
+  names(common_standardized_names) <- tolower(standardization_df$START)
+  standardized_names <- unname(lookupvector[tolower(data_field)])
+
+  # Clean up and return the names
+  rm(standardization_df, common_standardized_names)
+  gc()
+  return(standardized_names)
+}
+#----------------------------------------#
