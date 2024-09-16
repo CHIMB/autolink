@@ -77,13 +77,24 @@ linkage_ui <- page_navbar(
           background-color: #f8f9fa; /* Lighter color for open state */
           color: #000000;
         }"
+      ),
+      HTML("
+        .tooltip-inner {
+          max-width: 300px;  /* Custom width */
+          background-color: #f8f9fa;  /* Light background */
+          color: #333;  /* Dark text */
+          border: 1px solid #ddd;  /* Border styling */
+          padding: 10px;  /* Adjust padding */
+        }"
       )
     )
   ),
   #----
   title = "Data Linkage UI",
   id = "main_navbar",
-  nav_panel(title = "Home", id = "home_page",
+  #-- HOME PAGE --#
+  #----
+  nav_panel(title = "Home", value = "home_page",
     fluidPage(
      HTML("<br><br>"),
      accordion(
@@ -93,28 +104,63 @@ linkage_ui <- page_navbar(
            above tabs to move to that page, or you may scroll down and see what each page provides before selecting
            a new page."
         ),
-        accordion_panel(title = "Datasets"),
-        accordion_panel(title = "Linkage Data"),
-        accordion_panel(title = "Linkage Variables"),
-        accordion_panel(title = "Acceptance Methods & Rules"),
-        accordion_panel(title = "Comparison Methods & Rules"),
-        accordion_panel(title = "Linkage Rules"),
+        accordion_panel(title = "Datasets - Information"),
+        accordion_panel(title = "Linkage Data - Information"),
+        accordion_panel(title = "Linkage Variables - Information"),
+        accordion_panel(title = "Acceptance Methods & Rules - Information"),
+        accordion_panel(title = "Comparison Methods & Rules - Information"),
+        accordion_panel(title = "Linkage Rules - Information",
+          actionButton("to_methods", "Go To Linkage Rules Page")
+
+
+        ),
      )
     )
   ),
-  nav_panel(title = "Datasets", id = "datasets_page",
+  #----
+  #---------------#
+
+  #-- DATASETS PAGE --#
+  #----
+  nav_panel(title = "Datasets", value = "datasets_page",
     fluidPage(
-      "You are on the Datasets page. Here, you can add new datasets to be used in data linkage, disable & enable datasets to
-      allow for version control, and as well as modify the dataset names and codes.",
-      HTML("<br><br>"),
-      "The user will be provided with a table consisting of all currently created datasets. Below the tables will be input boxes
-      with the intention for the user to enter a dataset code, name, and version of the dataset. If a user clicks on one of the
-      existing datasets, the input boxes will be populated with dataset metadata which will allow for quicker editing. Here, the
-      user will also be allowed to toggle datasets to either enable or disable them."
+      dataTableOutput("currently_added_datasets"),
+
+      # If the user has selected a row, then we can either UPDATE or TOGGLE a dataset
+      conditionalPanel(
+        condition = "input.currently_added_datasets_rows_selected > 0",
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("toggle_dataset", "Toggle Selected Dataset", class = "btn-success"),
+
+            # Add a question mark icon button with a popover
+            actionButton("toggle_dataset_help", class = "btn btn-info", shiny::icon("question")) |>
+            # Add the popover manually
+            tooltip(paste("Toggle whether a dataset is available to be used in data linkage.",
+                          "If a dataset is Enabled, you may select/view/add/modify linkage algorithms",
+                          "and passes using that dataset, and may also use the dataset to perform data linkage.",
+                          "If Disabled, the dataset, algorithms, and passes will be ignored, and it",
+                          "may not be used for data linkage."),
+                    placement = "right",
+                    options = list(container = "body")
+            ),
+          ))
+        )
+      ),
+
+      # If the user has no row selected, then we can ADD a new dataset
+      conditionalPanel(
+        condition = "input.currently_added_datasets_rows_selected <= 0",
+        HTML("<br>")
+
+      )
     )
   ),
+  #----
+  #-------------------#
+
   navbarMenu("Linkage Data",
-    nav_panel(title = "Linkage Methods", id = "linkage_methods_page",
+    nav_panel(title = "Linkage Methods", value = "linkage_methods_page",
       fluidPage(
         "You are on the Linkage Methods page. Here, you can create a new selectable linkage method which will automatically be
         called via the `datalink` package during the linkage process. Once the user creates their own custom class implementation
@@ -125,7 +171,7 @@ linkage_ui <- page_navbar(
         technique, and a version descriptor at the users discretion."
       )
     ),
-    nav_panel(title = "Linkage Algorithms", id = "linkage_algorithms_page",
+    nav_panel(title = "Linkage Algorithms", value = "linkage_algorithms_page",
       fluidPage(
         "You are on the Linkage Algorithms page. Here, you can create a new linkage algorithm which can have iterations/steps added
         to them, the user will be asked asked to select two datasets to link, a left and right dataset which will be chosen from two
@@ -138,7 +184,7 @@ linkage_ui <- page_navbar(
         or disable algorithms for testing and linkage purposes."
       )
     ),
-    nav_panel(title = "Linkage Iterations", id = "linkage_iterations_page",
+    nav_panel(title = "Linkage Iterations", value = "linkage_iterations_page",
       fluidPage(
         "You are on the Linkage Iterations page. Here, you can select a left and right dataset for which you'd like to add iterations
         for, which will bring up a list of all current algorithms using those two datasets.",
@@ -150,14 +196,14 @@ linkage_ui <- page_navbar(
         actionButton("iteration_acceptance_rule", "Choose a Rule"),
       )
     ),
-    nav_panel(title = "Linkage Audits", id = "audits_page",
+    nav_panel(title = "Linkage Audits", value = "audits_page",
       "You are on the Audits page. Here, you can view all stored auditing information observed during data linkage, being able
       to sort by datasets, and date of capture. Further, the option to select and export selected auditing information is available
       to the user."
     ),
   ),
   navbarMenu("Linkage Variables",
-    nav_panel(title = "Blocking Variables", id = "blocking_variables_page",
+    nav_panel(title = "Blocking Variables", value = "blocking_variables_page",
       fluidPage(
         "You are on the Blocking Variables page. Here, you will upload the two datasets you wish to link, the server end will perform
         error handling to ensure the provided datasets exist in the database. If successful, you may select an existing algorithm and
@@ -174,7 +220,7 @@ linkage_ui <- page_navbar(
         in a table on the same page."
       )
     ),
-    nav_panel(title = "Matching Variables", id = "matching_variables_page",
+    nav_panel(title = "Matching Variables", value = "matching_variables_page",
       fluidPage(
         "You are on the Matching Variables page. Here, you will upload the two datasets you wish to link, the server end will perform
         error handling to ensure the provided datasets exist in the database. If successful, you may select an existing algorithm and
@@ -192,7 +238,7 @@ linkage_ui <- page_navbar(
         in a table on the same page."
       )
     ),
-    nav_panel(title = "Ground Truth Variables", id = "ground_truth_variables_page",
+    nav_panel(title = "Ground Truth Variables", value = "ground_truth_variables_page",
       fluidPage(
         "You are on the ground truth variables page. Here, you can view, add, modify, and drop the ground truth variables used
         in a specific linkage algorithm. Each algorithm has its own variables that can be added to, modified, or deleted, without
@@ -201,42 +247,46 @@ linkage_ui <- page_navbar(
     )
   ),
   navbarMenu("Acceptance Methods & Rules",
-    nav_panel(title = "Acceptance Methods", id = "acceptance_methods_page",
+    nav_panel(title = "Acceptance Methods", value = "acceptance_methods_page",
       "You are on the Acceptance Methods page. Here, you can enter information for creating a new/custom acceptance method that can
       be used in custom linkage implementations. The user will be required to provide a method name and description to submit or
       update."
     ),
-    nav_panel(title = "Acceptance Parameters", id = "acceptance_parameters_page",
+    nav_panel(title = "Acceptance Parameters", value = "acceptance_parameters_page",
       "You are on the Acceptance Parameters page. Here, you can select an exisiting acceptance method to add or update the acceptance
       parameters of."
     ),
-    nav_panel(title = "Acceptance Rules", id = "acceptance_rules_page",
+    nav_panel(title = "Acceptance Rules", value = "acceptance_rules_page",
       "You are on the Acceptance Rules page. Here, you can enter information for creating a new/custom acceptance rule that can
       be used in custom linkage implementations. The user will be required to provide a rule name and description, which will be
       stored in the database."
     )
   ),
   navbarMenu("Comparison Methods & Rules",
-    nav_panel(title = "Comparison Methods", id = "comparison_methods_page",
+    nav_panel(title = "Comparison Methods", value = "comparison_methods_page",
       "You are on the Comparison Methods page. Here, you can enter information for creating a new/custom comparison method that can
       be used in custom linkage implementations. The user will be required to provide a method name and description to submit or
       update."
     ),
-    nav_panel(title = "Comparison Parameters", id = "comparison_parameters_page",
+    nav_panel(title = "Comparison Parameters", value = "comparison_parameters_page",
       "You are on the Comparison Parameters page. Here, you can select an exisiting comparison method to add or update the comparison
       parameters of."
     ),
-    nav_panel(title = "Comparison Rules", id = "comparison_rules_page",
+    nav_panel(title = "Comparison Rules", value = "comparison_rules_page",
       "You are on the Comparison Rules page. Here, you can enter information for creating a new/custom comparison rule that can
       be used in custom linkage implementations. The user will be required to provide a rule name and description, which will be
       stored in the database."
     )
   ),
-  nav_panel(title = "Linkage Rules", id = "linkage_rules_page",
+  #-- LINKAGE RULES PAGE --#
+  #----
+  nav_panel(title = "Linkage Rules", value = "linkage_rule_page",
     "You are on the Linkage Rules page. Here, you can add a new linkage rule usable by blocking and matching variables. Input boxes for
     each of the main rules will be provided and the user may enter inputs for at least one of their choice for a rule to be valid. Once
     submitted the rule will be added to the database and thus available for use when selecting blocking and matching variables."
   ),
+  #----
+  #------------------------#
   nav_spacer(),
   nav_menu(
     title = "Links",
@@ -247,6 +297,164 @@ linkage_ui <- page_navbar(
 
 # Script/Server
 linkage_server <- function(input, output, session, linkage_metadata_conn, username){
+  #-- HIDING PAGES EVENTS --#
+  # Initially hide some tabs we don't need the users to access
+  nav_hide('main_navbar', 'linkage_rule_page')
+
+  # If the user goes off of an inner tab, hide it
+  observeEvent(input$main_navbar, {
+    # Get the tabs that are not necessary for the user
+    tabs_to_hide <- c("linkage_rule_page")
+    selected_panel <- input$main_navbar
+
+    # Hide them
+    for(tab in tabs_to_hide){
+      if(selected_panel != tab){
+        nav_hide('main_navbar', tab)
+      }
+    }
+  })
+  #-------------------------#
+
+  #-- DATASETS PAGE EVENTS --#
+  #----
+
+  # Query and output for getting the users datasets
+  get_datasets <- function(){
+    # Query to get all dataset information from the 'datasets' table
+    query <- paste('SELECT * FROM datasets ORDER BY dataset_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'dataset_code'] <- 'Dataset Code'
+    names(df)[names(df) == 'dataset_name'] <- 'Dataset Name'
+    names(df)[names(df) == 'version'] <- 'Version'
+    names(df)[names(df) == 'enabled_for_linkage'] <- 'Enabled'
+
+    # With datasets, we'll replace the enabled [0, 1] with [No, Yes]
+    df$Enabled <- str_replace(df$Enabled, "0", "No")
+    df$Enabled <- str_replace(df$Enabled, "1", "Yes")
+
+    # Drop the dataset_id value
+    df <- subset(df, select = -c(dataset_id))
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 't'))
+  }
+
+  # Function to read in a file, extract the column names, and return them
+  read_dataset_columns <- function(file_path) {
+    # Extract the file extension
+    file_extension <- tools::file_ext(file_path)
+
+    # Based on file extension, attempt to read only the first row (column names)
+    column_names <- switch(tolower(file_extension),
+       "csv" = {
+         # Read only the header from a CSV file
+         data.table::fread(file_path, nrows = 1) %>% colnames()
+       },
+       "txt" = {
+         # Read only the header from a TXT file
+         data.table::fread(file_path, nrows = 1) %>% colnames()
+       },
+       "sas7bdat" = {
+         # Read only the header from a SAS7BDAT file
+         haven::read_sas(file_path, n_max = 1) %>% colnames()
+       },
+       "xlsx" = {
+         # Read only the first row from an Excel file
+         readxl::read_excel(file_path, n_max = 1) %>% colnames()
+       },
+       "xls" = {
+         # Read only the first row from an older Excel file
+         readxl::read_excel(file_path, n_max = 1) %>% colnames()
+       },
+       "json" = {
+         # For JSON, read the first object's keys (assuming it's an array of objects)
+         json_data <- jsonlite::fromJSON(file_path, simplifyDataFrame = TRUE)
+         if (is.data.frame(json_data)) {
+           colnames(json_data)
+         } else {
+           stop("Unsupported JSON format - expecting an array of objects")
+         }
+       },
+       stop("Unsupported file format")  # Error if unsupported file type
+    )
+
+    # Return the extracted column names
+    return(column_names)
+  }
+
+  # Renders the Data table of currently added datasets
+  output$currently_added_datasets <- renderDataTable({
+    get_datasets()
+  })
+
+  # Enables or Disables the currently selected dataset
+  observeEvent(input$toggle_dataset, {
+    # Get the row that we're supposed to be toggling
+    #----#
+    selected_row <- input$currently_added_datasets_rows_selected
+
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets
+                                                ORDER BY dataset_id ASC'))
+
+    selected_dataset_id <- df[selected_row, "dataset_id"]
+    enabled_value       <- df[selected_row, "enabled_for_linkage"]
+    dataset_code        <- df[selected_row, "dataset_code"]
+    #----#
+
+    # Create a query for updating the enabled value of the record
+    #----#
+    if(enabled_value == 1){
+      update_query <- paste("UPDATE datasets
+                          SET enabled_for_linkage = 0
+                          WHERE dataset_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(selected_dataset_id))
+      dbClearResult(update)
+    }else{
+      # Error handling - don't allow user to have two databases enabled with the same data set code
+      #----#
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM datasets WHERE dataset_code = ? AND enabled_for_linkage = 1;')
+      dbBind(get_query, list(dataset_code))
+      output_df <- dbFetch(get_query)
+      enabled_databases <- nrow(output_df)
+      dbClearResult(get_query)
+
+      if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
+        showNotification("Failed to Enable Database - Database with the same dataset code is already enabled", type = "error", closeButton = FALSE)
+        return()
+      }
+      #----#
+
+      update_query <- paste("UPDATE datasets
+                          SET enabled_for_linkage = 1
+                          WHERE dataset_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(selected_dataset_id))
+      dbClearResult(update)
+    }
+    #----#
+
+    # Re-render data tables and reset UI
+    #----#
+    output$currently_added_datasets <- renderDataTable({
+      get_datasets()
+    })
+    #----#
+
+    # Send a success notification
+    #----#
+    if(enabled_value == 1){
+      showNotification("Dataset Successfully Disabled", type = "message", closeButton = FALSE)
+    }else{
+      showNotification("Dataset Successfully Enabled", type = "message", closeButton = FALSE)
+    }
+    #----#
+  })
+  #----
+  #--------------------------#
 
   # TEST FOR SELECTING AN ACCEPTANCE RULE FOR AN ITERATION
   # THIS CAN ALSO BE FOR HOW YOU SELECT MATCHING AND BLOCKING VARIABLES
@@ -309,7 +517,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   #----
 
   observeEvent(input$to_methods, {
-    updateNavbarPage(session, "main_navbar", selected = "Linkage Methods")
+    nav_show('main_navbar', 'linkage_rule_page')
+    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
   })
 }
 
