@@ -407,9 +407,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               comparison_rules_list[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
             }
           }
-          else{
-
-          }
         }
 
         # Now, we'll move onto the matching keys, using the compare_pairs() function from reclin2
@@ -424,7 +421,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         linkage_formula <- as.formula(paste("~", paste(matching_keys, collapse = " + ")))
 
         # After compare_pairs(), we'll run an EM algorithm on the linkage pairs
-        em_pairs <- problink_em(linkage_formula, data = linkage_pairs)
+        em_pairs <- suppressWarnings(problink_em(linkage_formula, data = linkage_pairs))
 
         # Afterwards, we'll score the pair using type = "all" to get all score types
         linkage_pairs <- predict(em_pairs, pairs = linkage_pairs, type = "all", add = TRUE)
@@ -463,6 +460,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         stage_name <- get_iteration_name(linkage_metadata_db, iteration_id)
         linked_dataset <- cbind(linked_dataset, stage=stage_name)
 
+
+        # Calculate AUC and various agreement statistics here? (dont think so, might need ALL links merged)
+
+        # mroc <- roc(all_links, PHIN_match, weight, plot=T, algorithm=2, direction="<")
+        # coords(mroc, "best", "threshold",
+        #        ret=c("threshold","sensitivity","specificity","ppv","npv","precision","recall","tp","tn","fp","fn"),
+        #        best.method="youden")
+        # auc(mroc)
         #----------------------------#
 
 
@@ -873,7 +878,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Since this is a deterministic pass, we'll use the 'score_simple()' function instead
         # of creating an EM algorithm
-        linkage_pairs <- score_simple(linkage_pairs, "score", on = c("primary_given_name"))
+        linkage_pairs <- score_simple(linkage_pairs, "score", on = matching_keys)
 
         #-------------------------#
 
@@ -920,6 +925,10 @@ run_main_linkage <- function(left_dataset, right_dataset, linkage_metadata_db, a
     #   1. Keep a list of "indicies" so that for each iteration/pass, when we read
     #      in the left dataset, we'll loop through that list of indicies and remove
     #      them before we pass the left dataset to be linked.
+    #   2. Before passing the datasets to the linkage classes, add a new column
+    #      to each dataset called "primary_record_id", so that when the final
+    #      linked data is returned, we can track the IDs and remove them from the
+    #      next iteration (BETTER IDEA)
 
     # Get the current row
     row <- iterations_df[row_num,]
