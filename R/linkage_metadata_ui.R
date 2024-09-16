@@ -145,14 +145,120 @@ linkage_ui <- page_navbar(
                     options = list(container = "body")
             ),
           ))
+        ),
+        HTML("<br>"),
+        fluidRow(
+          column(width = 4, div(style = "display: flex; align-items: center;",
+                                textAreaInput("update_dataset_code", label = "Dataset Code/File Prefix:", value = "",
+                                              width = validateCssUnit(500), resize = "none"),
+                                # Add a question mark icon button with a popover
+                                actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+
+                                  # Add the popover manually
+                                  tooltip(paste("The dataset code is the prefix of the source dataset that you will be using",
+                                                "during the data linkage process. The prefix you enter here should match the",
+                                                "prefix of the file you are using using EXACTLY."),
+                                          placement = "right",
+                                          options = list(container = "body"))
+          )),
+          column(width = 4, div(style = "display: flex; align-items: center;",
+                                textAreaInput("update_dataset_name", label = "Dataset Name:", value = "",
+                                              width = validateCssUnit(500), resize = "none"),
+                                # Add a question mark icon button with a popover
+                                actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+
+                                  # Add the popover manually
+                                  tooltip(paste("The dataset name should be an identifiable name for the dataset that you can",
+                                                "reasonably identify. The ideal name is the full expanded name of the dataset",
+                                                "that you plan on storing."),
+                                          placement = "right",
+                                          options = list(container = "body"))
+          )),
+          column(width = 4, div(style = "display: flex; align-items: center;",
+                                numericInput("update_dataset_version", label = "Dataset Version:",
+                                             value = NULL, width = validateCssUnit(500)),
+                                # Add a question mark icon button with a popover
+                                actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+
+                                  # Add the popover manually
+                                  tooltip(paste("The dataset version number can help differentiate dataset names additionally",
+                                                "while also allowing for storing different versions of the same dataset."),
+                                          placement = "right",
+                                          options = list(container = "body"))
+          )),
+        ),
+        HTML("<br>"),
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                                 actionButton("update_dataset", "Update Dataset", class = "btn-success"),
+          ))
         )
       ),
-
+      # abbreviated
       # If the user has no row selected, then we can ADD a new dataset
       conditionalPanel(
         condition = "input.currently_added_datasets_rows_selected <= 0",
-        HTML("<br>")
+        HTML("<br>"),
+        fluidRow(
+          column(width = 3, div(style = "display: flex; align-items: center;",
+            textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
+                          width = validateCssUnit(500), resize = "none"),
+            # Add a question mark icon button with a popover
+            actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
 
+            # Add the popover manually
+            tooltip(paste("The dataset code is the prefix of the source dataset that you will be using",
+                          "during the data linkage process. The prefix you enter here should match the",
+                          "prefix of the file you are using using EXACTLY."),
+                    placement = "right",
+                    options = list(container = "body"))
+          )),
+          column(width = 3, div(style = "display: flex; align-items: center;",
+            textAreaInput("add_dataset_name", label = "Dataset Name:", value = "",
+                          width = validateCssUnit(500), resize = "none"),
+            # Add a question mark icon button with a popover
+            actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+
+            # Add the popover manually
+            tooltip(paste("The dataset name should be an identifiable name for the dataset that you can",
+                          "reasonably identify. The ideal name is the full expanded name of the dataset",
+                          "that you plan on storing."),
+                    placement = "right",
+                    options = list(container = "body"))
+          )),
+          column(width = 3, div(style = "display: flex; align-items: center;",
+            numericInput("add_dataset_version", label = "Dataset Version:",
+                        value = NULL, width = validateCssUnit(500)),
+            # Add a question mark icon button with a popover
+            actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+
+            # Add the popover manually
+            tooltip(paste("The dataset version number can help differentiate dataset names additionally",
+                          "while also allowing for storing different versions of the same dataset."),
+                    placement = "right",
+                    options = list(container = "body"))
+          )),
+          column(width = 3, div(style = "display: flex; align-items: center;",
+            actionButton("add_dataset_file", label = "Source Dataset (Fields):",
+                          width = validateCssUnit(500)),
+            # Add a question mark icon button with a popover
+            actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+
+            # Add the popover manually
+            tooltip(paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                          "The column names will be grabbed from the first row in the source dataset for",
+                          "future use when creating linkage algorithms and passes."),
+                    placement = "right",
+                    options = list(container = "body")),
+            uiOutput("uploaded_file")
+          ))
+        ),
+        HTML("<br>"),
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+           actionButton("add_dataset", "Add Dataset", class = "btn-success"),
+          ))
+        )
       )
     )
   ),
@@ -318,6 +424,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   #-- DATASETS PAGE EVENTS --#
   #----
+  # Reactive value for the file path
+  file_path <- reactiveValues(
+    path=NULL
+  )
 
   # Query and output for getting the users datasets
   get_datasets <- function(){
@@ -453,6 +563,145 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     }
     #----#
   })
+
+  # Allows user to upload a file for grabbing column names
+  observeEvent(input$add_dataset_file,{
+    tryCatch({
+      file_path$path <- file.choose()
+    },
+    error = function(e){
+      file_path$path <- NULL
+    })
+  })
+
+  # Render the uploaded file
+  # observeEvent({
+  #   #uploaded_file <- file_path$path
+  #   # FIX THIS
+  #   # # Uploaded dataset file
+  #   # if(is.null(uploaded_file)){
+  #   #   output$uploaded_file <- renderUI({
+  #   #     column(12, HTML("No File Chosen"), align = "center")
+  #   #   })
+  #   # }
+  #   # else{
+  #   #   output$uploaded_file <- renderUI({
+  #   #     column(12, HTML(paste("<b>File Selected:</b>", basename(file_path$path))), align = "center")
+  #   #   })
+  #   # }
+  # })
+
+  # Adds a new dataset to the database
+  observeEvent(input$add_dataset, {
+    # Get the values that we're inserting into a new record
+    #----#
+    dataset_code <- input$add_dataset_code
+    dataset_name <- input$add_dataset_name
+    dataset_vers <- input$add_dataset_version
+    dataset_file <- file_path$path
+    print(dataset_code)
+    print(dataset_name)
+    print(dataset_vers)
+    print(dataset_file)
+    return()
+    dataset_cols <- read_dataset_columns(dataset_file)
+    #----#
+
+    # Error Handling
+    #----#
+    # Make sure the same dataset code is already being used
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM datasets WHERE dataset_code = ? AND enabled_for_linkage = 1;')
+    dbBind(get_query, list(dataset_code))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_databases != 0){
+      showNotification("Failed to Add Dataset - Dataset Code Already in Use", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure the inputs are good
+    if(dataset_code == "" || dataset_name == "" || is.na(dataset_vers) || is.null(dataset_file)){
+      showNotification("Failed to Add Dataset - Dataset Code Already in Use", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    tryCatch({
+      dbBegin(linkage_metadata_conn)
+
+      # Create a new entry query for entering into the database
+      #----#
+      new_entry_query <- paste("INSERT INTO datasets (dataset_code, dataset_name, version, enabled_for_linkage)",
+                               "VALUES(?, ?, ?, 1);")
+      new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+      dbBind(new_entry, list(dataset_code, dataset_name, dataset_vers))
+      dbClearResult(new_entry)
+      #----#
+
+      # Add the dataset fields to the other table after we insert basic information
+      #----#
+      # Get the most recently inserted dataset_id value
+      dataset_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS dataset_id;")$dataset_id
+
+      # Insert each column name into the dataset_fields table
+      for (col_name in dataset_cols) {
+        insert_field_query <- "INSERT INTO dataset_fields (dataset_id, field_name) VALUES (?, ?);"
+        insert_field_stmt <- dbSendStatement(linkage_metadata_conn, insert_field_query)
+        dbBind(insert_field_stmt, list(dataset_id, col_name))
+        dbClearResult(insert_field_stmt)
+      }
+
+      # Commit transaction
+      dbCommit(linkage_metadata_conn)
+      #----#
+    },
+    error = function(e){
+      # If we throw an error because of timeout, or bad insert, then rollback and return
+      dbRollback(linkage_metadata_conn)
+      showNotification("Failed to Add Dataset - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+      return()
+    })
+
+    # Update user input fields to make them blank!
+    #----#
+    updateTextAreaInput(session, "add_dataset_code",    value = "")
+    updateTextAreaInput(session, "add_dataset_name",    value = "")
+    updateNumericInput(session,  "add_dataset_vers",    value = NULL)
+    output$add_dataset_file <- renderUI({
+      fileInput("add_dataset_file", label = "Source Dataset (Fields):",
+                width = validateCssUnit(500))
+    })
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Dataset Successfully Added", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Observes what row the user selects to update and will pre-populate the updating fields
+  observe({
+    row_selected <- input$currently_added_datasets_rows_selected
+
+    # Get the entire dataframe for datasets so that we can get the info from the
+    # row the user selected.
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets'))
+    dataset_code <- df[row_selected, "dataset_code"]
+    dataset_name <- df[row_selected, "dataset_name"]
+    version <- df[row_selected, "version"]
+
+    # Now update the input fields
+    updateTextAreaInput(session, "update_dataset_code",    value = dataset_code)
+    updateTextAreaInput(session, "update_dataset_name",    value = dataset_name)
+    updateNumericInput(session,  "update_dataset_vers",    value = version)
+  })
+
   #----
   #--------------------------#
 
