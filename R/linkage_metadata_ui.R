@@ -87,7 +87,8 @@ linkage_ui <- page_navbar(
           padding: 10px;  /* Adjust padding */
         }"
       )
-    )
+    ),
+    tags$head(tags$style('h6 {color:red;}')),
   ),
   #----
   title = "Data Linkage UI",
@@ -124,6 +125,8 @@ linkage_ui <- page_navbar(
   #----
   nav_panel(title = "Datasets", value = "datasets_page",
     fluidPage(
+      h5(strong("Select An Existing Dataset to Update or Add a New Dataset Below:")),
+      h6(p(strong("NOTE: "), "For datasets that use the same dataset code/prefix, only one be enabled at a time.")),
       dataTableOutput("currently_added_datasets"),
 
       # If the user has selected a row, then we can either UPDATE or TOGGLE a dataset
@@ -134,57 +137,61 @@ linkage_ui <- page_navbar(
             actionButton("toggle_dataset", "Toggle Selected Dataset", class = "btn-success"),
 
             # Add a question mark icon button with a popover
-            actionButton("toggle_dataset_help", class = "btn btn-info", shiny::icon("question")) |>
+            #actionButton("toggle_dataset_help", class = "btn btn-info", shiny::icon("question")) |>
             # Add the popover manually
-            tooltip(paste("Toggle whether a dataset is available to be used in data linkage.",
-                          "If a dataset is Enabled, you may select/view/add/modify linkage algorithms",
-                          "and passes using that dataset, and may also use the dataset to perform data linkage.",
-                          "If Disabled, the dataset, algorithms, and passes will be ignored, and it",
-                          "may not be used for data linkage."),
-                    placement = "right",
-                    options = list(container = "body")
-            ),
+            h1(tooltip(bs_icon("question-circle"),
+                          paste("Toggle whether a dataset is available to be used in data linkage.",
+                                "If a dataset is Enabled, you may select/view/add/modify linkage algorithms",
+                                "and passes using that dataset, and may also use the dataset to perform data linkage.",
+                                "If Disabled, the dataset, algorithms, and passes will be ignored, and it",
+                                "may not be used for data linkage."),
+                          placement = "right",
+                          options = list(container = "body"))),
           ))
         ),
-        HTML("<br>"),
+        HTML("<br><br>"),
+        h5(strong("Update the Dataset Fields Here:")),
         fluidRow(
           column(width = 4, div(style = "display: flex; align-items: center;",
                                 textAreaInput("update_dataset_code", label = "Dataset Code/File Prefix:", value = "",
                                               width = validateCssUnit(500), resize = "none"),
                                 # Add a question mark icon button with a popover
-                                actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+                                #actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
 
                                   # Add the popover manually
-                                  tooltip(paste("The dataset code is the prefix of the source dataset that you will be using",
+                                  h1(tooltip(bs_icon("question-circle"),
+                                          paste("The dataset code is the prefix of the source dataset that you will be using",
                                                 "during the data linkage process. The prefix you enter here should match the",
                                                 "prefix of the file you are using using EXACTLY."),
                                           placement = "right",
-                                          options = list(container = "body"))
+                                          options = list(container = "body")))
           )),
           column(width = 4, div(style = "display: flex; align-items: center;",
                                 textAreaInput("update_dataset_name", label = "Dataset Name:", value = "",
                                               width = validateCssUnit(500), resize = "none"),
                                 # Add a question mark icon button with a popover
-                                actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+                                #actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
 
                                   # Add the popover manually
-                                  tooltip(paste("The dataset name should be an identifiable name for the dataset that you can",
+                                  h1(tooltip(bs_icon("question-circle"),
+                                          paste("The dataset name should be an identifiable name for the dataset that you can",
                                                 "reasonably identify. The ideal name is the full expanded name of the dataset",
                                                 "that you plan on storing."),
                                           placement = "right",
-                                          options = list(container = "body"))
+                                          options = list(container = "body")))
           )),
           column(width = 4, div(style = "display: flex; align-items: center;",
-                                numericInput("update_dataset_version", label = "Dataset Version:",
+                                numericInput("update_dataset_vers", label = "Dataset Version:",
                                              value = NULL, width = validateCssUnit(500)),
                                 # Add a question mark icon button with a popover
-                                actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+                                #actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
 
                                   # Add the popover manually
-                                  tooltip(paste("The dataset version number can help differentiate dataset names additionally",
+                                  h1(tooltip(bs_icon("question-circle"),
+                                          paste("The dataset version number can help differentiate dataset names additionally",
                                                 "while also allowing for storing different versions of the same dataset."),
                                           placement = "right",
-                                          options = list(container = "body"))
+                                          options = list(container = "body")))
           )),
         ),
         HTML("<br>"),
@@ -199,58 +206,74 @@ linkage_ui <- page_navbar(
       conditionalPanel(
         condition = "input.currently_added_datasets_rows_selected <= 0",
         HTML("<br>"),
+        h5(strong("Add the Dataset Fields Here:")),
         fluidRow(
           column(width = 3, div(style = "display: flex; align-items: center;",
             textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
                           width = validateCssUnit(500), resize = "none"),
             # Add a question mark icon button with a popover
-            actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+            #actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
 
             # Add the popover manually
-            tooltip(paste("The dataset code is the prefix of the source dataset that you will be using",
+            h1(tooltip(bs_icon("question-circle"),
+                    paste("The dataset code is the prefix of the source dataset that you will be using",
                           "during the data linkage process. The prefix you enter here should match the",
                           "prefix of the file you are using using EXACTLY."),
                     placement = "right",
-                    options = list(container = "body"))
+                    options = list(container = "body")))
           )),
           column(width = 3, div(style = "display: flex; align-items: center;",
             textAreaInput("add_dataset_name", label = "Dataset Name:", value = "",
                           width = validateCssUnit(500), resize = "none"),
             # Add a question mark icon button with a popover
-            actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+            #actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
 
             # Add the popover manually
-            tooltip(paste("The dataset name should be an identifiable name for the dataset that you can",
+            h1(tooltip(bs_icon("question-circle"),
+                    paste("The dataset name should be an identifiable name for the dataset that you can",
                           "reasonably identify. The ideal name is the full expanded name of the dataset",
                           "that you plan on storing."),
                     placement = "right",
-                    options = list(container = "body"))
+                    options = list(container = "body")))
           )),
           column(width = 3, div(style = "display: flex; align-items: center;",
             numericInput("add_dataset_version", label = "Dataset Version:",
                         value = NULL, width = validateCssUnit(500)),
             # Add a question mark icon button with a popover
-            actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+            #actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
 
             # Add the popover manually
-            tooltip(paste("The dataset version number can help differentiate dataset names additionally",
+            h1(tooltip(bs_icon("question-circle"),
+                    paste("The dataset version number can help differentiate dataset names additionally",
                           "while also allowing for storing different versions of the same dataset."),
                     placement = "right",
-                    options = list(container = "body"))
+                    options = list(container = "body")))
           )),
           column(width = 3, div(style = "display: flex; align-items: center;",
-            actionButton("add_dataset_file", label = "Source Dataset (Fields):",
-                          width = validateCssUnit(500)),
-            # Add a question mark icon button with a popover
-            actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                # Label for the uploaded file name
+                div(style = "margin-right: 10px;", "Uploaded File:"),
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Boxed text output for showing the uploaded file name
+                div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                    textOutput("uploaded_file_name")
+                ),
+                # Upload button
+                actionButton("add_dataset_file", label = "", shiny::icon("file-arrow-up")), #or use 'upload'
+                # Add a question mark icon button with a popover
+                #actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
 
-            # Add the popover manually
-            tooltip(paste("The dataset you plan on using to perform data linkage should be uploaded here.",
-                          "The column names will be grabbed from the first row in the source dataset for",
-                          "future use when creating linkage algorithms and passes."),
-                    placement = "right",
-                    options = list(container = "body")),
-            uiOutput("uploaded_file")
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                        paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                             "The column names will be grabbed from the first row in the source dataset for",
+                             "future use when creating linkage algorithms and passes."),
+                        placement = "right",
+                        options = list(container = "body")))
+              ))
+            )
           ))
         ),
         HTML("<br>"),
@@ -265,125 +288,258 @@ linkage_ui <- page_navbar(
   #----
   #-------------------#
 
-  navbarMenu("Linkage Data",
-    nav_panel(title = "Linkage Methods", value = "linkage_methods_page",
-      fluidPage(
-        "You are on the Linkage Methods page. Here, you can create a new selectable linkage method which will automatically be
-        called via the `datalink` package during the linkage process. Once the user creates their own custom class implementation
-        in an .R script, they may come here. To add that new method to the database.",
-        HTML("<br><br>"),
-        "This page will have a data table of all the current linkage methods + the techniques which will be viewable. Below the
-        data table, there will be input for an implementation name, which should match the R class the use defined, a linkage
-        technique, and a version descriptor at the users discretion."
+  #-- LINKAGE METHODS --#
+  #----
+  nav_panel(title = "Linkage Methods", value = "linkage_methods_page",
+    fluidPage(
+      # Generate the table
+      h5(strong("View the Currently Usable Linkage Methods or Add a New Linkage Method Below:")),
+      h6(p(strong("NOTE: "), "Only one combination of implementation name and technique label can exist at a time.")),
+      dataTableOutput("currently_added_linkage_methods"),
+
+      # Line break
+      HTML("<br>"),
+
+      # Add linkage method fields here
+      h5(strong("Add New Linkage Method Here:")),
+      fluidRow(
+        column(width = 4, div(style = "display: flex; align-items: center;",
+          textAreaInput("add_implementation_name", label = "Implementation/Class Name:", value = "",
+                        width = validateCssUnit(500), resize = "none"),
+
+          # Add the popover manually
+          h1(tooltip(bs_icon("question-circle"),
+                     paste("The linkage implementation/class name should match the custom R script built",
+                           "by yourself to be used for linkage EXACTLY. During linkage, the program will",
+                           "try to source and call your custom class by searching for this exact name."),
+                     placement = "right",
+                     options = list(container = "body")))
+        )),
+        column(width = 4, div(style = "display: flex; align-items: center;",
+          textAreaInput("add_technique_label", label = "Technique Label:", value = "",
+                        width = validateCssUnit(500), resize = "none"),
+
+          # Add the popover manually
+          h1(tooltip(bs_icon("question-circle"),
+                     paste("Within a linkage implementation, there are various techniques that can be used",
+                           "(Deterministic, Probabilistic) and the program will pass to your class which",
+                           "technique should be used."),
+                     placement = "right",
+                     options = list(container = "body")))
+        )),
+        column(width = 4, div(style = "display: flex; align-items: center;",
+          numericInput("add_implementation_vers", label = "Implementation Version:",
+                       value = NULL, width = validateCssUnit(500)),
+
+          # Add the popover manually
+          h1(tooltip(bs_icon("question-circle"),
+                     paste("The implementation version can help differentiate implementations from",
+                           "other implementations with similar names and techniques."),
+                     placement = "right",
+                     options = list(container = "body")))
+        )),
+      ),
+      HTML("<br>"),
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+          actionButton("add_linkage_method", "Add Linkage Method", class = "btn-success"),
+        ))
       )
-    ),
-    nav_panel(title = "Linkage Algorithms", value = "linkage_algorithms_page",
-      fluidPage(
-        "You are on the Linkage Algorithms page. Here, you can create a new linkage algorithm which can have iterations/steps added
+    )
+  ),
+  #----
+  #---------------------#
+
+  #-- LINKAGE ALGORITHMS --#
+  #----
+  nav_panel(title = "Linkage Algorithms", value = "linkage_algorithms_page",
+            fluidPage(
+              "You are on the Linkage Algorithms page. Here, you can create a new linkage algorithm which can have iterations/steps added
         to them, the user will be asked asked to select two datasets to link, a left and right dataset which will be chosen from two
         tables provided to the user.",
-        HTML("<br><br>"),
-        "With the datasets selected, the user can submit to creating a blank algorithm which will supply the database with an insert
+              HTML("<br><br>"),
+              "With the datasets selected, the user can submit to creating a blank algorithm which will supply the database with an insert
         query containing the selected dataset IDs, username, date modified, records linked, and being already set to enabled.",
-        HTML("<br><br>"),
-        "Additionally, the user should be provided with a table of all the current linkage algorithms with the option to enable
+              HTML("<br><br>"),
+              "Additionally, the user should be provided with a table of all the current linkage algorithms with the option to enable
         or disable algorithms for testing and linkage purposes."
-      )
-    ),
-    nav_panel(title = "Linkage Iterations", value = "linkage_iterations_page",
-      fluidPage(
-        "You are on the Linkage Iterations page. Here, you can select a left and right dataset for which you'd like to add iterations
-        for, which will bring up a list of all current algorithms using those two datasets.",
-        HTML("<br><br>"),
-        "Afterwards, you may select an algorithm which will bring up all the current iterations under that specific algorithm. From here,
-        the user can either enter an order for iteration which is an integer greater than 0, a linkage method which will call either
-        a default or custom linkage class, and an acceptance rule if required.",
-        HTML("<br><br>"),
-        actionButton("iteration_acceptance_rule", "Choose a Rule"),
-      )
-    ),
-    nav_panel(title = "Linkage Audits", value = "audits_page",
-      "You are on the Audits page. Here, you can view all stored auditing information observed during data linkage, being able
+            )
+  ),
+  #----
+  #------------------------#
+
+  #-- LINKAGE AUDITS --#
+  #----
+  nav_panel(title = "Linkage Audits", value = "audits_page",
+            "You are on the Audits page. Here, you can view all stored auditing information observed during data linkage, being able
       to sort by datasets, and date of capture. Further, the option to select and export selected auditing information is available
       to the user."
-    ),
   ),
-  navbarMenu("Linkage Variables",
-    nav_panel(title = "Blocking Variables", value = "blocking_variables_page",
-      fluidPage(
-        "You are on the Blocking Variables page. Here, you will upload the two datasets you wish to link, the server end will perform
+  #----
+  #--------------------#
+
+  #-- LINKAGE ITERATIONS --#
+  #----
+  nav_panel(title = "Linkage Iterations", value = "linkage_iterations_page",
+            fluidPage(
+              "You are on the Linkage Iterations page. Here, you can select a left and right dataset for which you'd like to add iterations
+        for, which will bring up a list of all current algorithms using those two datasets.",
+              HTML("<br><br>"),
+              "Afterwards, you may select an algorithm which will bring up all the current iterations under that specific algorithm. From here,
+        the user can either enter an order for iteration which is an integer greater than 0, a linkage method which will call either
+        a default or custom linkage class, and an acceptance rule if required.",
+              HTML("<br><br>"),
+              actionButton("iteration_acceptance_rule", "Choose a Rule"),
+            )
+  ),
+  #----
+  #------------------------#
+
+  #-- BLOCKING VARIABLES PAGE --#
+  #----
+  nav_panel(title = "Blocking Variables", value = "blocking_variables_page",
+            fluidPage(
+              "You are on the Blocking Variables page. Here, you will upload the two datasets you wish to link, the server end will perform
         error handling to ensure the provided datasets exist in the database. If successful, you may select an existing algorithm and
         existing iteration to add to (this can be done using a button which will store the selected algorithm ID and selected iteration
         ID).",
-        actionButton("blocking_variable_algorithm_id", "Select an Algorithm"),
-        actionButton("blocking_variable_iteration_id", "Select an Iteration"),
-        HTML("<br><br>"),
-        "Once an iteration is selected, two tables may be provided to the user which are the field names in the left and right dataset.
+              actionButton("blocking_variable_algorithm_id", "Select an Algorithm"),
+              actionButton("blocking_variable_iteration_id", "Select an Iteration"),
+              HTML("<br><br>"),
+              "Once an iteration is selected, two tables may be provided to the user which are the field names in the left and right dataset.
         And additionally, the user can select a Linkage Rule for blocking on the two datasets. The user will select a field from the left
         dataset and a field from the right dataset, an optional linkage rule, and then submit the blocking variable.",
-        HTML("<br><br>"),
-        "Once submitted, the user may continue to add as many blocking variables as they would like, viewing the currently added variables
+              HTML("<br><br>"),
+              "Once submitted, the user may continue to add as many blocking variables as they would like, viewing the currently added variables
         in a table on the same page."
-      )
-    ),
-    nav_panel(title = "Matching Variables", value = "matching_variables_page",
-      fluidPage(
-        "You are on the Matching Variables page. Here, you will upload the two datasets you wish to link, the server end will perform
+            )
+  ),
+  #----
+  #-----------------------------#
+
+  #-- MATCHING VARIABLES PAGE --#
+  #----
+  nav_panel(title = "Matching Variables", value = "matching_variables_page",
+            fluidPage(
+              "You are on the Matching Variables page. Here, you will upload the two datasets you wish to link, the server end will perform
         error handling to ensure the provided datasets exist in the database. If successful, you may select an existing algorithm and
         existing iteration to add to (this can be done using a button which will store the selected algorithm ID and selected iteration
         ID).",
-        actionButton("matching_variable_algorithm_id", "Select an Algorithm"),
-        actionButton("matching_variable_iteration_id", "Select an Iteration"),
-        HTML("<br><br>"),
-        "Once an iteration is selected, two tables may be provided to the user which are the field names in the left and right dataset.
+              actionButton("matching_variable_algorithm_id", "Select an Algorithm"),
+              actionButton("matching_variable_iteration_id", "Select an Iteration"),
+              HTML("<br><br>"),
+              "Once an iteration is selected, two tables may be provided to the user which are the field names in the left and right dataset.
         And additionally, the user can select a Linkage Rule for matching on the two datasets, along with a Comparison Rule for string
         matching purposes. The user will select a field from the left dataset and a field from the right dataset, an optional linkage
         rule, and then submit the matching variable.",
-        HTML("<br><br>"),
-        "Once submitted, the user may continue to add as many matching variables as they would like, viewing the currently added variables
+              HTML("<br><br>"),
+              "Once submitted, the user may continue to add as many matching variables as they would like, viewing the currently added variables
         in a table on the same page."
-      )
-    ),
-    nav_panel(title = "Ground Truth Variables", value = "ground_truth_variables_page",
-      fluidPage(
-        "You are on the ground truth variables page. Here, you can view, add, modify, and drop the ground truth variables used
+            )
+  ),
+  #----
+  #-----------------------------#
+
+  #-- GROUND TRUTH VARIABLES PAGE --#
+  #----
+  nav_panel(title = "Ground Truth Variables", value = "ground_truth_variables_page",
+            fluidPage(
+              "You are on the ground truth variables page. Here, you can view, add, modify, and drop the ground truth variables used
         in a specific linkage algorithm. Each algorithm has its own variables that can be added to, modified, or deleted, without
         affecting the variables of any other algorithm.",
+            )
+  ),
+  #----
+  #---------------------------------#
+
+  #-- ACCEPTANCE METHODS --#
+  #----
+  nav_panel(title = "Acceptance Methods", value = "acceptance_methods_page",
+    fluidPage(
+      # Generate the table
+      h5(strong("View the Currently Usable Acceptance Methods, Select One To Modify, or Add a New Method:")),
+      h6(p(strong("NOTE: "), "No acceptance methods can share the same the same name, and no parameters can share the same name within methods.")),
+      dataTableOutput("currently_added_acceptance_methods_and_parameters"),
+
+      # Line break
+      HTML("<br>"),
+
+      # If no row is selected, the user can enter a new method and parameters
+      conditionalPanel(
+        condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected <= 0",
+
+        h5(strong("Add A New Method and Parameters Here:")),
+        layout_column_wrap(
+          width = 1/2,
+          height = 300,
+          # CARD FOR ACCEPTANCE METHOD INFO
+          card(full_screen = TRUE, card_header("Acceptance Method General Information"),
+            fluidPage(
+              "HELLO!"
+            )
+          ),
+
+          # CARD FOR ACCEPTANCE PARAMETER INFO
+          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information"),
+            fluidPage(
+              "HELLO!"
+            )
+          )
+        )
       )
     )
   ),
-  navbarMenu("Acceptance Methods & Rules",
-    nav_panel(title = "Acceptance Methods", value = "acceptance_methods_page",
-      "You are on the Acceptance Methods page. Here, you can enter information for creating a new/custom acceptance method that can
-      be used in custom linkage implementations. The user will be required to provide a method name and description to submit or
-      update."
-    ),
-    nav_panel(title = "Acceptance Parameters", value = "acceptance_parameters_page",
-      "You are on the Acceptance Parameters page. Here, you can select an exisiting acceptance method to add or update the acceptance
+  #----
+  #------------------------#
+
+  #-- ACCEPTANCE PARAMETERS --#
+  #----
+  nav_panel(title = "Acceptance Parameters", value = "acceptance_parameters_page",
+            "You are on the Acceptance Parameters page. Here, you can select an exisiting acceptance method to add or update the acceptance
       parameters of."
-    ),
-    nav_panel(title = "Acceptance Rules", value = "acceptance_rules_page",
-      "You are on the Acceptance Rules page. Here, you can enter information for creating a new/custom acceptance rule that can
+  ),
+  #----
+  #---------------------------#
+
+  #-- ACCEPTANCE RULES --#
+  #----
+  nav_panel(title = "Acceptance Rules", value = "acceptance_rules_page",
+            "You are on the Acceptance Rules page. Here, you can enter information for creating a new/custom acceptance rule that can
       be used in custom linkage implementations. The user will be required to provide a rule name and description, which will be
       stored in the database."
-    )
   ),
-  navbarMenu("Comparison Methods & Rules",
-    nav_panel(title = "Comparison Methods", value = "comparison_methods_page",
-      "You are on the Comparison Methods page. Here, you can enter information for creating a new/custom comparison method that can
+  #----
+  #----------------------#
+
+  #-- COMPARISON METHODS PAGE --#
+  #----
+  nav_panel(title = "Comparison Methods", value = "comparison_methods_page",
+            "You are on the Comparison Methods page. Here, you can enter information for creating a new/custom comparison method that can
       be used in custom linkage implementations. The user will be required to provide a method name and description to submit or
       update."
-    ),
-    nav_panel(title = "Comparison Parameters", value = "comparison_parameters_page",
-      "You are on the Comparison Parameters page. Here, you can select an exisiting comparison method to add or update the comparison
+  ),
+  #----
+  #-----------------------------#
+
+  #-- COMPARISON PARAMETERS PAGE --#
+  #----
+  nav_panel(title = "Comparison Parameters", value = "comparison_parameters_page",
+            "You are on the Comparison Parameters page. Here, you can select an exisiting comparison method to add or update the comparison
       parameters of."
-    ),
-    nav_panel(title = "Comparison Rules", value = "comparison_rules_page",
-      "You are on the Comparison Rules page. Here, you can enter information for creating a new/custom comparison rule that can
+  ),
+  #----
+  #--------------------------------#
+
+  #-- COMPARISON RULES PAGE --#
+  #----
+  nav_panel(title = "Comparison Rules", value = "comparison_rules_page",
+            "You are on the Comparison Rules page. Here, you can enter information for creating a new/custom comparison rule that can
       be used in custom linkage implementations. The user will be required to provide a rule name and description, which will be
       stored in the database."
-    )
   ),
+  #----
+  #---------------------------#
+
   #-- LINKAGE RULES PAGE --#
   #----
   nav_panel(title = "Linkage Rules", value = "linkage_rule_page",
@@ -413,7 +569,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     tabs_to_hide <- c("linkage_rule_page")
     selected_panel <- input$main_navbar
 
-    # Hide them
+    # Hide the page if its not the one you're currently on
     for(tab in tabs_to_hide){
       if(selected_panel != tab){
         nav_hide('main_navbar', tab)
@@ -457,39 +613,48 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract the file extension
     file_extension <- tools::file_ext(file_path)
 
-    # Based on file extension, attempt to read only the first row (column names)
-    column_names <- switch(tolower(file_extension),
-       "csv" = {
-         # Read only the header from a CSV file
-         data.table::fread(file_path, nrows = 1) %>% colnames()
-       },
-       "txt" = {
-         # Read only the header from a TXT file
-         data.table::fread(file_path, nrows = 1) %>% colnames()
-       },
-       "sas7bdat" = {
-         # Read only the header from a SAS7BDAT file
-         haven::read_sas(file_path, n_max = 1) %>% colnames()
-       },
-       "xlsx" = {
-         # Read only the first row from an Excel file
-         readxl::read_excel(file_path, n_max = 1) %>% colnames()
-       },
-       "xls" = {
-         # Read only the first row from an older Excel file
-         readxl::read_excel(file_path, n_max = 1) %>% colnames()
-       },
-       "json" = {
-         # For JSON, read the first object's keys (assuming it's an array of objects)
-         json_data <- jsonlite::fromJSON(file_path, simplifyDataFrame = TRUE)
-         if (is.data.frame(json_data)) {
-           colnames(json_data)
-         } else {
-           stop("Unsupported JSON format - expecting an array of objects")
-         }
-       },
-       stop("Unsupported file format")  # Error if unsupported file type
-    )
+    # Create a vector for the column names
+    column_names <- c()
+
+    # Try to extract them
+    tryCatch({
+      # Based on file extension, attempt to read only the first row (column names)
+      column_names <- switch(tolower(file_extension),
+         "csv" = {
+           # Read only the header from a CSV file
+           data.table::fread(file_path, nrows = 1) %>% colnames()
+         },
+         "txt" = {
+           # Read only the header from a TXT file
+           data.table::fread(file_path, nrows = 1) %>% colnames()
+         },
+         "sas7bdat" = {
+           # Read only the header from a SAS7BDAT file
+           haven::read_sas(file_path, n_max = 1) %>% colnames()
+         },
+         "xlsx" = {
+           # Read only the first row from an Excel file
+           readxl::read_excel(file_path, n_max = 1) %>% colnames()
+         },
+         "xls" = {
+           # Read only the first row from an older Excel file
+           readxl::read_excel(file_path, n_max = 1) %>% colnames()
+         },
+         "json" = {
+           # For JSON, read the first object's keys (assuming it's an array of objects)
+           json_data <- jsonlite::fromJSON(file_path, simplifyDataFrame = TRUE)
+           if (is.data.frame(json_data)) {
+             colnames(json_data)
+           } else {
+             stop("Unsupported JSON format - expecting an array of objects")
+           }
+         },
+         stop("Unsupported file format")  # Error if unsupported file type
+      )
+    },
+    error = function(e){
+      column_names <- c()
+    })
 
     # Return the extracted column names
     return(column_names)
@@ -575,21 +740,21 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   })
 
   # Render the uploaded file
-  # observeEvent({
-  #   #uploaded_file <- file_path$path
-  #   # FIX THIS
-  #   # # Uploaded dataset file
-  #   # if(is.null(uploaded_file)){
-  #   #   output$uploaded_file <- renderUI({
-  #   #     column(12, HTML("No File Chosen"), align = "center")
-  #   #   })
-  #   # }
-  #   # else{
-  #   #   output$uploaded_file <- renderUI({
-  #   #     column(12, HTML(paste("<b>File Selected:</b>", basename(file_path$path))), align = "center")
-  #   #   })
-  #   # }
-  # })
+  observe({
+    uploaded_file <- file_path$path
+
+    # Uploaded dataset file
+    if(is.null(uploaded_file)){
+      output$uploaded_file_name <- renderText({
+        "No File Uploaded"
+      })
+    }
+    else{
+      output$uploaded_file_name <- renderText({
+        basename(uploaded_file)
+      })
+    }
+  })
 
   # Adds a new dataset to the database
   observeEvent(input$add_dataset, {
@@ -599,12 +764,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dataset_name <- input$add_dataset_name
     dataset_vers <- input$add_dataset_version
     dataset_file <- file_path$path
-    print(dataset_code)
-    print(dataset_name)
-    print(dataset_vers)
-    print(dataset_file)
-    return()
-    dataset_cols <- read_dataset_columns(dataset_file)
     #----#
 
     # Error Handling
@@ -622,7 +781,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Make sure the inputs are good
     if(dataset_code == "" || dataset_name == "" || is.na(dataset_vers) || is.null(dataset_file)){
-      showNotification("Failed to Add Dataset - Dataset Code Already in Use", type = "error", closeButton = FALSE)
+      showNotification("Failed to Add Dataset - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Try grabbing the column names
+    dataset_cols <- read_dataset_columns(dataset_file)
+
+    # If column reading failed (dataset_cols remains empty), return
+    if(length(dataset_cols) == 0) {
+      showNotification("Failed to Add Dataset - Invalid Input File", type = "error", closeButton = FALSE)
       return()
     }
     #----#
@@ -632,6 +800,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
       # Create a new entry query for entering into the database
       #----#
+      dataset_vers <- paste0("v", dataset_vers)
       new_entry_query <- paste("INSERT INTO datasets (dataset_code, dataset_name, version, enabled_for_linkage)",
                                "VALUES(?, ?, ?, 1);")
       new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
@@ -668,15 +837,17 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     updateTextAreaInput(session, "add_dataset_code",    value = "")
     updateTextAreaInput(session, "add_dataset_name",    value = "")
     updateNumericInput(session,  "add_dataset_vers",    value = NULL)
-    output$add_dataset_file <- renderUI({
-      fileInput("add_dataset_file", label = "Source Dataset (Fields):",
-                width = validateCssUnit(500))
+    file_path$path <- NULL
+    output$uploaded_file_name <- renderText({
+      "No File Uploaded"
     })
     #----#
 
     # Update Data Tables and UI Renders
     #----#
-
+    output$currently_added_datasets <- renderDataTable({
+      get_datasets()
+    })
     #----#
 
     # Show success notification
@@ -696,14 +867,212 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dataset_name <- df[row_selected, "dataset_name"]
     version <- df[row_selected, "version"]
 
+    # Convert the version string to a number
+    version <- sub('.', '', version)
+    version_num <- as.numeric(version)
+
     # Now update the input fields
     updateTextAreaInput(session, "update_dataset_code",    value = dataset_code)
     updateTextAreaInput(session, "update_dataset_name",    value = dataset_name)
-    updateNumericInput(session,  "update_dataset_vers",    value = version)
+    updateNumericInput(session,  "update_dataset_vers",    value = version_num)
+  })
+
+  # Updates an existing record in the 'datasets' table
+  observeEvent(input$update_dataset, {
+    # Get the values that we're updating an existing record of
+    #----#
+    dataset_code <- input$update_dataset_code
+    dataset_name <- input$update_dataset_name
+    dataset_vers <- input$update_dataset_vers
+    selected_row <- input$currently_added_datasets_rows_selected
+
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets
+                                                ORDER BY dataset_id ASC'))
+
+    selected_dataset_id <- df[selected_row, "dataset_id"]
+    #----#
+
+    # Error handling to ensure we dont break database rules when we perform the update
+    #----#
+    # Verify that the updated dataset code is not already in use
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM datasets WHERE dataset_id != ? AND dataset_code = ? AND enabled_for_linkage = 1;')
+    dbBind(get_query, list(selected_dataset_id, dataset_code))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_databases != 0){
+      showNotification("Failed to Add Dataset - Dataset Code Already in Use", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure the inputs are good
+    if(dataset_code == "" || dataset_name == "" || is.na(dataset_vers)){
+      showNotification("Failed to Add Dataset - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Create a query for updating the dataset
+    #----#
+    dataset_vers <- paste0("v", dataset_vers)
+    update_query <- paste("UPDATE datasets
+                          SET dataset_code = ?, dataset_name = ?, version = ?
+                          WHERE dataset_id = ?")
+    update <- dbSendStatement(linkage_metadata_conn, update_query)
+    dbBind(update, list(dataset_code, dataset_name, dataset_vers, selected_dataset_id))
+    dbClearResult(update)
+    #----#
+
+    # Update the user input fields to be blank
+    #----#
+    updateTextAreaInput(session, "update_dataset_code",    value = "")
+    updateTextAreaInput(session, "update_dataset_name",    value = "")
+    updateNumericInput(session,  "update_dataset_vers",    value = NULL)
+    #----#
+
+    # Re-render data tables and reset UI
+    #----#
+    output$currently_added_datasets <- renderDataTable({
+      get_datasets()
+    })
+    #----#
+
+    # Send a success notification
+    #----#
+    showNotification("Dataset Successfully Updated", type = "message", closeButton = FALSE)
+    #----#
   })
 
   #----
   #--------------------------#
+
+  #-- LINKAGE METHODS PAGE EVENTS --#
+  #----
+  # Query and output for getting the users linkage methods
+  get_linkage_methods <- function(){
+    # Query to get all linkage method information from the 'linkage_methods' table
+    query <- paste('SELECT * FROM linkage_methods
+                ORDER BY linkage_method_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'implementation_name'] <- 'Implementation Name'
+    names(df)[names(df) == 'technique_label'] <- 'Technique Label'
+    names(df)[names(df) == 'version'] <- 'Version'
+
+    # Drop the linkage_method_id value
+    df <- subset(df, select = -c(linkage_method_id))
+
+    # Reorder the columns so they're easier to read
+    df <- df[, c('Implementation Name', 'Technique Label', 'Version')]
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'none', rownames = FALSE, options = list(lengthChange = FALSE, dom = 't'))
+  }
+
+  # Renders the Data table of currently added linkage methods
+  output$currently_added_linkage_methods <- renderDataTable({
+    get_linkage_methods()
+  })
+
+  # Adds a new record to the linkage methods table
+  observeEvent(input$add_linkage_method, {
+    # Get the values that we're inserting into a new record
+    #----#
+    implementation_name <- input$add_implementation_name
+    technique_label     <- input$add_technique_label
+    implementation_vers <- input$add_implementation_vers
+    #----#
+
+    # Error check to verify that an exact match doesn't exist
+    #----#
+    # Verify inputs are good
+    if(implementation_name == "" || technique_label == "" || is.null(implementation_vers)){
+      showNotification("Failed to Add Linkage Method - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    implementation_vers <- paste0("v", implementation_vers)
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_methods
+                                                  WHERE implementation_name = ? AND technique_label = ? AND version = ?;')
+    dbBind(get_query, list(implementation_name, technique_label, implementation_vers))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_databases != 0){
+      showNotification("Failed to Add Linkage Method - Linkage Method Already Exists", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Create a new entry query for entering into the database
+    #----#
+    new_entry_query <- paste("INSERT INTO linkage_methods (implementation_name, technique_label, version)",
+                             "VALUES(?, ?, ?);")
+    new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+    dbBind(new_entry, list(implementation_name, technique_label, implementation_vers))
+    dbClearResult(new_entry)
+    #----#
+
+    # Update user input fields to make them blank!
+    #----#
+    updateTextAreaInput(session, "add_implementation_name",    value = "")
+    updateTextAreaInput(session, "add_technique_label",        value = "")
+    updateNumericInput(session,  "add_implementation_vers",    value = NULL)
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$currently_added_linkage_methods <- renderDataTable({
+      get_linkage_methods()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Linkage Method Successfully Added", type = "message", closeButton = FALSE)
+    #----#
+  })
+  #----
+  #---------------------------------#
+
+
+  #-- ACCEPTANCE METHODS & PARAMETERS PAGE EVENTS --#
+  #----
+  # Query and output for getting the acceptance methods & parameters
+  get_acceptance_methods_and_parameters <- function(){
+    # Query to get all acceptance method information from the 'acceptance_methods'
+    # and 'acceptance_method_parameters' table
+    query <- paste('SELECT am.acceptance_method_id, method_name, am.description, parameter_key FROM acceptance_methods am
+                      JOIN acceptance_method_parameters amp on amp.acceptance_method_id = am.acceptance_method_id
+                      ORDER BY am.acceptance_method_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Aggregate parameters by acceptance_method_id
+    df <- df %>%
+      group_by(acceptance_method_id, method_name, description) %>%
+      summarise(parameters = paste(parameter_key, collapse = ", ")) %>%
+      ungroup()
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'method_name'] <- 'Acceptance Method Name'
+    names(df)[names(df) == 'description'] <- 'Acceptance Method Description'
+    names(df)[names(df) == 'parameters'] <- 'Acceptance Method Parameters'
+
+    # Drop the acceptance_method_id
+    df <- subset(df, select = -c(acceptance_method_id))
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 't'))
+    print(dt)
+  }
+
+  # Renders the data table of currently added acceptance methods & parameters
+  output$currently_added_acceptance_methods_and_parameters <- renderDataTable({
+    get_acceptance_methods_and_parameters()
+  })
+  #----
+  #-------------------------------------------------#
 
   # TEST FOR SELECTING AN ACCEPTANCE RULE FOR AN ITERATION
   # THIS CAN ALSO BE FOR HOW YOU SELECT MATCHING AND BLOCKING VARIABLES
