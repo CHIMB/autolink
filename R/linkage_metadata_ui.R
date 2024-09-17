@@ -473,18 +473,136 @@ linkage_ui <- page_navbar(
           width = 1/2,
           height = 300,
           # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Acceptance Method General Information"),
+          card(full_screen = TRUE, card_header("Acceptance Method General Information",
+               tooltip(bs_icon("question-circle"),
+                       paste("Within this card, you can enter general information about the acceptance",
+                             "method that you want to add, which includes the name of the method and a",
+                             "short description of what the expected values are."),
+                       placement = "right",
+                       options = list(container = "body"))),
             fluidPage(
-              "HELLO!"
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  textAreaInput("add_acceptance_method_name", label = "Acceptance Method Name:", value = "",
+                                width = validateCssUnit(500), resize = "none"),
+
+                  # Add the popover manually
+                  h1(tooltip(bs_icon("question-circle"),
+                             paste("The acceptance method name should be descriptive and easy to identify for",
+                                   "later linkage iteration and acceptance rule creation."),
+                             placement = "right",
+                             options = list(container = "body")))
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  textAreaInput("add_acceptance_method_desc", label = "Acceptance Method Description:", value = "",
+                                width = validateCssUnit(500), resize = "none"),
+
+                  # Add the popover manually
+                  h1(tooltip(bs_icon("question-circle"),
+                             paste("The acceptance method description should be short and concise, and should",
+                                   "detail the expected inputs for the parameters and how the acceptance method",
+                                   "would work."),
+                             placement = "right",
+                             options = list(container = "body")))
+                ))
+              )
             )
           ),
 
           # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information"),
+          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information",
+               tooltip(bs_icon("question-circle"),
+                       paste("Within this card, you can add parameters that belong to the acceptance method",
+                             "you are wanting to add, each parameter consists of a key which is how it would",
+                             "called from R, and a short description of the parameter. You may add as many",
+                             "parameters as you would like for the method being constructed."),
+                       placement = "right",
+                       options = list(container = "body"))),
             fluidPage(
-              "HELLO!"
+              # Generate the table
+              h5(strong("Parameters to be Added:")),
+              h6(p(strong("NOTE: "), "No parameters can share the same name.")),
+              dataTableOutput("acceptance_parameters_to_add"),
+
+              # IF NO ROW IS SELECTED, STORE A PARAMETER THAT IS TO BE ADDED
+              conditionalPanel(
+                condition = "input.acceptance_parameters_to_add_rows_selected <= 0",
+                fluidRow(
+                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                    textAreaInput("add_acceptance_parameter_key", label = "Acceptance Parameter Key:", value = "",
+                                  width = validateCssUnit(500), resize = "none"),
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("The acceptance parameter key should be separated by underscores, and is how",
+                                     "you would expect to retrieve the parameter value from this key value pair label."),
+                               placement = "right",
+                               options = list(container = "body")))
+                  )),
+                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                    textAreaInput("add_acceptance_parameter_desc", label = "Acceptance Parameter Description:", value = "",
+                                  width = validateCssUnit(500), resize = "none"),
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("The acceptance parameter description should be brief and should explain how each",
+                                     "key is used during data linkage and what values it should expect."),
+                               placement = "right",
+                               options = list(container = "body")))
+                  ))
+                ),
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    actionButton("prepare_acceptance_method_parameters_to_add", "Add Acceptance Parameter", class = "btn-warning"),
+                  ))
+                )
+              ),
+              # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED OR DROPPED
+              conditionalPanel(
+                condition = "input.acceptance_parameters_to_add_rows_selected > 0",
+                fluidRow(
+                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                    textAreaInput("update_acceptance_parameter_key", label = "Update Parameter Key:", value = "",
+                                  width = validateCssUnit(500), resize = "none"),
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("The acceptance parameter key should be separated by underscores, and is how",
+                                     "you would expect to retrieve the parameter value from this key value pair label."),
+                               placement = "right",
+                               options = list(container = "body")))
+                  )),
+                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                    textAreaInput("update_acceptance_parameter_desc", label = "Update Parameter Description:", value = "",
+                                  width = validateCssUnit(500), resize = "none"),
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("The acceptance parameter description should be brief and should explain how each",
+                                     "key is used during data linkage and what values it should expect."),
+                               placement = "right",
+                               options = list(container = "body")))
+                  ))
+                ),
+                fluidRow(
+                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: right;",
+                                         actionButton("update_prepared_acceptance_method_parameters_to_add", "Update Acceptance Parameter", class = "btn-warning"),
+                  )),
+                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: left;",
+                                        actionButton("drop_prepared_acceptance_method_parameters_to_add", "Drop Acceptance Parameter", class = "btn-danger"),
+                  ))
+                )
+              )
             )
           )
+        ),
+        HTML("<br>"),
+        # After the user finishes adding everything they need, they can add new method and
+        # parameters
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                                 actionButton("add_acceptance_method", "Add Acceptance Method & Parameters", class = "btn-success"),
+          ))
         )
       )
     )
@@ -1064,13 +1182,187 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Put it into a data table now
     dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 't'))
-    print(dt)
   }
 
   # Renders the data table of currently added acceptance methods & parameters
   output$currently_added_acceptance_methods_and_parameters <- renderDataTable({
     get_acceptance_methods_and_parameters()
   })
+
+  #-- NEW ACCEPTANCE METHOD & PARAMETERS --#
+  # Create global variables for the parameter_key, and the descriptions of each
+  parameter_keys_to_add <- c()
+  parameter_desc_to_add <- c()
+
+  # Function for creating the table of parameters to be added
+  get_parameters_to_add <- function(){
+    # Create a data frame from all the parameter keys
+    df <- data.frame(
+      keys = if(length(parameter_keys_to_add) == 0) numeric() else parameter_keys_to_add,
+      desc = if(length(parameter_desc_to_add) == 0) character() else parameter_desc_to_add
+    )
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'keys'] <- 'Acceptance Parameter Key'
+    names(df)[names(df) == 'desc'] <- 'Acceptance Parameter Description'
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 't'))
+  }
+
+  # Renders the data table of acceptance parameters that are to be added
+  output$acceptance_parameters_to_add <- renderDataTable({
+    get_parameters_to_add()
+  })
+
+  # Adds a parameter key and description to the list of prepped keys and descriptions
+  observeEvent(input$prepare_acceptance_method_parameters_to_add, {
+    # Get the values that we're inserting into a new record
+    #----#
+    parameter_key  <- input$add_acceptance_parameter_key
+    parameter_desc <- input$add_acceptance_parameter_desc
+    #----#
+
+    # Error Handling
+    #----#
+    # Make sure the same dataset code is already being used
+    if(parameter_key %in% parameter_keys_to_add){
+      showNotification("Failed to Add Parameter Key - Parameter Key Already Prepared", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure the inputs are good
+    if(parameter_key == "" || parameter_desc == ""){
+      showNotification("Failed to Add Parameter Key - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    parameter_keys_to_add <<- append(parameter_keys_to_add, parameter_key)
+    parameter_desc_to_add <<- append(parameter_desc_to_add, parameter_desc)
+    #----#
+
+    # Update user input fields to make them blank!
+    #----#
+    updateTextAreaInput(session, "add_acceptance_parameter_key",  value = "")
+    updateTextAreaInput(session, "add_acceptance_parameter_desc", value = "")
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$acceptance_parameters_to_add <- renderDataTable({
+      get_parameters_to_add()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Parameter Key Successfully Prepared", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Observes what row the user selects to update and will pre-populate the parameter key updating fields
+  observe({
+    row_selected <- input$acceptance_parameters_to_add_rows_selected
+
+    # Get the the parameter key and desc from the prepared values
+    parameter_key  <- parameter_keys_to_add[row_selected]
+    parameter_desc <- parameter_desc_to_add[row_selected]
+
+    # Now update the input fields
+    updateTextAreaInput(session, "update_acceptance_parameter_key",  value = parameter_key)
+    updateTextAreaInput(session, "update_acceptance_parameter_desc", value = parameter_desc)
+  })
+
+  # Updates an existing record in our prepared parameters
+  observeEvent(input$update_prepared_acceptance_method_parameters_to_add, {
+    # Get the values that we're inserting into a new record + the selected row
+    #----#
+    row_selected <- input$acceptance_parameters_to_add_rows_selected
+    parameter_key  <- input$update_acceptance_parameter_key
+    parameter_desc <- input$update_acceptance_parameter_desc
+    #----#
+
+    # Error Handling
+    #----#
+    # Make sure the same parameter key is not being used
+    if(parameter_key %in% parameter_keys_to_add && parameter_keys_to_add[row_selected] != parameter_key){
+      showNotification("Failed to Add Parameter Key - Parameter Key Already Prepared", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure the inputs are good
+    if(parameter_key == "" || parameter_desc == ""){
+      showNotification("Failed to Add Parameter Key - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    parameter_keys_to_add[row_selected] <<- parameter_key
+    parameter_desc_to_add[row_selected] <<- parameter_desc
+    #----#
+
+    # Update user input fields to make them blank!
+    #----#
+    updateTextAreaInput(session, "update_acceptance_parameter_key",  value = "")
+    updateTextAreaInput(session, "update_acceptance_parameter_desc", value = "")
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$acceptance_parameters_to_add <- renderDataTable({
+      get_parameters_to_add()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Prepared Parameter Key Successfully Updated", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Drops an existing record from our prepared parameters
+  observeEvent(input$drop_prepared_acceptance_method_parameters_to_add, {
+    # Get the row to drop
+    #----#
+    row_selected <- input$acceptance_parameters_to_add_rows_selected
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    parameter_keys_to_add <<- parameter_keys_to_add[-c(row_selected)]
+    parameter_desc_to_add <<- parameter_desc_to_add[-c(row_selected)]
+    #----#
+
+    # Update user input fields to make them blank!
+    #----#
+    updateTextAreaInput(session, "update_acceptance_parameter_key",  value = "")
+    updateTextAreaInput(session, "update_acceptance_parameter_desc", value = "")
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$acceptance_parameters_to_add <- renderDataTable({
+      get_parameters_to_add()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Prepared Parameter Key Successfully Dropped", type = "message", closeButton = FALSE)
+    #----#
+  })
+  #----------------------------------------#
+
+  #-- UPDATE ACCEPTANCE METHOD & PARAMETERS --#
+
+  #-------------------------------------------#
+
+
   #----
   #-------------------------------------------------#
 
@@ -1143,7 +1435,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 #' Start Linkage Metadata UI
 #'
 #' Upon call, and passing a valid linkage metadata file, the application will run using the supplied metadata file
-#' as the file that can be modified. This involves viewing entries, adding new entires, modifying existing entires
+#' as the file that can be modified. This involves viewing entries, adding new entries, modifying existing entries
 #' or deleting them.
 #' @examples
 #' my_metadata_file <- file.choose() # Select .sqlite file
