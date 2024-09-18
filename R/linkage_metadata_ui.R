@@ -112,8 +112,6 @@ linkage_ui <- page_navbar(
         accordion_panel(title = "Comparison Methods & Rules - Information"),
         accordion_panel(title = "Linkage Rules - Information",
           actionButton("to_methods", "Go To Linkage Rules Page")
-
-
         ),
      )
     )
@@ -457,7 +455,7 @@ linkage_ui <- page_navbar(
   nav_panel(title = "Acceptance Methods", value = "acceptance_methods_page",
     fluidPage(
       # Generate the table
-      h5(strong("View the Currently Usable Acceptance Methods, Select One To Modify, or Add a New Method:")),
+      h5(strong("Add a New Acceptance Method Below, or Select an Existing Method To Update or Add a Rule To:")),
       h6(p(strong("NOTE: "), "No acceptance methods can share the same the same name, and no parameters can share the same name within methods.")),
       dataTableOutput("currently_added_acceptance_methods_and_parameters"),
 
@@ -468,7 +466,7 @@ linkage_ui <- page_navbar(
       conditionalPanel(
         condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected <= 0",
 
-        h5(strong("Add A New Method and Parameters Here:")),
+        h5(strong("Add a New Acceptance Method and Parameters Here:")),
         layout_column_wrap(
           width = 1/2,
           height = 300,
@@ -601,7 +599,119 @@ linkage_ui <- page_navbar(
         # parameters
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                                 actionButton("add_acceptance_method", "Add Acceptance Method & Parameters", class = "btn-success"),
+                                 actionButton("add_acceptance_method_and_parameters", "Add Acceptance Method & Parameters", class = "btn-success"),
+          ))
+        )
+      ),
+      # If a row is selected, you may update the acceptance method name, descriptions + parameter names and description.
+      # You are, however, unable to delete parameter keys or acceptance methods after they've been created.
+      # You may also click a button which brings you to a page for adding a new rule
+      conditionalPanel(
+        condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected > 0",
+        h5(strong("Create a New Acceptance Rule for the Selected Acceptance Method Here:")),
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                                 actionButton("acceptance_methods_to_acceptance_rules", "View and Add Acceptance Rules", class = "btn-info"),
+          ))
+        ),
+        HTML("<br>"),
+        h5(strong("Update the Selected Acceptance Method and Parameters Here:")),
+        layout_column_wrap(
+          width = 1/2,
+          height = 300,
+          # CARD FOR ACCEPTANCE METHOD INFO
+          card(full_screen = TRUE, card_header("Acceptance Method General Information",
+                                               tooltip(bs_icon("question-circle"),
+                                                       paste("Within this card, you can enter general information about the acceptance",
+                                                             "method that you want to add, which includes the name of the method and a",
+                                                             "short description of what the expected values are."),
+                                                       placement = "right",
+                                                       options = list(container = "body"))),
+               fluidPage(
+                 fluidRow(
+                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                                          textAreaInput("update_acceptance_method_name", label = "Acceptance Method Name:", value = "",
+                                                        width = validateCssUnit(500), resize = "none"),
+
+                                          # Add the popover manually
+                                          h1(tooltip(bs_icon("question-circle"),
+                                                     paste("The acceptance method name should be descriptive and easy to identify for",
+                                                           "later linkage iteration and acceptance rule creation."),
+                                                     placement = "right",
+                                                     options = list(container = "body")))
+                   )),
+                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                                          textAreaInput("update_acceptance_method_desc", label = "Acceptance Method Description:", value = "",
+                                                        width = validateCssUnit(500), resize = "none"),
+
+                                          # Add the popover manually
+                                          h1(tooltip(bs_icon("question-circle"),
+                                                     paste("The acceptance method description should be short and concise, and should",
+                                                           "detail the expected inputs for the parameters and how the acceptance method",
+                                                           "would work."),
+                                                     placement = "right",
+                                                     options = list(container = "body")))
+                   ))
+                 )
+               )
+          ),
+
+          # CARD FOR ACCEPTANCE PARAMETER INFO
+          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information",
+                                               tooltip(bs_icon("question-circle"),
+                                                       paste("Within this card, you can add parameters that belong to the acceptance method",
+                                                             "you are wanting to add, each parameter consists of a key which is how it would",
+                                                             "called from R, and a short description of the parameter. You may add as many",
+                                                             "parameters as you would like for the method being constructed."),
+                                                       placement = "right",
+                                                       options = list(container = "body"))),
+               fluidPage(
+                 # Generate the table
+                 h5(strong("Parameters to be Updated (Select a Row to Update the Key and Description):")),
+                 h6(p(strong("NOTE: "), "No parameters can share the same name.")),
+                 dataTableOutput("acceptance_parameters_to_update"),
+
+                 # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED
+                 conditionalPanel(
+                   condition = "input.acceptance_parameters_to_update_rows_selected > 0",
+                   fluidRow(
+                     column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                                           textAreaInput("acceptance_parameter_key_update", label = "Update Parameter Key:", value = "",
+                                                         width = validateCssUnit(500), resize = "none"),
+
+                                           # Add the popover manually
+                                           h1(tooltip(bs_icon("question-circle"),
+                                                      paste("The acceptance parameter key should be separated by underscores, and is how",
+                                                            "you would expect to retrieve the parameter value from this key value pair label."),
+                                                      placement = "right",
+                                                      options = list(container = "body")))
+                     )),
+                     column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                                           textAreaInput("acceptance_parameter_desc_update", label = "Update Parameter Description:", value = "",
+                                                         width = validateCssUnit(500), resize = "none"),
+
+                                           # Add the popover manually
+                                           h1(tooltip(bs_icon("question-circle"),
+                                                      paste("The acceptance parameter description should be brief and should explain how each",
+                                                            "key is used during data linkage and what values it should expect."),
+                                                      placement = "right",
+                                                      options = list(container = "body")))
+                     ))
+                   ),
+                   fluidRow(
+                     column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                                           actionButton("update_prepared_acceptance_method_parameters_to_update", "Update Acceptance Parameter", class = "btn-warning"),
+                     )),
+                   )
+                 )
+               )
+          )
+        ),
+        HTML("<br>"),
+        # After the user finishes adding everything they need, they can update the acceptance method & parameters
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                                 actionButton("update_acceptance_method_and_parameters", "Update Acceptance Method & Parameters", class = "btn-success"),
           ))
         )
       )
@@ -610,21 +720,49 @@ linkage_ui <- page_navbar(
   #----
   #------------------------#
 
-  #-- ACCEPTANCE PARAMETERS --#
-  #----
-  nav_panel(title = "Acceptance Parameters", value = "acceptance_parameters_page",
-            "You are on the Acceptance Parameters page. Here, you can select an exisiting acceptance method to add or update the acceptance
-      parameters of."
-  ),
-  #----
-  #---------------------------#
-
   #-- ACCEPTANCE RULES --#
   #----
   nav_panel(title = "Acceptance Rules", value = "acceptance_rules_page",
-            "You are on the Acceptance Rules page. Here, you can enter information for creating a new/custom acceptance rule that can
-      be used in custom linkage implementations. The user will be required to provide a rule name and description, which will be
-      stored in the database."
+    fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                               actionButton("acceptance_rules_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some breathing room
+      HTML("<br><br>"),
+
+      # Generate the table
+      h5(strong("View From the Table of Existing Rules & Create a New Rule Below:")),
+      dataTableOutput("currently_added_acceptance_rules"),
+
+      # Small line break
+      HTML("<br><br>"),
+      div(style = "display: flex; justify-content: center; align-items: center;",
+        # CARD FOR ACCEPTANCE RULES
+        card(max_height = 300, full_screen = TRUE, card_header("Acceptance Rules Parameter Values",
+             tooltip(bs_icon("question-circle"),
+                     paste("Within this card, you can enter your desired values for the acceptance",
+                           "rule that you would like to use for future linkage iterations. All inputs",
+                           "must be filled and should follow the descriptions listed by each parameter",
+                           "to ensure that the linkage process is successful using your values."),
+                     placement = "right",
+                     options = list(container = "body"))),
+          fluidPage(
+            fluidRow(
+              column(width = 12, uiOutput("acceptance_rules_inputs"))
+            )
+          )
+        ),
+      ),
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+          actionButton("add_acceptance_rules", "Submit Acceptance Rule Values", class = "btn-success"),
+        ))
+      ),
+    )
   ),
   #----
   #----------------------#
@@ -638,15 +776,6 @@ linkage_ui <- page_navbar(
   ),
   #----
   #-----------------------------#
-
-  #-- COMPARISON PARAMETERS PAGE --#
-  #----
-  nav_panel(title = "Comparison Parameters", value = "comparison_parameters_page",
-            "You are on the Comparison Parameters page. Here, you can select an exisiting comparison method to add or update the comparison
-      parameters of."
-  ),
-  #----
-  #--------------------------------#
 
   #-- COMPARISON RULES PAGE --#
   #----
@@ -680,11 +809,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   #-- HIDING PAGES EVENTS --#
   # Initially hide some tabs we don't need the users to access
   nav_hide('main_navbar', 'linkage_rule_page')
+  nav_hide('main_navbar', 'acceptance_rules_page')
+  nav_hide('main_navbar', 'comparison_rules_page')
 
   # If the user goes off of an inner tab, hide it
   observeEvent(input$main_navbar, {
     # Get the tabs that are not necessary for the user
-    tabs_to_hide <- c("linkage_rule_page")
+    tabs_to_hide <- c("linkage_rule_page", "acceptance_rules_page", "comparison_rules_page")
     selected_panel <- input$main_navbar
 
     # Hide the page if its not the one you're currently on
@@ -886,6 +1017,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Error Handling
     #----#
+    # Make sure the inputs are good
+    if(dataset_code == "" || dataset_name == "" || is.na(dataset_vers) || is.null(dataset_file)){
+      showNotification("Failed to Add Dataset - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
     # Make sure the same dataset code is already being used
     get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM datasets WHERE dataset_code = ? AND enabled_for_linkage = 1;')
     dbBind(get_query, list(dataset_code))
@@ -894,12 +1031,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dbClearResult(get_query)
     if(num_of_databases != 0){
       showNotification("Failed to Add Dataset - Dataset Code Already in Use", type = "error", closeButton = FALSE)
-      return()
-    }
-
-    # Make sure the inputs are good
-    if(dataset_code == "" || dataset_name == "" || is.na(dataset_vers) || is.null(dataset_file)){
-      showNotification("Failed to Add Dataset - Some Inputs are Missing", type = "error", closeButton = FALSE)
       return()
     }
 
@@ -1154,7 +1285,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   #----
   #---------------------------------#
 
-
   #-- ACCEPTANCE METHODS & PARAMETERS PAGE EVENTS --#
   #----
   # Query and output for getting the acceptance methods & parameters
@@ -1187,6 +1317,34 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   # Renders the data table of currently added acceptance methods & parameters
   output$currently_added_acceptance_methods_and_parameters <- renderDataTable({
     get_acceptance_methods_and_parameters()
+  })
+
+  # Brings the user to the acceptance rules page FROM the Acceptance Methods & Parameters page
+  observeEvent(input$acceptance_methods_to_acceptance_rules, {
+    # Get the selected row
+    selected_row <- input$currently_added_acceptance_methods_and_parameters_rows_selected
+    # Get the acceptance method id from the selected row
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from acceptance_methods
+                                             ORDER BY acceptance_method_id ASC'))
+    acceptance_method_id <- df[selected_row, "acceptance_method_id"]
+
+    # Update the global variable for the acceptance method id and the return page
+    acceptance_method_id_add_rule <<- acceptance_method_id
+    acceptance_rules_return_page  <<- "acceptance_methods_page"
+
+    # Update the table of acceptance rules on that page
+    output$currently_added_acceptance_rules <- renderDataTable({
+      get_acceptance_rules()
+    })
+
+    # Update the UI inputs for the acceptance rules on that page
+    output$acceptance_rules_inputs <- renderUI({
+      get_acceptance_rules_inputs()
+    })
+
+    # Show the acceptance rules pages
+    nav_show('main_navbar', 'acceptance_rules_page')
+    updateNavbarPage(session, "main_navbar", selected = "acceptance_rules_page")
   })
 
   #-- NEW ACCEPTANCE METHOD & PARAMETERS --#
@@ -1289,13 +1447,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     #----#
     # Make sure the same parameter key is not being used
     if(parameter_key %in% parameter_keys_to_add && parameter_keys_to_add[row_selected] != parameter_key){
-      showNotification("Failed to Add Parameter Key - Parameter Key Already Prepared", type = "error", closeButton = FALSE)
+      showNotification("Failed to Update Parameter Key - Parameter Key Already Prepared", type = "error", closeButton = FALSE)
       return()
     }
 
     # Make sure the inputs are good
     if(parameter_key == "" || parameter_desc == ""){
-      showNotification("Failed to Add Parameter Key - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      showNotification("Failed to Update Parameter Key - Some Inputs are Missing", type = "error", closeButton = FALSE)
       return()
     }
     #----#
@@ -1356,15 +1514,430 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     showNotification("Prepared Parameter Key Successfully Dropped", type = "message", closeButton = FALSE)
     #----#
   })
+
+  # Creates a new acceptance method w/parameters using the general information & prepared parameters
+  observeEvent(input$add_acceptance_method_and_parameters, {
+    acceptance_method_name <- input$add_acceptance_method_name
+    acceptance_method_desc <- input$add_acceptance_method_desc
+
+    # Error checks
+    #----#
+    # Make Sure the acceptance method inputs are all valid
+    if(acceptance_method_name == "" || acceptance_method_desc == ""){
+      showNotification("Failed to Add Acceptance Method - Some Acceptance Method Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure there exist acceptance parameters that are being added with this acceptance methods
+    if(length(parameter_keys_to_add) == 0 || length(parameter_desc_to_add) == 0){
+      showNotification("Failed to Add Acceptance Method - Missing Parameters to Add With Acceptance Method", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure no other acceptance method shares the same name
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM acceptance_methods
+                                                  WHERE method_name = ?;')
+    dbBind(get_query, list(acceptance_method_name))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_databases != 0){
+      showNotification("Failed to Add Acceptance Method - Acceptance Method Already Exists", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Create a new entry query for entering into the database
+    #----#
+    tryCatch({
+      # Begin a transaction for the acceptance methods & parameters insertions
+      dbBegin(linkage_metadata_conn)
+
+      # Insert the acceptance method
+      new_entry_query <- paste("INSERT INTO acceptance_methods (method_name, description)",
+                               "VALUES(?, ?);")
+      new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+      dbBind(new_entry, list(acceptance_method_name, acceptance_method_desc))
+      dbClearResult(new_entry)
+
+      # Get the most recently inserted acceptance_method_id value
+      acceptance_method_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS acceptance_method_id;")$acceptance_method_id
+
+      # Insert each parameter key and description into the database
+      for (index in 1:length(parameter_keys_to_add)) {
+        # Get the parameter key and description
+        parameter_key <- parameter_keys_to_add[index]
+        description <- parameter_desc_to_add[index]
+
+        # Insert the parameters
+        new_entry_query <- paste("INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_key, description)",
+                                 "VALUES(?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(acceptance_method_id, parameter_key, description))
+        dbClearResult(new_entry)
+      }
+
+      # Commit the transaction after all insertions are successful
+      dbCommit(linkage_metadata_conn)
+    },
+    error = function(e){
+      # If we throw an error because of timeout, or bad insert, then rollback and return
+      dbRollback(linkage_metadata_conn)
+      showNotification("Failed to Add Acceptance Method & Parameters - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+      return()
+    })
+    #----#
+
+    # Reset the prepared parameters and keys
+    #----#
+    parameter_keys_to_add <<- c()
+    parameter_desc_to_add <<- c()
+    #----#
+
+    # Update user input fields to make them blank!
+    #----#
+    updateTextAreaInput(session, "add_acceptance_method_name",    value = "")
+    updateTextAreaInput(session, "add_acceptance_method_desc",    value = "")
+    updateTextAreaInput(session, "add_acceptance_parameter_key",  value = "")
+    updateTextAreaInput(session, "add_acceptance_parameter_desc", value = "")
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$acceptance_parameters_to_add <- renderDataTable({
+      get_parameters_to_add()
+    })
+    output$currently_added_acceptance_methods_and_parameters <- renderDataTable({
+      get_acceptance_methods_and_parameters()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Acceptance Method & Parameters Successfully Created", type = "message", closeButton = FALSE)
+    #----#
+  })
   #----------------------------------------#
 
   #-- UPDATE ACCEPTANCE METHOD & PARAMETERS --#
+  # Create global variables for the parameter_key, and the descriptions of each
+  parameter_keys_to_update <- c()
+  parameter_desc_to_update <- c()
 
+  # Function for creating the table of parameters to be updated
+  get_parameters_to_update <- function(){
+    # Create a data frame from all the parameter keys
+    df <- data.frame(
+      keys = if(length(parameter_keys_to_update) == 0) numeric() else parameter_keys_to_update,
+      desc = if(length(parameter_desc_to_update) == 0) character() else parameter_desc_to_update
+    )
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'keys'] <- 'Acceptance Parameter Key'
+    names(df)[names(df) == 'desc'] <- 'Acceptance Parameter Description'
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 't'))
+  }
+
+  # Renders the data table of acceptance parameters that are to be updated
+  output$acceptance_parameters_to_update <- renderDataTable({
+    get_parameters_to_update()
+  })
+
+  # Observes what acceptance method the user will update and will pre-populate the parameter key updating fields + general information
+  observe({
+    # Get the selected row
+    row_selected <- input$currently_added_acceptance_methods_and_parameters_rows_selected
+
+    # If no row is selected, or a null row is selected, return
+    if(is.null(row_selected)) return()
+
+    # Query to get the general information
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from acceptance_methods
+                                             ORDER BY acceptance_method_id ASC'))
+
+    acceptance_method_id   <- df[row_selected, "acceptance_method_id"]
+    acceptance_method_name <- df[row_selected, "method_name"]
+    acceptance_method_desc <- df[row_selected, "description"]
+
+    # Query to get the parameter keys
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from acceptance_method_parameters
+                                                WHERE acceptance_method_id =', acceptance_method_id,
+                                                'ORDER BY parameter_id ASC'))
+    parameter_keys <- df$parameter_key
+    parameter_desc <- df$description
+
+    # Get the the parameter key and desc from the prepared values
+    parameter_keys_to_update <<- parameter_keys
+    parameter_desc_to_update <<- parameter_desc
+
+    # Now update the input fields
+    updateTextAreaInput(session, "update_acceptance_method_name", value = acceptance_method_name)
+    updateTextAreaInput(session, "update_acceptance_method_desc", value = acceptance_method_desc)
+
+    # Render the table for prepared parameters
+    output$acceptance_parameters_to_update <- renderDataTable({
+      get_parameters_to_update()
+    })
+  })
+
+  # Observes what acceptance parameter key the user selects and pre-populates the input fields
+  observe({
+    row_selected <- input$acceptance_parameters_to_update_rows_selected
+
+    # Get the the parameter key and desc from the prepared values
+    parameter_key  <- parameter_keys_to_update[row_selected]
+    parameter_desc <- parameter_desc_to_update[row_selected]
+
+    # Now update the input fields
+    updateTextAreaInput(session, "acceptance_parameter_key_update",  value = parameter_key)
+    updateTextAreaInput(session, "acceptance_parameter_desc_update", value = parameter_desc)
+  })
+
+  # Updates an existing record in our prepared parameters to update
+  observeEvent(input$update_prepared_acceptance_method_parameters_to_update, {
+    # Get the values that we're inserting into a new record + the selected row
+    #----#
+    row_selected <- input$acceptance_parameters_to_update_rows_selected
+    parameter_key  <- input$acceptance_parameter_key_update
+    parameter_desc <- input$acceptance_parameter_desc_update
+    #----#
+
+    # Error Handling
+    #----#
+    # Make sure the same parameter key is not being used
+    if(parameter_key %in% parameter_keys_to_update && parameter_keys_to_update[row_selected] != parameter_key){
+      showNotification("Failed to Update Parameter Key - Parameter Key Already Prepared", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure the inputs are good
+    if(parameter_key == "" || parameter_desc == ""){
+      showNotification("Failed to Update Parameter Key - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    parameter_keys_to_update[row_selected] <<- parameter_key
+    parameter_desc_to_update[row_selected] <<- parameter_desc
+    #----#
+
+    # Update user input fields to make them blank!
+    #----#
+    updateTextAreaInput(session, "acceptance_parameter_key_update",  value = "")
+    updateTextAreaInput(session, "acceptance_parameter_desc_update", value = "")
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$acceptance_parameters_to_update <- renderDataTable({
+      get_parameters_to_update()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Prepared Parameter Key Successfully Updated", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Updates the acceptance method and parameters of the selected row
+  observeEvent(input$update_acceptance_method_and_parameters, {
+    # Get the user provided method name, description, and selected row to update
+    acceptance_method_name <- input$update_acceptance_method_name
+    acceptance_method_desc <- input$update_acceptance_method_desc
+    selected_row <- input$currently_added_acceptance_methods_and_parameters_rows_selected
+
+    # Get the acceptance method id from the selected row
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from acceptance_methods
+                                             ORDER BY acceptance_method_id ASC'))
+
+    acceptance_method_id <- df[selected_row, "acceptance_method_id"]
+
+    # Get the parameter IDs using the selected acceptance method id
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from acceptance_method_parameters
+                                                WHERE acceptance_method_id =', acceptance_method_id,
+                                                  'ORDER BY parameter_id ASC'))
+    parameter_ids <- df$parameter_id
+
+    # Error checks
+    #----#
+    # Make Sure the acceptance method inputs are all valid
+    if(acceptance_method_name == "" || acceptance_method_desc == ""){
+      showNotification("Failed to Update Acceptance Method - Some Acceptance Method Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure there exist acceptance parameters that are being added with this acceptance methods
+    if(length(parameter_keys_to_update) == 0 || length(parameter_desc_to_update) == 0){
+      showNotification("Failed to Update Acceptance Method - Missing Parameters to Update With Acceptance Method", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure no other acceptance method shares the same name
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM acceptance_methods
+                                                  WHERE method_name = ? AND acceptance_method_id != ?;')
+    dbBind(get_query, list(acceptance_method_name, acceptance_method_id))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_databases != 0){
+      showNotification("Failed to Update Acceptance Method - Acceptance Method Already Exists", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Create a new entry query for entering into the database
+    #----#
+    tryCatch({
+      # Begin a transaction for the acceptance methods & parameters insertions
+      dbBegin(linkage_metadata_conn)
+
+      # Query for updating the acceptance method
+      update_query <- paste("UPDATE acceptance_methods
+                          SET method_name = ?, description = ?
+                          WHERE acceptance_method_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(acceptance_method_name, acceptance_method_desc, acceptance_method_id))
+      dbClearResult(update)
+
+      # Insert each parameter key and description into the database
+      for (index in 1:length(parameter_ids)) {
+        # Get the parameter key, description, and ID for updating
+        parameter_key <- parameter_keys_to_update[index]
+        description   <- parameter_desc_to_update[index]
+        parameter_id  <- parameter_ids[index]
+
+        # Update the parameters
+        update_query <- paste("UPDATE acceptance_method_parameters
+                          SET parameter_key = ?, description = ?
+                          WHERE parameter_id = ?")
+        update <- dbSendStatement(linkage_metadata_conn, update_query)
+        dbBind(update, list(parameter_key, description, parameter_id))
+        dbClearResult(update)
+      }
+
+      # Commit the transaction after all insertions are successful
+      dbCommit(linkage_metadata_conn)
+    },
+    error = function(e){
+      # If we throw an error because of timeout, or bad insert, then rollback and return
+      dbRollback(linkage_metadata_conn)
+      showNotification("Failed to Update Acceptance Method & Parameters - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+      return()
+    })
+    #----#
+
+    # Reset the prepared parameters and keys
+    #----#
+    parameter_keys_to_update <<- c()
+    parameter_desc_to_update <<- c()
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$currently_added_acceptance_methods_and_parameters <- renderDataTable({
+      get_acceptance_methods_and_parameters()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Acceptance Method & Parameters Successfully Updated", type = "message", closeButton = FALSE)
+    #----#
+  })
   #-------------------------------------------#
 
 
   #----
   #-------------------------------------------------#
+
+  #-- ACCEPTANCE RULES PAGE EVENTS --#
+  #----
+  # Create a global variable for which acceptance method we're wanting to add a rule for, and
+  # as well as the PAGE we came from
+  acceptance_method_id_add_rule <- 1
+  acceptance_rules_return_page  <- "acceptance_methods_page"
+
+  # Back button will bring you back to whichever page you came from
+  observeEvent(input$acceptance_rules_back, {
+    # Show return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = acceptance_rules_return_page)
+  })
+
+  # Function for creating the table of parameters to be added
+  get_acceptance_rules <- function(){
+    acceptance_method_id <- acceptance_method_id_add_rule
+
+    # Query to get all acceptance method information from the 'acceptance_method_parameters' table
+    query <- paste('SELECT arp.acceptance_rule_id, parameter_id, parameter FROM acceptance_rules ar
+                   JOIN acceptance_rules_parameters arp ON ar.acceptance_rule_id = arp.acceptance_rule_id
+                   WHERE acceptance_method_id =', acceptance_method_id)
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Aggregate parameters by acceptance_rule_id
+    df <- df %>%
+      group_by(acceptance_rule_id) %>%
+      summarise(parameters = paste(parameter, collapse = ", ")) %>%
+      ungroup()
+
+    # With our data frame, we'll rename some of the columns to look better (we can always drop the ID if we want)
+    names(df)[names(df) == 'acceptance_rule_id'] <- 'Acceptance Rule No.'
+    names(df)[names(df) == 'parameters'] <- 'Parameter Values'
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 't'))
+  }
+
+  # Renders the data table of acceptance parameters that are to be added
+  output$currently_added_acceptance_rules <- renderDataTable({
+    get_acceptance_rules()
+  })
+
+  # Performs the query and UI construction for the acceptance rule inputs
+  get_acceptance_rules_inputs <- function(){
+    # Get the parameter IDs, keys, and descriptions of the inputs we need
+    query <- paste('SELECT * from acceptance_method_parameters
+                   WHERE acceptance_method_id =', acceptance_method_id_add_rule)
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the number of inputs we'll need
+    num_inputs <- nrow(df)
+
+    # Construct the list of inputs
+    acceptance_rule_input_list <- lapply(1:(num_inputs), function(index){
+      # Using the current index, grab all the parameter information and provide a
+      # numeric input for the user to enter their data.
+      # Generate the table
+      parameter_key  <- df[index, "parameter_key"]
+      parameter_desc <- df[index, "description"]
+
+      fluidPage(
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: left; align-items: center;",
+            numericInput(paste0("acceptance_rules_input_", index), label = h5(strong(parameter_key)),
+                         value = NULL, width = validateCssUnit(500)),
+
+            # Add the popover manually
+            h1(tooltip(bs_icon("question-circle"),
+                       parameter_desc,
+                       placement = "right",
+                       options = list(container = "body")))
+          )),
+        )
+      )
+    })
+  }
+
+  # Renders the UI inputs for the selected acceptance method
+  output$acceptance_rules_inputs <- renderUI({
+    get_acceptance_rules_inputs()
+  })
+  #----
+  #----------------------------------#
 
   # TEST FOR SELECTING AN ACCEPTANCE RULE FOR AN ITERATION
   # THIS CAN ALSO BE FOR HOW YOU SELECT MATCHING AND BLOCKING VARIABLES
