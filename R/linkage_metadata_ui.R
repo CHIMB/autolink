@@ -1486,6 +1486,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Re-render data tables and reset UI
     #----#
+    output$linkage_algorithm_left_dataset_input <- renderUI({
+      get_left_datasets_linkage_algorithms()
+    })
+
+    # Renders the UI for the right dataset select input
+    output$linkage_algorithm_right_dataset_input <- renderUI({
+      get_right_datasets_linkage_algorithms()
+    })
+
     output$currently_added_datasets <- renderDataTable({
       get_datasets()
     })
