@@ -374,9 +374,66 @@ linkage_ui <- page_navbar(
 
         # Generate the table
         h5(strong("Add an Empty Algorithm Below, or Select a Row to either Enable/Disable the Algorithm, View/Modify Passes, or View/Modify Ground Truth Variables:")),
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            dataTableOutput("currently_added_linkage_algorithms"),
+          )),
+        ),
+        # Buttons below
+        conditionalPanel(
+          condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
+          HTML("<br>"),
+          # Create a card for the buttons
+          div(style = "display: flex; justify-content: center; align-items: center;",
+            card(
+              width = 1,
+              height = 150,
+              full_screen = FALSE,
+              card_header("Algorithm Specific Information"),
+              card_body(
+                fluidRow(
+                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                      actionButton("toggle_algorithm", "Toggle Selected Algorithm", class = "btn-success"),
 
-        # Make a fluid row here, with the table on the left, with buttons on the right
-        dataTableOutput("currently_added_linkage_algorithms"),
+                      # Add the popover manually
+                      h1(tooltip(bs_icon("question-circle"),
+                                 paste("Toggle whether an algorithm is available to be used in data linkage.",
+                                       "If an algorithm is Enabled, you may select/view/add/modify linkage passes",
+                                       "and ground truth variables for that algorithm, and may also use the algorithm",
+                                       "to perform data linkage. If Disabled, the algorithm, and passes will be ignored,",
+                                       "and it may not be used for data linkage."),
+                                 placement = "right",
+                                 options = list(container = "body")
+                      ))
+                    )
+                  ),
+                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("linkage_algorithms_to_iterations", "Algorithm Passes", class = "btn-warning"),
+
+                      # Add the popover manually
+                      h1(tooltip(bs_icon("question-circle"),
+                                 paste("View, add, and modify the individual passes for this algorithm."),
+                                 placement = "right",
+                                 options = list(container = "body")
+                      ))
+                    )
+                  ),
+                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                      actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables", class = "btn-info"),
+
+                      # Add the popover manually
+                      h1(tooltip(bs_icon("question-circle"),
+                                 paste("View, add, and modify the ground truth variables for this algorithm."),
+                                 placement = "right",
+                                 options = list(container = "body")
+                      ))
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ),
 
         # Line break to separate the table and new algorithm input
         HTML("<br><br>"),
@@ -1836,8 +1893,195 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
   }
 
+  # Render the data table for the linkage algorithms of the desired 2 datasets
   output$currently_added_linkage_algorithms <- renderDataTable({
     get_linkage_algorithms()
+  })
+
+  # Add an empty linkage algorithm to the table using the provided datasets and name
+  observeEvent(input$add_linkage_algorithm, {
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    algorithm_name   <- input$linkage_algorithm_descriptor
+    modified_by <- username
+    modified_date <- format(Sys.Date(), format = "%Y-%m-%d")
+
+    # Error check to verify that an exact match doesn't exist
+    #----#
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms
+                                                  WHERE dataset_id_left = ? AND dataset_id_right = ? AND algorithm_name = ? AND enabled = 1;')
+    dbBind(get_query, list(left_dataset_id, right_dataset_id, algorithm_name))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_databases != 0){
+      showNotification("Failed to Add Linkage Method - Linkage Method Already Exists", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Create a new entry query for entering into the database
+    #----#
+    new_entry_query <- paste("INSERT INTO linkage_algorithms (dataset_id_left, dataset_id_right, algorithm_name, modified_date, modified_by, enabled)",
+                             "VALUES(?, ?, ?, ?, ?, ?);")
+    new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+    dbBind(new_entry, list(left_dataset_id, right_dataset_id, algorithm_name, modified_date, modified_by, 1))
+    dbClearResult(new_entry)
+    #----#
+
+    # Update user input fields to make them blank!
+    #----#
+    updateTextAreaInput(session, "linkage_algorithm_descriptor", value = "")
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$currently_added_linkage_algorithms <- renderDataTable({
+      get_linkage_algorithms()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Linkage Algorithm Successfully Created", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Observes what row the user selects to update and will pre-populate the parameter key updating fields
+  observe({
+    # Get the user inputs
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+
+    # If no row is selected, or a null row is selected, return
+    if(is.null(selected_row)) return()
+
+    # Query to get the algorithms we could select from
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    algorithm_name <- df[selected_row, "algorithm_name"]
+
+    # Now update the input fields
+    updateTextAreaInput(session, "linkage_algorithm_descriptor_update",  value = algorithm_name)
+  })
+
+  # Update the selected linkage algorithm by changing the name
+  observeEvent(input$update_linkage_algorithm, {
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    algorithm_name   <- input$linkage_algorithm_descriptor_update
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    algorithm_id <- df[selected_row, "algorithm_id"]
+    modified_by <- username
+    modified_date <- format(Sys.Date(), format = "%Y-%m-%d")
+
+    # Error check to verify that an exact match doesn't exist
+    #----#
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms
+                                                  WHERE dataset_id_left = ? AND dataset_id_right = ? AND algorithm_name = ? AND algorithm_id != ?;')
+    dbBind(get_query, list(left_dataset_id, right_dataset_id, algorithm_name, algorithm_id))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_databases != 0){
+      showNotification("Failed to Update Linkage Method - Linkage Method Already Exists", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Create a new entry query for updating the linkage algorithm
+    #----#
+    update_query <- paste("UPDATE linkage_algorithms
+                          SET algorithm_name = ?, modified_by = ?, modified_date = ?
+                          WHERE algorithm_id = ?")
+    update <- dbSendStatement(linkage_metadata_conn, update_query)
+    dbBind(update, list(algorithm_name, modified_by, modified_date, algorithm_id))
+    dbClearResult(update)
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$currently_added_linkage_algorithms <- renderDataTable({
+      get_linkage_algorithms()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Linkage Algorithm Successfully Updated", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Toggle the selected linkage algorithm
+  observeEvent(input$toggle_algorithm, {
+    # Get the row that we're supposed to be toggling
+    #----#
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    algorithm_id <- df[selected_row, "algorithm_id"]
+    algorithm_name <- df[selected_row, "algorithm_name"]
+    enabled_value <- df[selected_row, "enabled"]
+    #----#
+
+    # Create a query for updating the enabled value of the record
+    #----#
+    if(enabled_value == 1){
+      update_query <- paste("UPDATE linkage_algorithms
+                          SET enabled = 0
+                          WHERE algorithm_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(algorithm_id))
+      dbClearResult(update)
+    }else{
+      # Error handling - don't allow user to have two algorithms enabled with the same name
+      #----#
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND enabled = 1;')
+      dbBind(get_query, list(algorithm_name))
+      output_df <- dbFetch(get_query)
+      enabled_databases <- nrow(output_df)
+      dbClearResult(get_query)
+
+      if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
+        showNotification("Failed to Enable Algorithm - Algorithm with the same name is already enabled", type = "error", closeButton = FALSE)
+        return()
+      }
+      #----#
+
+      update_query <- paste("UPDATE linkage_algorithms
+                          SET enabled = 1
+                          WHERE algorithm_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(algorithm_id))
+      dbClearResult(update)
+    }
+    #----#
+
+    # Re-render data tables and reset UI
+    #----#
+    output$currently_added_linkage_algorithms <- renderDataTable({
+      get_linkage_algorithms()
+    })
+    #----#
+
+    # Send a success notification
+    #----#
+    if(enabled_value == 1){
+      showNotification("Algorithm Successfully Disabled", type = "message", closeButton = FALSE)
+    }else{
+      showNotification("Algorithm Successfully Enabled", type = "message", closeButton = FALSE)
+    }
   })
   #----
   #------------------------------------#
