@@ -351,17 +351,86 @@ linkage_ui <- page_navbar(
   #-- LINKAGE ALGORITHMS --#
   #----
   nav_panel(title = "Linkage Algorithms", value = "linkage_algorithms_page",
-            fluidPage(
-              "You are on the Linkage Algorithms page. Here, you can create a new linkage algorithm which can have iterations/steps added
-        to them, the user will be asked asked to select two datasets to link, a left and right dataset which will be chosen from two
-        tables provided to the user.",
-              HTML("<br><br>"),
-              "With the datasets selected, the user can submit to creating a blank algorithm which will supply the database with an insert
-        query containing the selected dataset IDs, username, date modified, records linked, and being already set to enabled.",
-              HTML("<br><br>"),
-              "Additionally, the user should be provided with a table of all the current linkage algorithms with the option to enable
-        or disable algorithms for testing and linkage purposes."
-            )
+    fluidPage(
+      # Two select inputs for choosing which datasets we want to be using
+      h5(strong("Select a Left and Right Dataset To View or Add Linkage Algorithms:")),
+      h6(p(strong("Note: "), paste("The left and right dataset must be distinct."))),
+      fluidRow(
+        column(width = 6, div(style = "display: flex; justify-content: right; align-items: right;",
+          uiOutput("linkage_algorithm_left_dataset_input"),
+        )),
+        column(width = 6, div(style = "display: flex; justify-content: left; align-items: left;",
+          uiOutput("linkage_algorithm_right_dataset_input"),
+        ))
+      ),
+
+      # Line break to give the input and table some space
+      HTML("<br><br>"),
+
+      # Once the user selects their LEFT and RIGHT dataset, show them the table of linkage algorithms
+      conditionalPanel(
+        condition = "input.linkage_algorithm_left_dataset != 'null' && input.linkage_algorithm_right_dataset != 'null'
+                    && input.linkage_algorithm_left_dataset != input.linkage_algorithm_right_dataset",
+
+        # Generate the table
+        h5(strong("Add an Empty Algorithm Below, or Select a Row to either Enable/Disable the Algorithm, View/Modify Passes, or View/Modify Ground Truth Variables:")),
+
+        # Make a fluid row here, with the table on the left, with buttons on the right
+        dataTableOutput("currently_added_linkage_algorithms"),
+
+        # Line break to separate the table and new algorithm input
+        HTML("<br><br>"),
+
+        # Conditional panel for if a row wasn't selected
+        conditionalPanel(
+          condition = "input.currently_added_linkage_algorithms_rows_selected <= 0",
+          h5(strong("Create empty linkage algorithm here:")),
+          h6(p(strong("Note: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              textAreaInput("linkage_algorithm_descriptor", label = "Algorithm Name/Descriptor:", value = "",
+                            width = validateCssUnit(500), resize = "none"),
+
+              # Add the popover manually
+              h1(tooltip(bs_icon("question-circle"),
+                         paste("The algorithm name/descriptor is a way to easily identify specific algorithms",
+                               "of two datasets. The name should be short, concise, and identifiable for the user."),
+                         placement = "right",
+                         options = list(container = "body")))
+            ))
+          ),
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              actionButton("add_linkage_algorithm", "Add Linkage Algorithm:", class = "btn-success"),
+            ))
+          )
+        ),
+        # Conditional panel for if a row was selected
+        conditionalPanel(
+          condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
+          h5(strong("Update linkage algorithm here:")),
+          h6(p(strong("Note: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              textAreaInput("linkage_algorithm_descriptor_update", label = "Algorithm Name/Descriptor:", value = "",
+                            width = validateCssUnit(500), resize = "none"),
+
+              # Add the popover manually
+              h1(tooltip(bs_icon("question-circle"),
+                         paste("The algorithm name/descriptor is a way to easily identify specific algorithms",
+                               "of two datasets. The name should be short, concise, and identifiable for the user."),
+                         placement = "right",
+                         options = list(container = "body")))
+            ))
+          ),
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              actionButton("update_linkage_algorithm", "Update Linkage Algorithm:", class = "btn-success"),
+            ))
+          )
+        )
+      ),
+    )
   ),
   #----
   #------------------------#
@@ -454,6 +523,16 @@ linkage_ui <- page_navbar(
   #----
   nav_panel(title = "Acceptance Methods", value = "acceptance_methods_page",
     fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                               actionButton("acceptance_methods_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some space
+      HTML("<br>"),
+
       # Generate the table
       h5(strong("Add a New Acceptance Method Below, or Select an Existing Method To Update or Add a Rule To:")),
       h6(p(strong("NOTE: "), "No acceptance methods can share the same the same name, and no parameters can share the same name within methods.")),
@@ -771,6 +850,16 @@ linkage_ui <- page_navbar(
   #----
   nav_panel(title = "Comparison Methods", value = "comparison_methods_page",
     fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                               actionButton("comparison_methods_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some space
+      HTML("<br>"),
+
       # Generate the table
       h5(strong("Add a New Comparison Method Below, or Select an Existing Method To Update or Add a Rule To:")),
       h6(p(strong("NOTE: "), "No comparison methods can share the same the same name, and no parameters can share the same name within methods.")),
@@ -1087,9 +1176,89 @@ linkage_ui <- page_navbar(
   #-- LINKAGE RULES PAGE --#
   #----
   nav_panel(title = "Linkage Rules", value = "linkage_rule_page",
-    "You are on the Linkage Rules page. Here, you can add a new linkage rule usable by blocking and matching variables. Input boxes for
-    each of the main rules will be provided and the user may enter inputs for at least one of their choice for a rule to be valid. Once
-    submitted the rule will be added to the database and thus available for use when selecting blocking and matching variables."
+    fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                               actionButton("linkage_rules_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some breathing room
+      HTML("<br><br>"),
+
+      # Generate the table
+      h5(strong("View From the Table of Existing Rules & Create a New Rule Below:")),
+      h6(p(strong("Note: "), paste("A rule cannot contain both numerical AND string rules, it can contain one or the other."))),
+      dataTableOutput("currently_added_linkage_rules"),
+
+      # Small line break
+      HTML("<br><br>"),
+
+      # Fluid row for the 4 inputs (alternate field, date variance, substring length, and name standardization)
+      fluidRow(
+        column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+          numericInput("add_alternate_field_number", label = "Alternative Field Value:",
+                       value = NULL, width = validateCssUnit(500)),
+
+          # Add the popover manually
+          h1(tooltip(bs_icon("question-circle"),
+                     paste("The alternative field number should be a positive number greater than 1, and is",
+                           "used to select which alternative value to use in place of the original value when",
+                           "performing blocking or matching."),
+                     placement = "right",
+                     options = list(container = "body")))
+        )),
+        column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+          numericInput("add_integer_value_variance", label = "Integer Value Variance:",
+                       value = NULL, width = validateCssUnit(500)),
+
+          # Add the popover manually
+          h1(tooltip(bs_icon("question-circle"),
+                     paste("The integer value variance should be a positive number greater than 0, and is",
+                           "used for date related fields. The number entered will be used to block on the",
+                           "original value, as well as plus and minus the integer you added to obtain a range",
+                           "of dates. Used for blocking keys primarily."),
+                     placement = "right",
+                     options = list(container = "body")))
+        )),
+        column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+          numericInput("add_substring_length", label = "Substring Length:",
+                       value = NULL, width = validateCssUnit(500)),
+
+          # Add the popover manually
+          h1(tooltip(bs_icon("question-circle"),
+                     paste("The substring length should be a positive number greater than 0, and is",
+                           "used to block or match on the first certain number of characters in a name."),
+                     placement = "right",
+                     options = list(container = "body")))
+        )),
+        column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+          selectInput("add_name_standardization", label = "Standardize Names?",
+                      choices = list("No" = 1,
+                                     "Yes" = 2),
+                      selected = 1,
+                      width = validateCssUnit(500)),
+
+          # Add the popover manually
+          h1(tooltip(bs_icon("question-circle"),
+                     paste("If names are to be standardized, variations of names are converted to the most",
+                           "common spelling of that name. You must provide a CSV file when you begin the linkage",
+                           "process containing a column of the variant spellings, titled START, and a column",
+                           "of the common spelling it maps to, titled LABEL. A default CSV is provided on",
+                           "GitHub."),
+                     placement = "right",
+                     options = list(container = "body")))
+        ))
+      ),
+
+      # Submit Linkage Rule Button
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+          actionButton("add_linkage_rule", "Submit Linkage Rule Values", class = "btn-success"),
+        ))
+      ),
+    )
   ),
   #----
   #------------------------#
@@ -1387,7 +1556,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     #----#
     updateTextAreaInput(session, "add_dataset_code",    value = "")
     updateTextAreaInput(session, "add_dataset_name",    value = "")
-    updateNumericInput(session,  "add_dataset_vers",    value = NULL)
+    updateNumericInput(session,  "add_dataset_vers",    value = NA)
     file_path$path <- NULL
     output$uploaded_file_name <- renderText({
       "No File Uploaded"
@@ -1396,6 +1565,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Update Data Tables and UI Renders
     #----#
+    output$linkage_algorithm_left_dataset_input <- renderUI({
+      get_left_datasets_linkage_algorithms()
+    })
+    output$linkage_algorithm_right_dataset_input <- renderUI({
+      get_right_datasets_linkage_algorithms()
+    })
     output$currently_added_datasets <- renderDataTable({
       get_datasets()
     })
@@ -1478,7 +1653,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     #----#
     updateTextAreaInput(session, "update_dataset_code",    value = "")
     updateTextAreaInput(session, "update_dataset_name",    value = "")
-    updateNumericInput(session,  "update_dataset_vers",    value = NULL)
+    updateNumericInput(session,  "update_dataset_vers",    value = NA)
     #----#
 
     # Re-render data tables and reset UI
@@ -1569,7 +1744,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     #----#
     updateTextAreaInput(session, "add_implementation_name",    value = "")
     updateTextAreaInput(session, "add_technique_label",        value = "")
-    updateNumericInput(session,  "add_implementation_vers",    value = NULL)
+    updateNumericInput(session,  "add_implementation_vers",    value = NA)
     #----#
 
     # Update Data Tables and UI Renders
@@ -1587,8 +1762,96 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   #----
   #---------------------------------#
 
+  #-- LINKAGE ALGORITHMS PAGE EVENTS --#
+  #----
+  # Creates the select input UI for the left dataset
+  get_left_datasets_linkage_algorithms <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, "SELECT dataset_name, dataset_id FROM datasets where enabled_for_linkage = 1")
+
+    # Extract columns from query result
+    choices <- setNames(query_result$dataset_id, query_result$dataset_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("linkage_algorithm_left_dataset", label = "Left Dataset:",
+                     choices = choices, width = validateCssUnit(500)))
+  }
+
+  # Creates the select input UI for the left dataset
+  get_right_datasets_linkage_algorithms <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, "SELECT dataset_name, dataset_id FROM datasets where enabled_for_linkage = 1")
+
+    # Extract columns from query result
+    choices <- setNames(query_result$dataset_id, query_result$dataset_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("linkage_algorithm_right_dataset", label = "Right Dataset:",
+                     choices = choices, width = validateCssUnit(500)))
+  }
+
+  # Renders the UI for the left dataset select input
+  output$linkage_algorithm_left_dataset_input <- renderUI({
+    get_left_datasets_linkage_algorithms()
+  })
+
+  # Renders the UI for the right dataset select input
+  output$linkage_algorithm_right_dataset_input <- renderUI({
+    get_right_datasets_linkage_algorithms()
+  })
+
+  # Query and output for getting the selected linkage algorithms
+  get_linkage_algorithms <- function(){
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+
+    # Query to get all linkage method information from the 'linkage_methods' table
+    query <- paste('SELECT * FROM linkage_algorithms
+                WHERE dataset_id_left =', left_dataset_id, ' AND dataset_id_right =', right_dataset_id,
+                   'ORDER BY algorithm_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'algorithm_name'] <- 'Algorithm Name'
+    names(df)[names(df) == 'modified_date'] <- 'Modified Date'
+    names(df)[names(df) == 'modified_by'] <- 'Modified By'
+    names(df)[names(df) == 'enabled'] <- 'Enabled'
+
+    # With algorithms, we'll replace the enabled [0, 1] with [No, Yes]
+    df$Enabled <- str_replace(df$Enabled, "0", "No")
+    df$Enabled <- str_replace(df$Enabled, "1", "Yes")
+
+    # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
+    df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right))
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+  }
+
+  output$currently_added_linkage_algorithms <- renderDataTable({
+    get_linkage_algorithms()
+  })
+  #----
+  #------------------------------------#
+
   #-- ACCEPTANCE METHODS & PARAMETERS PAGE EVENTS --#
   #----
+  acceptance_methods_return_page  <- "home_page"
+
+  # Back button will bring you back to whichever page you came from
+  observeEvent(input$acceptance_methods_back, {
+    # Show return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = acceptance_methods_return_page)
+  })
+
   # Query and output for getting the acceptance methods & parameters
   get_acceptance_methods_and_parameters <- function(){
     # Query to get all acceptance method information from the 'acceptance_methods'
@@ -2273,10 +2536,36 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       input_val <- input[[paste0("acceptance_rules_input_", index)]]
       # Ensure it isn't null
       if(is.na(input_val)){
-        # If we throw an error because of timeout, or bad insert, then rollback and return
         showNotification("Failed to Add Acceptance Rule - Some Input(s) Are Missing", type = "error", closeButton = FALSE)
         return()
       }
+    }
+
+    # Lastly, we'll make sure this rule doesn't already exist
+    df <- data.frame()
+    for (index in 1:(num_inputs)) {
+      # Get the parameter to input
+      parameter <- input[[paste0("acceptance_rules_input_", index)]]
+
+      # Get the parameter ID
+      parameter_id <- parameter_ids[index]
+
+      # Check if the database has this eact match
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM acceptance_rules_parameters
+                                                  WHERE parameter_id = ? AND parameter = ?;')
+      dbBind(get_query, list(parameter_id, parameter))
+      output_df <- dbFetch(get_query)
+      dbClearResult(get_query)
+      df <- rbind(df, output_df)
+    }
+
+    # Group by the acceptance_rule_id
+    df_grouped <- df %>% group_by(acceptance_rule_id) %>% filter(n() == num_inputs)
+
+    # If it contains exactly those parameters, then there will be a row in the grouped df, so return
+    if(nrow(df_grouped) > 0){
+      showNotification("Failed to Add Acceptance Rule - Acceptance Rule Already Exists", type = "error", closeButton = FALSE)
+      return()
     }
     #----#
 
@@ -2350,6 +2639,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   #-- COMPARISON METHODS & PARAMETERS PAGE EVENTS --#
   #----
+  comparison_methods_return_page  <- "home_page"
+
+  # Back button will bring you back to whichever page you came from
+  observeEvent(input$comparison_methods_back, {
+    # Show return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = comparison_methods_return_page)
+  })
+
   # Query and output for getting the acceptance methods & parameters
   get_comparison_methods_and_parameters <- function(){
     # Query to get all acceptance method information from the 'comparison_methods'
@@ -2592,7 +2889,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     }
 
     # Make sure there exist comparison parameters that are being added with this comparison methods
-    if(length(parameter_keys_to_add) == 0 || length(parameter_desc_to_add) == 0){
+    if(length(comparison_parameter_keys_to_add) == 0 || length(comparison_parameter_desc_to_add) == 0){
       showNotification("Failed to Add Comparison Method - Missing Parameters to Add With Comparison Method", type = "error", closeButton = FALSE)
       return()
     }
@@ -2628,10 +2925,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       comparison_method_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS comparison_method_id;")$comparison_method_id
 
       # Insert each parameter key and description into the database
-      for (index in 1:length(parameter_keys_to_add)) {
+      for (index in 1:length(comparison_parameter_keys_to_add)) {
         # Get the parameter key and description
-        parameter_key <- parameter_keys_to_add[index]
-        description <- parameter_desc_to_add[index]
+        parameter_key <- comparison_parameter_keys_to_add[index]
+        description <- comparison_parameter_desc_to_add[index]
 
         # Insert the parameters
         new_entry_query <- paste("INSERT INTO comparison_method_parameters (comparison_method_id, parameter_key, description)",
@@ -2847,7 +3144,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     }
 
     # Make sure no other acceptance method shares the same name
-    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM acceptance_methods
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM comparison_methods
                                                   WHERE method_name = ? AND comparison_method_id != ?;')
     dbBind(get_query, list(comparison_method_name, comparison_method_id))
     output_df <- dbFetch(get_query)
@@ -2867,7 +3164,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       dbBegin(linkage_metadata_conn)
 
       # Query for updating the acceptance method
-      update_query <- paste("UPDATE acceptance_methods
+      update_query <- paste("UPDATE comparison_methods
                           SET method_name = ?, description = ?
                           WHERE comparison_method_id = ?")
       update <- dbSendStatement(linkage_metadata_conn, update_query)
@@ -2877,12 +3174,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       # Insert each parameter key and description into the database
       for (index in 1:length(parameter_ids)) {
         # Get the parameter key, description, and ID for updating
-        parameter_key <- parameter_keys_to_update[index]
-        description   <- parameter_desc_to_update[index]
+        parameter_key <- comparison_parameter_keys_to_update[index]
+        description   <- comparison_parameter_desc_to_update[index]
         parameter_id  <- parameter_ids[index]
 
         # Update the parameters
-        update_query <- paste("UPDATE acceptance_method_parameters
+        update_query <- paste("UPDATE comparison_method_parameters
                           SET parameter_key = ?, description = ?
                           WHERE parameter_id = ?")
         update <- dbSendStatement(linkage_metadata_conn, update_query)
@@ -3032,6 +3329,33 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
         return()
       }
     }
+
+    # Lastly, we'll make sure this rule doesn't already exist
+    df <- data.frame()
+    for (index in 1:(num_inputs)) {
+      # Get the parameter to input
+      parameter <- input[[paste0("comparison_rules_input_", index)]]
+
+      # Get the parameter ID
+      parameter_id <- parameter_ids[index]
+
+      # Check if the database has this eact match
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM comparison_rules_parameters
+                                                  WHERE parameter_id = ? AND parameter = ?;')
+      dbBind(get_query, list(parameter_id, parameter))
+      output_df <- dbFetch(get_query)
+      dbClearResult(get_query)
+      df <- rbind(df, output_df)
+    }
+
+    # Group by the comparison_rule_id
+    df_grouped <- df %>% group_by(comparison_rule_id) %>% filter(n() == num_inputs)
+
+    # If it contains exactly those parameters, then there will be a row in the grouped df, so return
+    if(nrow(df_grouped) > 0){
+      showNotification("Failed to Add Comparison Rule - Comparison Rule Already Exists", type = "error", closeButton = FALSE)
+      return()
+    }
     #----#
 
     # Add all the necessary acceptance rule information
@@ -3101,6 +3425,191 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   })
   #----
   #----------------------------------#
+
+  #-- LINKAGE RULES PAGE EVENTS --#
+  #----
+  linkage_rules_return_page  <- "home_page"
+
+  # Back button will bring you back to whichever page you came from
+  observeEvent(input$linkage_rules_back, {
+    # Show return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = linkage_rules_return_page)
+  })
+
+  # Gets the linkage rules from the database and puts them into a data table
+  get_linkage_rules <- function(){
+    # Query to get all acceptance method information from the 'acceptance_methods' table
+    query <- paste('SELECT * FROM linkage_rules
+               ORDER BY linkage_rule_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # For each row in the data frame, we're going to make the rules easier to read and select
+    for(row_num in 1:nrow(df)){
+      # Get the current row
+      row <- df[row_num,]
+
+      # We'll start with "Alternative Field"
+      alt_field_val <- row$alternate_field_value
+      if(is.na(alt_field_val)){
+        row$alternate_field_value <- "1st Field Value"
+      }
+      else{
+        row$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+      }
+
+      # Next we'll handle the "Integer Variance"
+      int_variance <- row$integer_value_variance
+      if(is.na(int_variance)){
+        row$integer_value_variance <- "±0"
+      }
+      else{
+        row$integer_value_variance <- paste0("±", int_variance)
+        row$substring_length <- "Does Not Apply"
+        row$standardize_names <- "Does Not Apply"
+      }
+
+      # Next we'll handle "Name Substring"
+      name_substring <- row$substring_length
+      if(is.na(name_substring) && is.na(int_variance)){
+        row$substring_length <- "Entire Name"
+      }else if (!is.na(name_substring) && is.na(int_variance)){
+        row$substring_length <- paste0("First ", name_substring, " character(s)")
+      }
+
+      # Re-enter our modified row back into the linkage rules
+      df[row_num,] <- row
+    }
+
+    # With standardized names, we'll replace the [0, 1] with [No, Yes]
+    df[is.na(df)] <- "No"
+    df$standardize_names <- str_replace(df$standardize_names, "1", "Yes")
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'alternate_field_value'] <- 'Alternative Field'
+    names(df)[names(df) == 'integer_value_variance'] <- 'Integer Variance'
+    names(df)[names(df) == 'substring_length'] <- 'Name Substring'
+    names(df)[names(df) == 'standardize_names'] <- 'Standardize Names'
+
+    # Drop the linkage_rule_id
+    df <- subset(df, select = -c(linkage_rule_id))
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+  }
+
+  # Renders the data table of comparison parameters that are to be added
+  output$currently_added_linkage_rules <- renderDataTable({
+    get_linkage_rules()
+  })
+
+  # Adds a new linkage rule to the database
+  observeEvent(input$add_linkage_rule, {
+    # Get the values the user provided
+    alternate_field_value  <- input$add_alternate_field_number
+    integer_value_variance <- input$add_integer_value_variance
+    substring_length       <- input$add_substring_length
+    standardize_names      <- input$add_name_standardization
+
+    # Error handle to make sure we don't end up putting invalid values into the 'Linkage Rules' table
+    #----#
+    # First, we'll make sure that the numeric values provided are actually numeric (can't even happen if we use a numericInput() in shiny)
+    if(!is.na(alternate_field_value) && is.na(suppressWarnings(as.numeric(alternate_field_value)))){
+      showNotification("Failed to Create Linkage Rule - Alternate Field Value Input is not Numeric", type = "error", closeButton = FALSE)
+      return()
+    }
+    if(!is.na(integer_value_variance) && is.na(suppressWarnings(as.numeric(integer_value_variance)))){
+      showNotification("Failed to Create Linkage Rule - Integer Value Variance Input is not Numeric", type = "error", closeButton = FALSE)
+      return()
+    }
+    if(!is.na(substring_length) && is.na(suppressWarnings(as.numeric(substring_length)))){
+      showNotification("Failed to Create Linkage Rule - Substring Length Input is not Numeric", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Next, we'll make sure that if a numeric value is provided, that it is valid by setting it to default values (NA)
+    if(!is.na(alternate_field_value) && as.numeric(alternate_field_value) <= 1){
+      alternate_field_value <- NA
+    }
+    if(!is.na(integer_value_variance) && as.numeric(integer_value_variance) <= 0){
+      integer_value_variance <- NA
+    }
+    if(!is.na(substring_length) && as.numeric(substring_length) <= 0){
+      substring_length <- NA
+    }
+    if(standardize_names == 1){
+      standardize_names <- NA
+    }
+
+    # Next, if all values were left empty after this, we'll return throw an error
+    if(is.na(alternate_field_value) && is.na(integer_value_variance) && is.na(substring_length) && is.na(standardize_names)){
+      showNotification("Failed to Create Linkage Rule - All Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Next, we'll make sure that only one type of Name or Numerical rule can be chosen at a time
+    if(!is.na(integer_value_variance) && !is.na(substring_length)){
+      showNotification("Failed to Create Linkage Rule - Cannot Apply Both String and Numerical Rules to a Field (Drop One or the Other)", type = "error", closeButton = FALSE)
+      return()
+    }
+    if(!is.na(integer_value_variance) && !is.na(standardize_names)){
+      showNotification("Failed to Create Linkage Rule - Cannot Apply Both String and Numerical Rules to a Field (Drop One or the Other)", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Lastly, we'll make sure this rule doesn't already exist
+    # Modify the query to handle NULL values
+    get_query <- dbSendQuery(linkage_metadata_conn, '
+                              SELECT * FROM linkage_rules
+                              WHERE (alternate_field_value = ? OR (alternate_field_value IS NULL AND ? IS NULL))
+                              AND (integer_value_variance = ? OR (integer_value_variance IS NULL AND ? IS NULL))
+                              AND (substring_length = ? OR (substring_length IS NULL AND ? IS NULL))
+                              AND (standardize_names = ? OR (standardize_names IS NULL AND ? IS NULL));')
+    # Bind the values to the query
+    dbBind(get_query, list(alternate_field_value, alternate_field_value,
+                           integer_value_variance, integer_value_variance,
+                           substring_length, substring_length,
+                           standardize_names, standardize_names))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    print(output_df)
+    if(num_of_databases != 0){
+      showNotification("Failed to Add Linkage Rule - Linkage Rule Already Exists", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Add the new user provided values to the database as a new linkage rule
+    #----#
+    new_entry_query <- paste("INSERT INTO linkage_rules (alternate_field_value, integer_value_variance, substring_length, standardize_names)",
+                             "VALUES(?, ?, ?, ?);")
+    new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+    dbBind(new_entry, list(alternate_field_value, integer_value_variance, substring_length, standardize_names))
+    dbClearResult(new_entry)
+    #----#
+
+    # Update user input fields to make them blank!
+    #----#
+    updateNumericInput(session, "add_alternate_field_number", value = NA)
+    updateNumericInput(session, "add_integer_value_variance", value = NA)
+    updateNumericInput(session, "add_substring_length", value = NA)
+    updateSelectInput(session, "add_name_standardization", selected = 1)
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$currently_added_linkage_rules <- renderDataTable({
+      get_linkage_rules()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Linkage Rule Successfully Created", type = "message", closeButton = FALSE)
+    #----#
+  })
+  #----
+  #-------------------------------#
 
   # TEST FOR SELECTING AN ACCEPTANCE RULE FOR AN ITERATION
   # THIS CAN ALSO BE FOR HOW YOU SELECT MATCHING AND BLOCKING VARIABLES
