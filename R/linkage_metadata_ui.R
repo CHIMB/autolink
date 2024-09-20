@@ -123,7 +123,7 @@ linkage_ui <- page_navbar(
   #----
   nav_panel(title = "Datasets", value = "datasets_page",
     fluidPage(
-      h5(strong("Select An Existing Dataset to Update or Add a New Dataset Below:")),
+      h5(strong("Select An Existing Dataset to Update:")),
       h6(p(strong("NOTE: "), "For datasets that use the same dataset code/prefix, only one be enabled at a time.")),
       dataTableOutput("currently_added_datasets"),
 
@@ -204,7 +204,7 @@ linkage_ui <- page_navbar(
       conditionalPanel(
         condition = "input.currently_added_datasets_rows_selected <= 0",
         HTML("<br>"),
-        h5(strong("Add the Dataset Fields Here:")),
+        h5(strong("Or, Add the Dataset Fields Here:")),
         fluidRow(
           column(width = 3, div(style = "display: flex; align-items: center;",
             textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
@@ -291,7 +291,7 @@ linkage_ui <- page_navbar(
   nav_panel(title = "Linkage Methods", value = "linkage_methods_page",
     fluidPage(
       # Generate the table
-      h5(strong("View the Currently Usable Linkage Methods or Add a New Linkage Method Below:")),
+      h5(strong("View the Currently Usable Linkage Methods:")),
       h6(p(strong("NOTE: "), "Only one combination of implementation name and technique label can exist at a time.")),
       dataTableOutput("currently_added_linkage_methods"),
 
@@ -299,7 +299,7 @@ linkage_ui <- page_navbar(
       HTML("<br>"),
 
       # Add linkage method fields here
-      h5(strong("Add New Linkage Method Here:")),
+      h5(strong("Or, Add a New Linkage Method Here:")),
       fluidRow(
         column(width = 4, div(style = "display: flex; align-items: center;",
           textAreaInput("add_implementation_name", label = "Implementation/Class Name:", value = "",
@@ -373,13 +373,13 @@ linkage_ui <- page_navbar(
                     && input.linkage_algorithm_left_dataset != input.linkage_algorithm_right_dataset",
 
         # Generate the table
-        h5(strong("Add an Empty Algorithm Below, or Select a Row to either Enable/Disable the Algorithm, View/Modify Passes, or View/Modify Ground Truth Variables:")),
+        h5(strong("Select a Row to either Enable/Disable the Algorithm, View/Modify Passes, or View/Modify Ground Truth Variables:")),
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
             dataTableOutput("currently_added_linkage_algorithms"),
           )),
         ),
-        # Buttons below
+        # If a row WAS selected
         conditionalPanel(
           condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
           HTML("<br>"),
@@ -408,7 +408,7 @@ linkage_ui <- page_navbar(
                     )
                   ),
                   column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("linkage_algorithms_to_iterations", "Algorithm Passes", class = "btn-warning"),
+                      actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes", class = "btn-warning"),
 
                       # Add the popover manually
                       h1(tooltip(bs_icon("question-circle"),
@@ -441,7 +441,7 @@ linkage_ui <- page_navbar(
         # Conditional panel for if a row wasn't selected
         conditionalPanel(
           condition = "input.currently_added_linkage_algorithms_rows_selected <= 0",
-          h5(strong("Create empty linkage algorithm here:")),
+          h5(strong("Or, create an empty linkage algorithm here:")),
           h6(p(strong("Note: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
           fluidRow(
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -458,7 +458,7 @@ linkage_ui <- page_navbar(
           ),
           fluidRow(
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              actionButton("add_linkage_algorithm", "Add Linkage Algorithm:", class = "btn-success"),
+              actionButton("add_linkage_algorithm", "Add Linkage Algorithm", class = "btn-success"),
             ))
           )
         ),
@@ -482,7 +482,7 @@ linkage_ui <- page_navbar(
           ),
           fluidRow(
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              actionButton("update_linkage_algorithm", "Update Linkage Algorithm:", class = "btn-success"),
+              actionButton("update_linkage_algorithm", "Update Linkage Algorithm", class = "btn-success"),
             ))
           )
         )
@@ -502,67 +502,459 @@ linkage_ui <- page_navbar(
   #----
   #--------------------#
 
-  #-- LINKAGE ITERATIONS --#
+  #-- VIEW LINKAGE ITERATIONS --#
   #----
-  nav_panel(title = "Linkage Iterations", value = "linkage_iterations_page",
-            fluidPage(
-              "You are on the Linkage Iterations page. Here, you can select a left and right dataset for which you'd like to add iterations
-        for, which will bring up a list of all current algorithms using those two datasets.",
-              HTML("<br><br>"),
-              "Afterwards, you may select an algorithm which will bring up all the current iterations under that specific algorithm. From here,
-        the user can either enter an order for iteration which is an integer greater than 0, a linkage method which will call either
-        a default or custom linkage class, and an acceptance rule if required.",
-              HTML("<br><br>"),
-              actionButton("iteration_acceptance_rule", "Choose a Rule"),
-            )
-  ),
-  #----
-  #------------------------#
+  nav_panel(title = "View Linkage Iterations", value = "view_linkage_iterations_page",
+    fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                               actionButton("view_linkage_iterations_back", "Back", class = "btn-info"),
+        ))
+      ),
 
-  #-- BLOCKING VARIABLES PAGE --#
-  #----
-  nav_panel(title = "Blocking Variables", value = "blocking_variables_page",
-            fluidPage(
-              "You are on the Blocking Variables page. Here, you will upload the two datasets you wish to link, the server end will perform
-        error handling to ensure the provided datasets exist in the database. If successful, you may select an existing algorithm and
-        existing iteration to add to (this can be done using a button which will store the selected algorithm ID and selected iteration
-        ID).",
-              actionButton("blocking_variable_algorithm_id", "Select an Algorithm"),
-              actionButton("blocking_variable_iteration_id", "Select an Iteration"),
-              HTML("<br><br>"),
-              "Once an iteration is selected, two tables may be provided to the user which are the field names in the left and right dataset.
-        And additionally, the user can select a Linkage Rule for blocking on the two datasets. The user will select a field from the left
-        dataset and a field from the right dataset, an optional linkage rule, and then submit the blocking variable.",
-              HTML("<br><br>"),
-              "Once submitted, the user may continue to add as many blocking variables as they would like, viewing the currently added variables
-        in a table on the same page."
+      # Line break to give the back button some space
+      HTML("<br>"),
+
+      # Render the data table of currently available iterations
+      h5(strong("Select An Existing Iteration to Update, or to Enable/Disable:")),
+      h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
+      dataTableOutput("currently_added_linkage_iterations"),
+
+      # If now row is selected, the user may either create a new iteration, or add a previously used iteration
+      # belonging to the same algorithm.
+      conditionalPanel(
+        condition = "input.currently_added_linkage_iterations_rows_selected <= 0",
+
+        #-- Firstly, the user can create a brand new iteration to add --#
+
+        # Line break between the table
+        HTML("<br>"),
+
+        # Create a card for the buttons
+        h5(strong("Or, create a brand new linkage iteration from scratch here:")),
+        div(style = "display: flex; justify-content: center; align-items: center;",
+          card(
+            width = 1,
+            height = 125,
+            full_screen = FALSE,
+            card_header("Create New Linkage Iteration"),
+            card_body(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    actionButton("add_new_linkage_iteration", "Add New Iteration", class = "btn-success"),
+                  )
+                ),
+              )
             )
+          )
+        ),
+
+        #-- Or, the user can select from an existing iteration, making any small changes that they'd like --#
+
+        # Line break between the previous card
+        HTML("<br>"),
+
+        h5(strong("Or, select a previously used iteration to use here:")),
+        layout_column_wrap(
+          width = 1,
+          height = 400,
+          # CARD FOR EXISTING LINKAGE ITERATIONS
+          card(full_screen = TRUE, card_header("Previously Used Linkage Iterations"),
+            card_body(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    dataTableOutput("previously_used_iterations"),
+                  )
+                ),
+              ),
+              # If a row is selected, allow them to review and add the iteration
+              conditionalPanel(
+                condition = "input.previously_used_iterations_rows_selected > 0",
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("add_existing_linkage_iteration", "Review And Add Iteration", class = "btn-success"),
+                    )
+                  ),
+                )
+              )
+            )
+          )
+        )
+      ),
+
+      # If a row IS selected, they may modify it, or enable/disable the iteration
+      conditionalPanel(
+        condition = "input.currently_added_linkage_iterations_rows_selected > 0",
+
+        # Create a card for the buttons
+        div(style = "display: flex; justify-content: center; align-items: center;",
+          card(
+            width = 1,
+            height = 125,
+            full_screen = FALSE,
+            card_header("Iteration Specific Information"),
+            card_body(
+              fluidRow(
+                column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                    actionButton("toggle_linkage_iteration", "Toggle", class = "btn-success"),
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("Toggle whether an algorithm is available to be used in data linkage.",
+                                     "If an algorithm is Enabled, you may select/view/add/modify linkage passes",
+                                     "and ground truth variables for that algorithm, and may also use the algorithm",
+                                     "to perform data linkage. If Disabled, the algorithm, and passes will be ignored,",
+                                     "and it may not be used for data linkage."),
+                               placement = "right",
+                               options = list(container = "body")
+                    ))
+                  )
+                ),
+                column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                    actionButton("modify_linkage_iterations", "Modify", class = "btn-warning"),
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("Modify the blocking variables, matching variables, and general information",
+                                     "of the selected linkage iteration."),
+                               placement = "right",
+                               options = list(container = "body")
+                    ))
+                  )
+                ),
+              )
+            )
+          )
+        )
+      )
+    )
   ),
   #----
   #-----------------------------#
 
-  #-- MATCHING VARIABLES PAGE --#
+  #-- ADD LINKAGE ITERATIONS --#
   #----
-  nav_panel(title = "Matching Variables", value = "matching_variables_page",
-            fluidPage(
-              "You are on the Matching Variables page. Here, you will upload the two datasets you wish to link, the server end will perform
-        error handling to ensure the provided datasets exist in the database. If successful, you may select an existing algorithm and
-        existing iteration to add to (this can be done using a button which will store the selected algorithm ID and selected iteration
-        ID).",
-              actionButton("matching_variable_algorithm_id", "Select an Algorithm"),
-              actionButton("matching_variable_iteration_id", "Select an Iteration"),
-              HTML("<br><br>"),
-              "Once an iteration is selected, two tables may be provided to the user which are the field names in the left and right dataset.
-        And additionally, the user can select a Linkage Rule for matching on the two datasets, along with a Comparison Rule for string
-        matching purposes. The user will select a field from the left dataset and a field from the right dataset, an optional linkage
-        rule, and then submit the matching variable.",
-              HTML("<br><br>"),
-              "Once submitted, the user may continue to add as many matching variables as they would like, viewing the currently added variables
-        in a table on the same page."
+  nav_panel(title = "Add Linkage Iterations", value = "add_linkage_iterations_page",
+    fluidPage(
+      # Render the data table of currently available iterations
+      # h5(strong("Select An Existing Iteration to Update, or to Enable/Disable:")),
+      # h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
+      # dataTableOutput("current_linkage_iterations_while_adding"), # do we want to show the current iterations while they make a new one?
+
+      # Line break between the table
+      HTML("<br>"),
+
+      h5(strong("Step 1: Enter General Information About The Linkage Iteration")),
+      h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
+
+      # Create a card for the general information inputs
+      div(style = "display: flex; justify-content: center; align-items: center;",
+        card(
+          width = 1,
+          height = 200,
+          full_screen = FALSE,
+          card_header("Create New Linkage Iteration"),
+          card_body(
+            fluidRow(
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  textAreaInput("add_iteration_name", label = "Iteration/Pass Name:", value = "",
+                                width = validateCssUnit(500), resize = "none"),
+
+                  # Add the popover manually
+                  h1(tooltip(bs_icon("question-circle"),
+                             paste("The iteration/pass name is a short descriptor to help identify what was linked",
+                                   "on what specific iteration/pass."),
+                             placement = "right",
+                             options = list(container = "body")))
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  numericInput("add_iteration_order", label = "Iteration Order/Priority:", value = NULL,
+                                width = validateCssUnit(500)),
+
+                  # Add the popover manually
+                  h1(tooltip(bs_icon("question-circle"),
+                             paste("The iteration order determines the order in which the iterations/passes of",
+                                   "the selected algorithm are ran in."),
+                             placement = "right",
+                             options = list(container = "body")))
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("add_iteration_linkage_method_input"),
+
+                  # Add the popover manually
+                  h1(tooltip(bs_icon("question-circle"),
+                             paste("The linkage method determines which class will perform the data linkage process."),
+                             placement = "right",
+                             options = list(container = "body")))
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("prepare_iteration_acceptance_rule", "Add Acceptance Rule", class = "btn-warning"),
+
+                  # Add the popover manually
+                  h1(tooltip(bs_icon("question-circle"),
+                             paste("The acceptance rule determines whether a record is considered good during the linkage process."),
+                             placement = "right",
+                             options = list(container = "body")))
+                )
+              ),
             )
+          )
+        )
+      ),
+
+      # Line break between the previous card
+      HTML("<br>"),
+
+      # IF THIS LOOKS TOO BAD, JUST HAVE 3 CARDS TOTAL (GENERAL INFO, BLOCKING KEYS, MATCHING KEYS)!!!
+
+      h5(strong("Step 2: Select the Blocking and Matching Variables")),
+      layout_column_wrap(
+        width = 1/2,
+        height = 500,
+        # CARD FOR BLOCKING VARIABLES
+        card(full_screen = TRUE, card_header("Blocking Variables"),
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  dataTableOutput("add_blocking_variables_table"),
+                )
+              ),
+            ),
+            # If NO ROW IS SELECTED, allow them to add blocking variables
+            conditionalPanel(
+              condition = "input.add_blocking_variables_table_rows_selected <= 0",
+              fluidRow(
+                column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                    uiOutput("add_left_blocking_field_input"),
+                  )
+                ),
+                column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                    uiOutput("add_right_blocking_field_input"),
+                  )
+                ),
+                column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        # Label for the uploaded file name
+                        div(style = "margin-right: 10px;", "Linkage Rules:"),
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                            textOutput("blocking_linkage_rules_add")
+                        ),
+                        # Add linkage rule button
+                        actionButton("prepare_blocking_linkage_rule", label = "", shiny::icon("plus")),
+
+                      ))
+                    )
+                  )
+                )
+              ),
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    actionButton("prepare_blocking_variables", "Add Blocking Variables", class = "btn-success"),
+                  )
+                )
+              )
+            ),
+            # If a row IS selected, allow them to update or drop blocking variables
+            conditionalPanel(
+              condition = "input.add_blocking_variables_table_rows_selected > 0",
+              fluidRow(
+                column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                    uiOutput("update_left_blocking_field_input"),
+                  )
+                ),
+                column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                    uiOutput("update_right_blocking_field_input"),
+                  )
+                ),
+                column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        # Label for the uploaded file name
+                        div(style = "margin-right: 10px;", "Linkage Rules:"),
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                            textOutput("blocking_linkage_rules_update")
+                        ),
+                        # Add linkage rule button
+                        actionButton("prepare_blocking_linkage_rule_update", label = "", shiny::icon("plus")),
+
+                      ))
+                    )
+                  )
+                )
+              ),
+              fluidRow(
+                column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                    actionButton("prepare_blocking_variables_update", "Update Blocking Variables", class = "btn-warning"),
+                  )
+                ),
+                column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                    actionButton("drop_blocking_variables", "Drop Blocking Variables", class = "btn-danger"),
+                  )
+                )
+              )
+            )
+          )
+        ),
+
+        # CARD FOR MATCHING VARIABLES
+        card(full_screen = TRUE, card_header("Matching Variables"),
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  dataTableOutput("add_matching_variables_table"),
+                )
+              ),
+            ),
+            # If a row IS NOT selected, allow them to add matching variables
+            conditionalPanel(
+              condition = "input.add_matching_variables_table_rows_selected <= 0",
+              fluidRow(
+                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                    uiOutput("add_left_matching_field_input"),
+                  )
+                ),
+                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                    uiOutput("add_right_matching_field_input"),
+                  )
+                ),
+                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        # Label for the uploaded file name
+                        div(style = "margin-right: 10px;", "Linkage Rules:"),
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("matching_linkage_rules_add")
+                        ),
+                        # Add linkage rule button
+                        actionButton("prepare_matching_linkage_rule", label = "", shiny::icon("plus")),
+                      ))
+                    )
+                  )
+                ),
+                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        # Label for the uploaded file name
+                        div(style = "margin-right: 10px;", "Comparison Rules:"),
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                            textOutput("matching_comparison_rules_add")
+                        ),
+                        # Add linkage rule button
+                        actionButton("prepare_matching_comparison_rule", label = "", shiny::icon("plus")),
+                      ))
+                    )
+                  )
+                )
+              ),
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    actionButton("prepare_matching_variables", "Add Blocking Variables", class = "btn-success"),
+                  )
+                )
+              )
+            ),
+            # If a row IS selected, allow them to update or drop matching variables
+            conditionalPanel(
+              condition = "input.add_matching_variables_table_rows_selected > 0",
+              fluidRow(
+                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                    uiOutput("update_left_matching_field_input"),
+                  )
+                ),
+                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                    uiOutput("update_right_matching_field_input"),
+                  )
+                ),
+                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        # Label for the uploaded file name
+                        div(style = "margin-right: 10px;", "Linkage Rules:"),
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                            textOutput("matching_linkage_rules_update")
+                        ),
+                        # Add linkage rule button
+                        actionButton("prepare_matching_linkage_rule_update", label = "", shiny::icon("plus")),
+                      ))
+                    )
+                  )
+                ),
+                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        # Label for the uploaded file name
+                        div(style = "margin-right: 10px;", "Comparison Rules:"),
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                            textOutput("matching_comparison_rules_update")
+                        ),
+                        # Add linkage rule button
+                        actionButton("prepare_matching_comparison_rule_update", label = "", shiny::icon("plus")),
+                      ))
+                    )
+                  )
+                )
+              ),
+              fluidRow(
+                column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                    actionButton("prepare_matching_variables_update", "Update Matching Variables", class = "btn-warning"),
+                  )
+                ),
+                column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                    actionButton("drop_matching_variables", "Drop Matching Variables", class = "btn-danger"),
+                  )
+                )
+              )
+            )
+          )
+        )
+      ),
+
+      # Two buttons for returning w/out saving, and for adding the new iteration
+      fluidRow(
+        column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+            actionButton("return_from_add_iterations", "Return Without Saving", class = "btn-danger"),
+          )
+        ),
+        column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+            actionButton("save_iteration", "Save and Modify Iteration", class = "btn-success"),
+          )
+        ),
+      )
+    )
   ),
   #----
-  #-----------------------------#
+  #----------------------------#
+
+  #-- UPDATE LINKAGE ITERATIONS --#
+  #----
+  nav_panel(title = "Update Linkage Iterations", value = "update_linkage_iterations_page",
+
+  ),
+  #----
+  #-------------------------------#
 
   #-- GROUND TRUTH VARIABLES PAGE --#
   #----
@@ -591,7 +983,7 @@ linkage_ui <- page_navbar(
       HTML("<br>"),
 
       # Generate the table
-      h5(strong("Add a New Acceptance Method Below, or Select an Existing Method To Update or Add a Rule To:")),
+      h5(strong("Select an Existing Method To Update or Add a Rule To:")),
       h6(p(strong("NOTE: "), "No acceptance methods can share the same the same name, and no parameters can share the same name within methods.")),
       dataTableOutput("currently_added_acceptance_methods_and_parameters"),
 
@@ -602,7 +994,7 @@ linkage_ui <- page_navbar(
       conditionalPanel(
         condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected <= 0",
 
-        h5(strong("Add a New Acceptance Method and Parameters Here:")),
+        h5(strong("Or, Add a New Acceptance Method and Parameters Here:")),
         layout_column_wrap(
           width = 1/2,
           height = 300,
@@ -918,7 +1310,7 @@ linkage_ui <- page_navbar(
       HTML("<br>"),
 
       # Generate the table
-      h5(strong("Add a New Comparison Method Below, or Select an Existing Method To Update or Add a Rule To:")),
+      h5(strong("Select an Existing Method To Update or Add a Rule To:")),
       h6(p(strong("NOTE: "), "No comparison methods can share the same the same name, and no parameters can share the same name within methods.")),
       dataTableOutput("currently_added_comparison_methods_and_parameters"),
 
@@ -929,7 +1321,7 @@ linkage_ui <- page_navbar(
       conditionalPanel(
         condition = "input.currently_added_comparison_methods_and_parameters_rows_selected <= 0",
 
-        h5(strong("Add a New Comparison Method and Parameters Here:")),
+        h5(strong("Or, Add a New Comparison Method and Parameters Here:")),
         layout_column_wrap(
           width = 1/2,
           height = 300,
@@ -1334,11 +1726,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   nav_hide('main_navbar', 'linkage_rule_page')
   nav_hide('main_navbar', 'acceptance_rules_page')
   nav_hide('main_navbar', 'comparison_rules_page')
+  nav_hide('main_navbar', 'view_linkage_iterations_page')
+  nav_hide('main_navbar', 'add_linkage_iterations_page')
+  nav_hide('main_navbar', 'update_linkage_iterations_page')
 
   # If the user goes off of an inner tab, hide it
   observeEvent(input$main_navbar, {
     # Get the tabs that are not necessary for the user
-    tabs_to_hide <- c("linkage_rule_page", "acceptance_rules_page", "comparison_rules_page")
+    tabs_to_hide <- c("linkage_rule_page", "acceptance_rules_page", "comparison_rules_page",
+                      "view_linkage_iterations_page", "add_linkage_iterations_page", "update_linkage_iterations_page")
     selected_panel <- input$main_navbar
 
     # Hide the page if its not the one you're currently on
@@ -1830,6 +2226,38 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   #-- LINKAGE ALGORITHMS PAGE EVENTS --#
   #----
+  # Brings the user to view the selected linkage algorithm and its iterations
+  observeEvent(input$linkage_algorithms_to_view_linkage_iterations, {
+    # Get the selected row
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    # Grab the algorithm id
+    algorithm_id <- df[selected_row, "algorithm_id"]
+
+    # Update the global variable for the acceptance method id and the return page
+    view_linkage_iterations_algorithm_id     <<- algorithm_id
+    view_linkage_iterations_left_dataset_id  <<- left_dataset_id
+    view_linkage_iterations_right_dataset_id <<- right_dataset_id
+    view_linkage_iterations_return_page      <<- "linkage_algorithms_page"
+
+    # Update the table of iterations on that page
+    output$currently_added_linkage_iterations <- renderDataTable({
+      get_linkage_iterations_view()
+    })
+    output$previously_used_iterations <- renderDataTable({
+      get_linkage_iterations_add_existing()
+    })
+
+    # Show the iterations page
+    nav_show('main_navbar', 'view_linkage_iterations_page')
+    updateNavbarPage(session, "main_navbar", selected = "view_linkage_iterations_page")
+  })
+
   # Creates the select input UI for the left dataset
   get_left_datasets_linkage_algorithms <- function(){
 
@@ -2094,6 +2522,1017 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   })
   #----
   #------------------------------------#
+
+  #-- VIEW LINKAGE ITERATIONS PAGE EVENTS --#
+  #----
+  # Create a global variable for which acceptance method we're wanting to add a rule for, and
+  # as well as the PAGE we came from
+  view_linkage_iterations_algorithm_id     <- 1
+  view_linkage_iterations_left_dataset_id  <- 1
+  view_linkage_iterations_right_dataset_id <- 1
+  view_linkage_iterations_return_page  <- "linkage_algorithms_page"
+
+  # Back button will bring you back to whichever page you came from
+  observeEvent(input$view_linkage_iterations_back, {
+    # Show return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = view_linkage_iterations_return_page)
+  })
+
+  # Function for creating the table of the currently selected algorithms iterations
+  get_linkage_iterations_view <- function(){
+    algorithm_id <- view_linkage_iterations_algorithm_id
+
+    # Query to get all linkage method information from the 'linkage_methods' table
+    query <- paste('SELECT * FROM linkage_iterations
+                WHERE algorithm_id =', algorithm_id,
+                   'ORDER BY iteration_num ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Loop through each row in the dataframe to replace the acceptance_rule_id with the method name and parameters & the linkage method
+    if(nrow(df) > 0){
+      for (i in 1:nrow(df)) {
+        # Get the acceptance_rule_id for the current row
+        acceptance_rule_id <- df$acceptance_rule_id[i]
+        if (nrow(df) > 0 && !is.na(acceptance_rule_id)) {
+          # Query to get the acceptance method name from the acceptance_rules table
+          method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                             WHERE acceptance_rule_id =', acceptance_rule_id)
+          method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+          # Query to get the associated parameters for the acceptance_rule_id
+          params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+          params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+          # Combine the parameters into a string
+          params_str <- paste(params_df$parameter, collapse = ", ")
+
+          # Create the final string "method_name (key1=value1, key2=value2)"
+          method_with_params <- paste0(method_name, " (", params_str, ")")
+
+          # Replace the acceptance_rule_id with the method and parameters string
+          df$acceptance_rule_id[i] <- method_with_params
+        }
+
+        # Get the linkage_method_id for the current row
+        linkage_method_id <- df$linkage_method_id[i]
+        if (nrow(df) > 0 && !is.na(linkage_method_id)){
+          # Query to get the linkage method
+          method_query <- paste('SELECT technique_label, implementation_name FROM linkage_iterations li
+                             JOIN linkage_methods lm on li.linkage_method_id = lm.linkage_method_id
+                             WHERE lm.linkage_method_id =', linkage_method_id)
+          method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+          # Create a string with the implementation name and label together
+          linkage_method_and_technique <- paste0(method_df$implementation_name, " (", method_df$technique_label, ")")
+
+          # Replace the linkage method ID with the string
+          suppressWarnings(df$linkage_method_id[i] <- linkage_method_and_technique)
+        }
+
+        # Get the iteration_id for the current row
+        iteration_id <- df$iteration_id[i]
+
+        # Query to get blocking LEFT fields
+        blocking_query <- paste('SELECT field_name FROM blocking_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', iteration_id)
+        blocking_fields <- dbGetQuery(linkage_metadata_conn, blocking_query)$field_name
+        blocking_left_fields <- paste(blocking_fields, collapse = ", ")
+
+        # Add blocking fields to the dataframe
+        df$blocking_left_fields[i] <- blocking_left_fields
+
+        # Query to get matching LEFT fields
+        matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', iteration_id)
+        matching_df <- dbGetQuery(linkage_metadata_conn, matching_query)
+
+        # Loop through each matching variable to get its comparison methods
+        for(j in 1:nrow(matching_df)){
+          # Get the comparison_rule_id for this row
+          comparison_rule_id <- matching_df$comparison_rule_id[j]
+          if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
+            # Query to get the acceptance method name from the comparison_rules table
+            method_query <- paste('SELECT method_name FROM comparison_rules cr
+                             JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                             WHERE comparison_rule_id =', comparison_rule_id)
+            method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+            # Query to get the associated parameters for the comparison_rule_id
+            params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+            params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+            # Combine the parameters into a string
+            params_str <- paste(params_df$parameter, collapse = ", ")
+
+            # Create the final string "method_name (key1=value1, key2=value2)"
+            method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+
+            # Replace the comparison_rule_id with the method and parameters string
+            matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+          }
+        }
+
+        matching_fields <- matching_df$field_name
+        matching_left_fields <- paste(matching_fields, collapse = ", ")
+
+        # Add blocking fields to the dataframe
+        df$matching_left_fields[i] <- matching_left_fields
+      }
+    }
+    else{
+      # Create an empty data frame if no iterations exist
+      df <- data.frame(
+        algorithm_id = numeric(),
+        iteration_id = numeric(),
+        iteration_name = character(),
+        iteration_num = numeric(),
+        modified_date = character(),
+        modified_by = character(),
+        enabled = numeric(),
+        linkage_method_id = numeric(),
+        acceptance_rule_id = numeric(),
+        blocking_left_fields = character(),
+        matching_left_fields = character()
+      )
+    }
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'iteration_name'] <- 'Iteration Name'
+    names(df)[names(df) == 'iteration_num'] <- 'Iteration Order/Priority'
+    names(df)[names(df) == 'modified_date'] <- 'Modified Date'
+    names(df)[names(df) == 'modified_by'] <- 'Modified By'
+    names(df)[names(df) == 'enabled'] <- 'Enabled'
+    names(df)[names(df) == 'linkage_method_id'] <- 'Linkage Method'
+    names(df)[names(df) == 'acceptance_rule_id'] <- 'Acceptance Rules'
+    names(df)[names(df) == 'blocking_left_fields'] <- 'Blocking Keys'
+    names(df)[names(df) == 'matching_left_fields'] <- 'Matching Keys'
+
+    # With algorithms, we'll replace the enabled [0, 1] with [No, Yes]
+    df$Enabled <- str_replace(df$Enabled, "0", "No")
+    df$Enabled <- str_replace(df$Enabled, "1", "Yes")
+
+    # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
+    df <- subset(df, select = -c(algorithm_id, iteration_id))
+
+    # Reorder the columns so that 'Blocking Keys' and 'Matching Keys' come after 'Linkage Method'
+    df <- df[, c('Iteration Name', 'Iteration Order/Priority', 'Linkage Method', 'Blocking Keys', 'Matching Keys',
+                 'Acceptance Rules', 'Modified Date', 'Modified By', 'Enabled')]
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+  }
+
+  # Renders the data table of iterations that can be modified
+  output$currently_added_linkage_iterations <- renderDataTable({
+    get_linkage_iterations_view()
+  })
+
+  # Function for creating the table of existing iterations that we may add (NOT BELONGING TO THIS ALGORITHM)
+  get_linkage_iterations_add_existing <- function(){
+    # Query to get all the algorithm IDs that belong to these two datasets
+    query <- paste('SELECT * FROM linkage_algorithms
+                    WHERE dataset_id_left =', view_linkage_iterations_left_dataset_id, 'AND dataset_id_right =', view_linkage_iterations_right_dataset_id,
+                   'ORDER BY algorithm_id ASC;')
+    algorithms_df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Go through each row in all the linkage algorithms, and bind the dataframe to one large one
+    df <- data.frame()
+
+    if(nrow(algorithms_df) > 0){
+      for(i in 1:nrow(algorithms_df)){
+        # Get the algorithm ID
+        algorithm_id <- algorithms_df$algorithm_id[i]
+
+        # If this isnt the current algorithm we're viewing, ignore it, otherwise, get the rows and bind them
+        if(algorithm_id != view_linkage_iterations_algorithm_id){
+          # Query to get all linkage iteration information from the 'linkage_iterations' table
+          query <- paste('SELECT * FROM linkage_iterations
+                WHERE algorithm_id =', algorithm_id,
+                         'ORDER BY iteration_num ASC;')
+          df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+          # Bind the data frame
+          df <- rbind(df, df_temp)
+        }
+      }
+    }
+
+    # Loop through each row in the dataframe to replace the acceptance_rule_id with the method name and parameters & the linkage method
+    if(nrow(df) > 0){
+      for (i in 1:nrow(df)) {
+        # Get the acceptance_rule_id for the current row
+        acceptance_rule_id <- df$acceptance_rule_id[i]
+        if (nrow(df) > 0 && !is.na(acceptance_rule_id)) {
+          # Query to get the acceptance method name from the acceptance_rules table
+          method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                             WHERE acceptance_rule_id =', acceptance_rule_id)
+          method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+          # Query to get the associated parameters for the acceptance_rule_id
+          params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+          params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+          # Combine the parameters into a string
+          params_str <- paste(params_df$parameter, collapse = ", ")
+
+          # Create the final string "method_name (key1=value1, key2=value2)"
+          method_with_params <- paste0(method_name, " (", params_str, ")")
+
+          # Replace the acceptance_rule_id with the method and parameters string
+          df$acceptance_rule_id[i] <- method_with_params
+        }
+
+        # Get the linkage_method_id for the current row
+        linkage_method_id <- df$linkage_method_id[i]
+        if (nrow(df) > 0 && !is.na(linkage_method_id)){
+          # Query to get the linkage method
+          method_query <- paste('SELECT technique_label, implementation_name FROM linkage_iterations li
+                             JOIN linkage_methods lm on li.linkage_method_id = lm.linkage_method_id
+                             WHERE lm.linkage_method_id =', linkage_method_id)
+          method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+          # Create a string with the implementation name and label together
+          linkage_method_and_technique <- paste0(method_df$implementation_name, " (", method_df$technique_label, ")")
+
+          # Replace the linkage method ID with the string
+          suppressWarnings(df$linkage_method_id[i] <- linkage_method_and_technique)
+        }
+
+        # Get the iteration_id for the current row
+        iteration_id <- df$iteration_id[i]
+
+        # Query to get blocking LEFT fields
+        blocking_query <- paste('SELECT field_name FROM blocking_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', iteration_id)
+        blocking_fields <- dbGetQuery(linkage_metadata_conn, blocking_query)$field_name
+        blocking_left_fields <- paste(blocking_fields, collapse = ", ")
+
+        # Add blocking fields to the dataframe
+        df$blocking_left_fields[i] <- blocking_left_fields
+
+        # Query to get matching LEFT fields
+        matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', iteration_id)
+        matching_df <- dbGetQuery(linkage_metadata_conn, matching_query)
+
+        # Loop through each matching variable to get its comparison methods
+        for(j in 1:nrow(matching_df)){
+          # Get the comparison_rule_id for this row
+          comparison_rule_id <- matching_df$comparison_rule_id[j]
+          if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
+            # Query to get the acceptance method name from the comparison_rules table
+            method_query <- paste('SELECT method_name FROM comparison_rules cr
+                             JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                             WHERE comparison_rule_id =', comparison_rule_id)
+            method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+            # Query to get the associated parameters for the comparison_rule_id
+            params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+            params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+            # Combine the parameters into a string
+            params_str <- paste(params_df$parameter, collapse = ", ")
+
+            # Create the final string "method_name (key1=value1, key2=value2)"
+            method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+
+            # Replace the comparison_rule_id with the method and parameters string
+            matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+          }
+        }
+
+        matching_fields <- matching_df$field_name
+        matching_left_fields <- paste(matching_fields, collapse = ", ")
+
+        # Add blocking fields to the dataframe
+        df$matching_left_fields[i] <- matching_left_fields
+      }
+    }
+    else{
+      # Create an empty data frame if no iterations exist
+      df <- data.frame(
+        algorithm_id = numeric(),
+        iteration_id = numeric(),
+        iteration_name = character(),
+        iteration_num = numeric(),
+        modified_date = character(),
+        modified_by = character(),
+        enabled = numeric(),
+        linkage_method_id = numeric(),
+        acceptance_rule_id = numeric(),
+        blocking_left_fields = character(),
+        matching_left_fields = character()
+      )
+    }
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'iteration_name'] <- 'Iteration Name'
+    names(df)[names(df) == 'iteration_num'] <- 'Iteration Order/Priority'
+    names(df)[names(df) == 'modified_date'] <- 'Modified Date'
+    names(df)[names(df) == 'modified_by'] <- 'Modified By'
+    names(df)[names(df) == 'enabled'] <- 'Enabled'
+    names(df)[names(df) == 'linkage_method_id'] <- 'Linkage Method'
+    names(df)[names(df) == 'acceptance_rule_id'] <- 'Acceptance Rules'
+    names(df)[names(df) == 'blocking_left_fields'] <- 'Blocking Keys'
+    names(df)[names(df) == 'matching_left_fields'] <- 'Matching Keys'
+
+    # With algorithms, we'll replace the enabled [0, 1] with [No, Yes]
+    df$Enabled <- str_replace(df$Enabled, "0", "No")
+    df$Enabled <- str_replace(df$Enabled, "1", "Yes")
+
+    # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
+    df <- subset(df, select = -c(algorithm_id, iteration_id))
+
+    # Reorder the columns so that 'Blocking Keys' and 'Matching Keys' come after 'Linkage Method'
+    df <- df[, c('Iteration Name', 'Iteration Order/Priority', 'Linkage Method', 'Blocking Keys', 'Matching Keys',
+                 'Acceptance Rules', 'Modified Date', 'Modified By', 'Enabled')]
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+  }
+
+  # Renders the data table of previously used iterations that can be added to the selected algorithm
+  output$previously_used_iterations <- renderDataTable({
+    get_linkage_iterations_add_existing()
+  })
+
+  # If user wants to create a new iteration from scratch, send them to the next page
+  observeEvent(input$add_new_linkage_iteration, {
+    # Set the global variable values to being empty, since we're starting from scratch
+    left_blocking_keys_to_add        <<- c()
+    right_blocking_keys_to_add       <<- c()
+    blocking_linkage_rules_to_add    <<- c()
+
+    left_matching_keys_to_add        <<- c()
+    right_matching_keys_to_add       <<- c()
+    matching_linkage_rules_to_add    <<- c()
+    matching_comparison_rules_to_add <<- c()
+
+    # Set the back page to here and give them the algorithm ID we're part of
+    add_linkage_iterations_algorithm_id <<- view_linkage_iterations_algorithm_id
+    add_linkage_iterations_return_page  <<- "view_linkage_iterations_page"
+    add_linkage_iterations_left_dataset_id  <<- view_linkage_iterations_left_dataset_id
+    add_linkage_iterations_right_dataset_id <<- view_linkage_iterations_right_dataset_id
+
+    # Update the table of matching and blocking keys on that page
+    output$add_blocking_variables_table <- renderDataTable({
+      get_blocking_keys_to_add()
+    })
+    output$add_matching_variables_table <- renderDataTable({
+      get_matching_keys_to_add()
+    })
+    output$add_iteration_linkage_method_input <- renderUI({
+      get_linkage_methods_to_add()
+    })
+    output$add_left_blocking_field_input <- renderUI({
+      get_left_dataset_blocking_fields_to_add()
+    })
+    output$add_right_blocking_field_input <- renderUI({
+      get_right_dataset_blocking_fields_to_add()
+    })
+    output$update_left_blocking_field_input <- renderUI({
+      get_left_dataset_blocking_fields_to_update()
+    })
+    output$update_right_blocking_field_input <- renderUI({
+      get_right_dataset_blocking_fields_to_update()
+    })
+    output$add_left_matching_field_input <- renderUI({
+      get_left_dataset_matching_fields_to_add()
+    })
+    output$add_right_matching_field_input <- renderUI({
+      get_right_dataset_matching_fields_to_add()
+    })
+    output$update_left_matching_field_input <- renderUI({
+      get_left_dataset_matching_fields_to_update()
+    })
+    output$update_right_matching_field_input <- renderUI({
+      get_right_dataset_matching_fields_to_update()
+    })
+
+    # Show the add linkage iteration page
+    nav_show('main_navbar', 'add_linkage_iterations_page')
+    updateNavbarPage(session, "main_navbar", selected = "add_linkage_iterations_page")
+  })
+
+  # If user wants to create a new iteration using a previously defined one
+  observeEvent(input$add_existing_linkage_iteration, {
+    # Query to get all the algorithm IDs that belong to these two datasets
+    query <- paste('SELECT * FROM linkage_algorithms
+                    WHERE dataset_id_left =', view_linkage_iterations_left_dataset_id, 'AND dataset_id_right =', view_linkage_iterations_right_dataset_id,
+                   'ORDER BY algorithm_id ASC;')
+    algorithms_df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Go through each row in all the linkage algorithms, and bind the dataframe to one large one
+    df <- data.frame()
+
+    if(nrow(algorithms_df) > 0){
+      for(i in 1:nrow(algorithms_df)){
+        # Get the algorithm ID
+        algorithm_id <- algorithms_df$algorithm_id[i]
+
+        # If this isnt the current algorithm we're viewing, ignore it, otherwise, get the rows and bind them
+        if(algorithm_id != view_linkage_iterations_algorithm_id){
+          # Query to get all linkage iteration information from the 'linkage_iterations' table
+          query <- paste('SELECT * FROM linkage_iterations
+                WHERE algorithm_id =', algorithm_id,
+                         'ORDER BY iteration_num ASC;')
+          df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+          # Bind the data frame
+          df <- rbind(df, df_temp)
+        }
+      }
+    }
+
+    # With the completed data frame, get the row we selected
+    selected_row <- input$previously_used_iterations_rows_selected
+
+    # Grab the iteration id
+    iteration_id <- df[selected_row, "iteration_id"]
+
+    # Get the blocking variables for this iteration
+    query <- paste('SELECT * FROM blocking_variables
+                WHERE iteration_id =', iteration_id,
+                   'ORDER BY iteration_id ASC;')
+    df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Prepare the global variables
+    left_blocking_keys_to_add        <<- df_temp$left_dataset_field_id
+    right_blocking_keys_to_add       <<- df_temp$right_dataset_field_id
+    blocking_linkage_rules_to_add    <<- df_temp$linkage_rule_id
+
+    # Get the blocking variables for this iteration
+    query <- paste('SELECT * FROM matching_variables
+                WHERE iteration_id =', iteration_id,
+                   'ORDER BY iteration_id ASC;')
+    df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Prepare the global variables
+    left_matching_keys_to_add        <<- df_temp$left_dataset_field_id
+    right_matching_keys_to_add       <<- df_temp$right_dataset_field_id
+    matching_linkage_rules_to_add    <<- df_temp$linkage_rule_id
+    matching_comparison_rules_to_add <<- df_temp$comparison_rule_id
+
+    # Set the back page to here and give them the algorithm ID we're part of
+    add_linkage_iterations_algorithm_id <<- view_linkage_iterations_algorithm_id
+    add_linkage_iterations_return_page  <<- "view_linkage_iterations_page"
+    add_linkage_iterations_left_dataset_id  <<- view_linkage_iterations_left_dataset_id
+    add_linkage_iterations_right_dataset_id <<- view_linkage_iterations_right_dataset_id
+
+    # Update the table of matching and blocking keys on that page
+    output$add_blocking_variables_table <- renderDataTable({
+      get_blocking_keys_to_add()
+    })
+    output$add_matching_variables_table <- renderDataTable({
+      get_matching_keys_to_add()
+    })
+    output$add_iteration_linkage_method_input <- renderUI({
+      get_linkage_methods_to_add()
+    })
+    output$add_left_blocking_field_input <- renderUI({
+      get_left_dataset_blocking_fields_to_add()
+    })
+    output$add_right_blocking_field_input <- renderUI({
+      get_right_dataset_blocking_fields_to_add()
+    })
+    output$update_left_blocking_field_input <- renderUI({
+      get_left_dataset_blocking_fields_to_update()
+    })
+    output$update_right_blocking_field_input <- renderUI({
+      get_right_dataset_blocking_fields_to_update()
+    })
+    output$add_left_matching_field_input <- renderUI({
+      get_left_dataset_matching_fields_to_add()
+    })
+    output$add_right_matching_field_input <- renderUI({
+      get_right_dataset_matching_fields_to_add()
+    })
+    output$update_left_matching_field_input <- renderUI({
+      get_left_dataset_matching_fields_to_update()
+    })
+    output$update_right_matching_field_input <- renderUI({
+      get_right_dataset_matching_fields_to_update()
+    })
+
+    # Show the add linkage iteration page
+    nav_show('main_navbar', 'add_linkage_iterations_page')
+    updateNavbarPage(session, "main_navbar", selected = "add_linkage_iterations_page")
+  })
+  #----
+  #-----------------------------------------#
+
+  # IDEA:
+  #   To reuse essentially all of this code, use another global variable called
+  #   "linkage_iteration_updating" <- FALSE, and when we come to this page by
+  #   clicking the "Modify Pass" button, set it to true, and then when we want to
+  #   save and return, we'll perform queries relating to actually UPDATING the
+  #   database. And when its set to false. Behave like normal here!
+  #-- ADD LINKAGE ITERATION PAGE EVENTS --#
+  #----
+  # GLOBAL VARIABLES FOR RETURNING TO PREVIOUS PAGE
+  add_linkage_iterations_algorithm_id <- 1
+  add_linkage_iterations_left_dataset_id  <- 1
+  add_linkage_iterations_right_dataset_id <- 1
+  add_linkage_iterations_return_page  <- "view_linkage_algorithms_page"
+
+  # GLOBAL VARIABLES FOR STORING THE TEMPORARY BLOCKING AND MATCHING KEYS + THEIR RULES
+  left_blocking_keys_to_add        <- c()
+  right_blocking_keys_to_add       <- c()
+  blocking_linkage_rules_to_add    <- c()
+
+  left_matching_keys_to_add        <- c()
+  right_matching_keys_to_add       <- c()
+  matching_linkage_rules_to_add    <- c()
+  matching_comparison_rules_to_add <- c()
+
+  #-- SELECT INPUT UI FOR ADDING AND UPDATING BLOCKING FIELDS --#
+  # Creates the select input UI for available left fields
+  get_left_dataset_blocking_fields_to_add <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", add_linkage_iterations_left_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("left_blocking_field_add", label = "Left Dataset Field:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Creates the select input UI for available right fields
+  get_right_dataset_blocking_fields_to_add <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", add_linkage_iterations_right_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("right_blocking_field_add", label = "Right Dataset Field:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Creates the select input UI for available left fields
+  get_left_dataset_blocking_fields_to_update <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", add_linkage_iterations_left_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("left_blocking_field_update", label = "Left Dataset Field:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Creates the select input UI for available right fields
+  get_right_dataset_blocking_fields_to_update <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", add_linkage_iterations_right_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("right_blocking_field_update", label = "Right Dataset Field:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Renders the UI for the left blocking field add select input
+  output$add_left_blocking_field_input <- renderUI({
+    get_left_dataset_blocking_fields_to_add()
+  })
+
+  # Renders the UI for the right blocking field add select input
+  output$add_right_blocking_field_input <- renderUI({
+    get_right_dataset_blocking_fields_to_add()
+  })
+
+  # Renders the UI for the left blocking field update select input
+  output$update_left_blocking_field_input <- renderUI({
+    get_left_dataset_blocking_fields_to_update()
+  })
+
+  # Renders the UI for the right blocking field update select input
+  output$update_right_blocking_field_input <- renderUI({
+    get_right_dataset_blocking_fields_to_update()
+  })
+  #-------------------------------------------------------------#
+
+  #-- SELECT INPUT UI FOR ADDING AND UPDATING MATCHING FIELDS --#
+  # Creates the select input UI for available left fields
+  get_left_dataset_matching_fields_to_add <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", add_linkage_iterations_left_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("left_matching_field_add", label = "Left Dataset Field:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Creates the select input UI for available right fields
+  get_right_dataset_matching_fields_to_add <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", add_linkage_iterations_right_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("right_matching_field_add", label = "Right Dataset Field:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Creates the select input UI for available left fields
+  get_left_dataset_matching_fields_to_update <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", add_linkage_iterations_left_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("left_matching_field_update", label = "Left Dataset Field:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Creates the select input UI for available right fields
+  get_right_dataset_matching_fields_to_update <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", add_linkage_iterations_right_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("right_matching_field_update", label = "Right Dataset Field:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Renders the UI for the left blocking field add select input
+  output$add_left_matching_field_input <- renderUI({
+    get_left_dataset_matching_fields_to_add()
+  })
+
+  # Renders the UI for the right blocking field add select input
+  output$add_right_matching_field_input <- renderUI({
+    get_right_dataset_matching_fields_to_add()
+  })
+
+  # Renders the UI for the left blocking field update select input
+  output$update_left_matching_field_input <- renderUI({
+    get_left_dataset_matching_fields_to_update()
+  })
+
+  # Renders the UI for the right blocking field update select input
+  output$update_right_matching_field_input <- renderUI({
+    get_right_dataset_matching_fields_to_update()
+  })
+  #-------------------------------------------------------------#
+
+  # Creates the select input UI for the left dataset
+  get_linkage_methods_to_add <- function(){
+
+    # Get all linkage methods
+    query <- paste('SELECT * FROM linkage_methods
+                ORDER BY linkage_method_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # For all method IDs, combine the label and implementation name
+    for(i in 1:nrow(df)){
+      # Create a string with the implementation name and label together
+      linkage_method_and_technique <- paste0(df$implementation_name[i], " (", df$technique_label[i], ")")
+
+      # Replace the linkage method ID with the string
+      df$implementation_name[i] <- linkage_method_and_technique
+    }
+
+    # Extract columns from query result
+    choices <- setNames(df$linkage_method_id, df$implementation_name)
+
+    # Add the additional look up value where the first choice is 'null'
+    choices <- c(" " = "null", choices)
+
+    # Create select input with dynamic choices
+    span(selectInput("add_iteration_linkage_method", label = "Linkage Method & Technique:",
+                     choices = choices, width = validateCssUnit(300)))
+  }
+
+  # Renders the UI for the linkage method select input
+  output$add_iteration_linkage_method_input <- renderUI({
+    get_linkage_methods_to_add()
+  })
+
+  # Function for creating the table of blocking keys to be added
+  get_blocking_keys_to_add <- function(){
+    # Create a data frame from all the parameter keys
+    df <- data.frame(
+      left_keys  = if(length(left_blocking_keys_to_add) == 0) numeric() else left_blocking_keys_to_add,
+      right_keys = if(length(right_blocking_keys_to_add) == 0) numeric() else right_blocking_keys_to_add,
+      rules      = if(length(blocking_linkage_rules_to_add) == 0) numeric() else blocking_linkage_rules_to_add
+    )
+
+    # If we have rows, perform queries to convert the IDs into actual text
+    if(nrow(df) > 0){
+      # Loop through each row in the dataframe to replace the linkage_rule_id with the method name and parameters
+      for (i in 1:nrow(df)) {
+
+        # Get the left blocking key for the current row
+        left_blocking_id <- df$left_keys[i]
+        if(!is.na(left_blocking_id)){
+          # Query to get the left blocking field name
+          query <- paste('SELECT * FROM dataset_fields
+                           WHERE field_id =', left_blocking_id)
+          df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+          # Grab the field name from the data frame
+          field_name <- df_temp$field_name
+
+          # Place it into the left_keys location
+          df$left_keys[i] <- field_name
+        }
+
+        # Get the left blocking key for the current row
+        right_blocking_id <- df$right_keys[i]
+        if(!is.na(right_blocking_id)){
+          # Query to get the left blocking field name
+          query <- paste('SELECT * FROM dataset_fields
+                           WHERE field_id =', right_blocking_id)
+          df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+          # Grab the field name from the data frame
+          field_name <- df_temp$field_name
+
+          # Place it into the right_keys location
+          df$right_keys[i] <- field_name
+        }
+
+        # Get the linkage_rule_id for the current row
+        linkage_rule_id <- df$rules[i]
+        if (nrow(df) > 0 && !is.na(linkage_rule_id)){
+          # Query to get the acceptance method name from the comparison_rules table
+          method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+          method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+          # We'll start with "Alternative Field"
+          alt_field_val <- method_df$alternate_field_value
+          if(!is.na(alt_field_val)){
+            method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+          }
+
+          # Next we'll handle the "Integer Variance"
+          int_variance <- method_df$integer_value_variance
+          if(!is.na(int_variance)){
+            method_df$integer_value_variance <- paste0("±", int_variance)
+          }
+
+          # Next we'll handle "Name Substring"
+          name_substring <- method_df$substring_length
+          if(!is.na(name_substring)){
+            method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+          }
+
+          # With standardized names, we'll replace the [0, 1] with [No, Yes]
+          method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+          # Rename the column names to be easier to read when printed in table format
+          names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+          names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+          names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+          names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+          # Drop the linkage_rule_id from the table
+          method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+          # Initialize an empty list to store non-NA values
+          non_na_values <- list()
+
+          # Loop through each column in the current row
+          for (col_name in colnames(method_df)) {
+            value <- method_df[1, col_name]
+
+            # If the value is not NA, add it to the list
+            if (!is.na(value)) {
+              non_na_values <- c(non_na_values, paste0(value))
+            }
+          }
+
+          # Combine the non-NA values into a single string, separated by commas
+          combined_values <- paste(non_na_values, collapse = ", ")
+
+          # Place the combined values into the data frame
+          df$rules[i] <- combined_values
+        }
+      }
+    }
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'left_keys']  <- 'Blocking Left Field'
+    names(df)[names(df) == 'right_keys'] <- 'Blocking Right Field'
+    names(df)[names(df) == 'rules']      <- 'Linkage Rules'
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+  }
+
+  # Renders the data table of acceptance parameters that are to be added
+  output$add_blocking_variables_table <- renderDataTable({
+    get_blocking_keys_to_add()
+  })
+
+  # Function for creating the table of matching keys to be added
+  get_matching_keys_to_add <- function(){
+    # Create a data frame from all the parameter keys
+    df <- data.frame(
+      left_keys  = if(length(left_matching_keys_to_add) == 0) numeric() else left_matching_keys_to_add,
+      right_keys = if(length(right_matching_keys_to_add) == 0) numeric() else right_matching_keys_to_add,
+      link_rules = if(length(matching_linkage_rules_to_add) == 0) numeric() else matching_linkage_rules_to_add,
+      comp_rules = if(length(matching_comparison_rules_to_add) == 0) numeric() else matching_comparison_rules_to_add
+    )
+
+    # If we have rows, perform queries to conver the IDs into actual text
+    if(nrow(df) > 0){
+      # Loop through each row in the dataframe to replace the linkage_rule_id with the method name and parameters
+      for (i in 1:nrow(df)) {
+
+        # Get the left blocking key for the current row
+        left_blocking_id <- df$left_keys[i]
+        if(!is.na(left_blocking_id)){
+          # Query to get the left blocking field name
+          query <- paste('SELECT * FROM dataset_fields
+                           WHERE field_id =', left_blocking_id)
+          df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+          # Grab the field name from the data frame
+          field_name <- df_temp$field_name
+
+          # Place it into the left_keys location
+          df$left_keys[i] <- field_name
+        }
+
+        # Get the left blocking key for the current row
+        right_blocking_id <- df$right_keys[i]
+        if(!is.na(right_blocking_id)){
+          # Query to get the left blocking field name
+          query <- paste('SELECT * FROM dataset_fields
+                           WHERE field_id =', right_blocking_id)
+          df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+          # Grab the field name from the data frame
+          field_name <- df_temp$field_name
+
+          # Place it into the right_keys location
+          df$right_keys[i] <- field_name
+        }
+
+        # Get the linkage_rule_id for the current row
+        linkage_rule_id <- df$link_rules[i]
+        if (nrow(df) > 0 && !is.na(linkage_rule_id)){
+          # Query to get the acceptance method name from the comparison_rules table
+          method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+          method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+          # We'll start with "Alternative Field"
+          alt_field_val <- method_df$alternate_field_value
+          if(!is.na(alt_field_val)){
+            method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+          }
+
+          # Next we'll handle the "Integer Variance"
+          int_variance <- method_df$integer_value_variance
+          if(!is.na(int_variance)){
+            method_df$integer_value_variance <- paste0("±", int_variance)
+          }
+
+          # Next we'll handle "Name Substring"
+          name_substring <- method_df$substring_length
+          if(!is.na(name_substring)){
+            method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+          }
+
+          # With standardized names, we'll replace the [0, 1] with [No, Yes]
+          method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+          # Rename the column names to be easier to read when printed in table format
+          names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+          names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+          names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+          names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+          # Drop the linkage_rule_id from the table
+          method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+          # Initialize an empty list to store non-NA values
+          non_na_values <- list()
+
+          # Loop through each column in the current row
+          for (col_name in colnames(method_df)) {
+            value <- method_df[1, col_name]
+
+            # If the value is not NA, add it to the list
+            if (!is.na(value)) {
+              non_na_values <- c(non_na_values, paste0(value))
+            }
+          }
+
+          # Combine the non-NA values into a single string, separated by commas
+          combined_values <- paste(non_na_values, collapse = ", ")
+
+          # Place the combined values into the data frame
+          df$link_rules[i] <- combined_values
+        }
+
+        # Get the comparison_rule_id for the current row
+        comparison_rule_id <- df$comp_rules[i]
+        if(nrow(df) > 0 && !is.na(comparison_rule_id)){
+          # Query to get the acceptance method name from the comparison_rules table
+          method_query <- paste('SELECT method_name FROM comparison_rules cr
+                           JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                           WHERE comparison_rule_id =', comparison_rule_id)
+          method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+          # Query to get the associated parameters for the comparison_rule_id
+          params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+          params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+          # Combine the parameters into a string
+          params_str <- paste(params_df$parameter, collapse = ", ")
+
+          # Create the final string "method_name (key1=value1, key2=value2)"
+          method_with_params <- paste0(method_name, " (", params_str, ")")
+
+          # Replace the comparison_rule_id with the method and parameters string
+          df$comp_rules[i] <- method_with_params
+        }
+      }
+    }
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'left_keys']  <- 'Matching Left Field'
+    names(df)[names(df) == 'right_keys'] <- 'Matching Right Field'
+    names(df)[names(df) == 'link_rules'] <- 'Linkage Rules'
+    names(df)[names(df) == 'comp_rules'] <- 'Comparison Rules'
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+  }
+
+  # Renders the data table of acceptance parameters that are to be added
+  output$add_matching_variables_table <- renderDataTable({
+    get_matching_keys_to_add()
+  })
+
+  # If user returns without saving, bring them back to the view page
+  observeEvent(input$return_from_add_iterations, {
+    # Show return to the page you came from
+    nav_show("main_navbar", add_linkage_iterations_return_page)
+    updateNavbarPage(session, "main_navbar", selected = add_linkage_iterations_return_page)
+  })
+  #----
+  #---------------------------------------#
 
   #-- ACCEPTANCE METHODS & PARAMETERS PAGE EVENTS --#
   #----
