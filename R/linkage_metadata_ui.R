@@ -86,6 +86,11 @@ linkage_ui <- page_navbar(
           border: 1px solid #ddd;  /* Border styling */
           padding: 10px;  /* Adjust padding */
         }"
+      ),
+      HTML("
+          .modal{
+            z-index: 1150;
+        }"
       )
     ),
     tags$head(tags$style('h6 {color:red;}')),
@@ -652,7 +657,7 @@ linkage_ui <- page_navbar(
       div(style = "display: flex; justify-content: center; align-items: center;",
         card(
           width = 1,
-          height = 200,
+          height = 300,
           full_screen = FALSE,
           card_header("Create New Linkage Iteration"),
           card_body(
@@ -692,13 +697,20 @@ linkage_ui <- page_navbar(
                 )
               ),
               column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  actionButton("prepare_iteration_acceptance_rule", "Add Acceptance Rule", class = "btn-warning"),
-
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The acceptance rule determines whether a record is considered good during the linkage process."),
-                             placement = "right",
-                             options = list(container = "body")))
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Acceptance Rule:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("selected_iteration_acceptance_rule")
+                      ),
+                      # Add linkage rule button
+                      actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("plus")),
+                    ))
+                  )
                 )
               ),
             )
@@ -713,7 +725,7 @@ linkage_ui <- page_navbar(
 
       h5(strong("Step 2: Select the Blocking and Matching Variables")),
       layout_column_wrap(
-        width = 1/2,
+        width = 1,
         height = 500,
         # CARD FOR BLOCKING VARIABLES
         card(full_screen = TRUE, card_header("Blocking Variables"),
@@ -865,7 +877,7 @@ linkage_ui <- page_navbar(
               ),
               fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("prepare_matching_variables", "Add Blocking Variables", class = "btn-success"),
+                    actionButton("prepare_matching_variables", "Add Matching Variables", class = "btn-success"),
                   )
                 )
               )
@@ -1743,6 +1755,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
         nav_hide('main_navbar', tab)
       }
     }
+
+    # Remove the modal
+    removeModal()
   })
   #-------------------------#
 
@@ -2345,6 +2360,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Error check to verify that an exact match doesn't exist
     #----#
+    if(algorithm_name == ""){
+      showNotification("Failed to Add Linkage Algorithm - Algorithm Name Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
     get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms
                                                   WHERE dataset_id_left = ? AND dataset_id_right = ? AND algorithm_name = ? AND enabled = 1;')
     dbBind(get_query, list(left_dataset_id, right_dataset_id, algorithm_name))
@@ -2352,7 +2372,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     num_of_databases <- nrow(output_df)
     dbClearResult(get_query)
     if(num_of_databases != 0){
-      showNotification("Failed to Add Linkage Method - Linkage Method Already Exists", type = "error", closeButton = FALSE)
+      showNotification("Failed to Add Linkage Algorithm - Linkage Algorithm Already Exists", type = "error", closeButton = FALSE)
       return()
     }
     #----#
@@ -2421,6 +2441,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Error check to verify that an exact match doesn't exist
     #----#
+    if(algorithm_name == ""){
+      showNotification("Failed to Update Linkage Algorithm - Missing Algorithm Name", type = "error", closeButton = FALSE)
+      return()
+    }
+
     get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms
                                                   WHERE dataset_id_left = ? AND dataset_id_right = ? AND algorithm_name = ? AND algorithm_id != ?;')
     dbBind(get_query, list(left_dataset_id, right_dataset_id, algorithm_name, algorithm_id))
@@ -2428,7 +2453,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     num_of_databases <- nrow(output_df)
     dbClearResult(get_query)
     if(num_of_databases != 0){
-      showNotification("Failed to Update Linkage Method - Linkage Method Already Exists", type = "error", closeButton = FALSE)
+      showNotification("Failed to Update Linkage Algorithm - Linkage Algorithm Already Exists", type = "error", closeButton = FALSE)
       return()
     }
     #----#
@@ -2915,6 +2940,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       get_right_dataset_matching_fields_to_update()
     })
 
+    # Pre-populate the general information
+    updateTextAreaInput(session, "add_iteration_name", value = "")
+    updateNumericInput(session, "add_iteration_order", value = NA)
+    iteration_acceptance_rule_to_add <<- NA
+    output$selected_iteration_acceptance_rule <- renderText({
+      " "
+    })
+
     # Show the add linkage iteration page
     nav_show('main_navbar', 'add_linkage_iterations_page')
     updateNavbarPage(session, "main_navbar", selected = "add_linkage_iterations_page")
@@ -2992,9 +3025,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     output$add_matching_variables_table <- renderDataTable({
       get_matching_keys_to_add()
     })
-    output$add_iteration_linkage_method_input <- renderUI({
-      get_linkage_methods_to_add()
-    })
+    # output$add_iteration_linkage_method_input <- renderUI({
+    #   get_linkage_methods_to_add()
+    # })
     output$add_left_blocking_field_input <- renderUI({
       get_left_dataset_blocking_fields_to_add()
     })
@@ -3019,6 +3052,43 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     output$update_right_matching_field_input <- renderUI({
       get_right_dataset_matching_fields_to_update()
     })
+
+    # Get the general iteration information from the database
+    query <- paste('SELECT * FROM linkage_iterations
+                WHERE iteration_id =', iteration_id,
+                   'ORDER BY iteration_id ASC;')
+    df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+    iteration_name     <- df_temp$iteration_name
+    iteration_num      <- df_temp$iteration_num
+    linkage_method_id  <- df_temp$linkage_method_id
+    acceptance_rule_id <- df_temp$acceptance_rule_id
+
+    # Pre-populate the general information from the database
+    updateTextAreaInput(session, "add_iteration_name", value = iteration_name)
+    updateNumericInput(session, "add_iteration_order", value = iteration_num)
+    updateSelectInput(session, "add_iteration_linkage_method", selected = linkage_method_id)
+    iteration_acceptance_rule_to_add <<- acceptance_rule_id
+    if(!is.na(acceptance_rule_id)){
+      # Query to get the acceptance method name from the acceptance_rules table
+      method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                           JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                           WHERE acceptance_rule_id =', acceptance_rule_id)
+      method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+      # Query to get the associated parameters for the acceptance_rule_id
+      params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+      params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+      # Combine the parameters into a string
+      params_str <- paste(params_df$parameter, collapse = ", ")
+
+      # Create the final string "method_name (key1=value1, key2=value2)"
+      method_with_params <- paste0(method_name, " (", params_str, ")")
+      output$selected_iteration_acceptance_rule <- renderText({
+        method_with_params
+      })
+    }
 
     # Show the add linkage iteration page
     nav_show('main_navbar', 'add_linkage_iterations_page')
@@ -3050,6 +3120,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   right_matching_keys_to_add       <- c()
   matching_linkage_rules_to_add    <- c()
   matching_comparison_rules_to_add <- c()
+
+  # GLOBAL VARIABLES FOR STORING THE ACCEPTANCE RULES, PREPARED LINKAGE RULES, AND PREPARED COMPARISON RULES
+  iteration_acceptance_rule_to_add   <- NA
+  blocking_linkage_rule_to_add       <- NA
+  blocking_linkage_rule_to_update    <- NA
+  matching_linkage_rule_to_add       <- NA
+  matching_linkage_rule_to_update    <- NA
+  matching_comparison_rule_to_add    <- NA
+  matching_comparison_rule_to_update <- NA
 
   #-- SELECT INPUT UI FOR ADDING AND UPDATING BLOCKING FIELDS --#
   # Creates the select input UI for available left fields
@@ -3377,7 +3456,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
   }
 
-  # Renders the data table of acceptance parameters that are to be added
+  # Renders the data table of blocking keys that are to be added
   output$add_blocking_variables_table <- renderDataTable({
     get_blocking_keys_to_add()
   })
@@ -3520,7 +3599,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
   }
 
-  # Renders the data table of acceptance parameters that are to be added
+  # Renders the data table of matching keys that are to be added
   output$add_matching_variables_table <- renderDataTable({
     get_matching_keys_to_add()
   })
@@ -3531,15 +3610,1234 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     nav_show("main_navbar", add_linkage_iterations_return_page)
     updateNavbarPage(session, "main_navbar", selected = add_linkage_iterations_return_page)
   })
+
+  #-- GENERAL INFORMATION RELATED EVENTS --#
+  # Selecting an acceptance rule for the iteration
+  observeEvent(input$prepare_iteration_acceptance_rule, {
+    showModal(modalDialog(
+      title = "Choose Acceptance Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidPage(
+        # Linkage rule table
+        fluidRow(
+          h5(strong("Select An Acceptance Method And Corresponding Acceptance Rule Below for the Iteration:")),
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
+              dataTableOutput("add_acceptance_method_iteration"),
+            )
+          ),
+          # Once an acceptance method is selected, show the other table
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
+              conditionalPanel(
+                condition = "input.add_acceptance_method_iteration_rows_selected > 0",
+                dataTableOutput("add_acceptance_rule_iteration"),
+              ),
+            )
+          ),
+        ),
+
+        # OPTION 1: User may enter a new acceptance method & parameters
+        conditionalPanel(
+          condition = "input.add_acceptance_method_iteration_rows_selected <= 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the acceptance methods page
+          fluidRow(
+            h5(strong("Or, create a new acceptance method below:")),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_iteration_to_add_acceptance_methods", "Create Acceptance Method", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # OPTION 2: User may enter a new acceptance rule via selected method
+        conditionalPanel(
+          condition = "input.add_acceptance_method_iteration_rows_selected > 0 &&
+                       input.add_acceptance_rule_iteration_rows_selected <= 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the acceptance rules page
+          fluidRow(
+            h5(strong("Or, create a new acceptance rule below:")),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_iteration_to_add_acceptance_rules", "Create Acceptance Rule", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # OPTION 3: User can submit which acceptance rule they'd like to use
+        conditionalPanel(
+          condition = "input.add_acceptance_method_iteration_rows_selected > 0 &&
+                       input.add_acceptance_rule_iteration_rows_selected > 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the acceptance rules page
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("prepare_iteration_acceptance_rule_to_add", "Add Acceptance Rule", class = "btn-success"),
+              )
+            ),
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Generates the table of acceptance methods
+  output$add_acceptance_method_iteration <- renderDataTable({
+    get_acceptance_methods_and_parameters()
+  })
+
+  # Generates the table of acceptance rules & parameters
+  observeEvent(input$add_acceptance_method_iteration_rows_selected, {
+    selected_row <- input$add_acceptance_method_iteration_rows_selected
+
+    if (!is.null(selected_row)) {
+      # Perform a query to get the acceptance methods
+      query <- paste('SELECT * from acceptance_methods')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      # Retrieve the acceptance method id of the selected row
+      selected_method <<- df[selected_row, "acceptance_method_id"]
+
+      output$add_acceptance_rule_iteration <- renderDataTable({
+        acceptance_method_id <- selected_method
+
+        # Query to get all acceptance method information from the 'acceptance_method_parameters' table
+        query <- paste('SELECT arp.acceptance_rule_id, parameter_id, parameter FROM acceptance_rules ar
+                   JOIN acceptance_rules_parameters arp ON ar.acceptance_rule_id = arp.acceptance_rule_id
+                   WHERE acceptance_method_id =', acceptance_method_id)
+        df <- dbGetQuery(linkage_metadata_conn, query)
+
+        # Aggregate parameters by acceptance_rule_id
+        df <- df %>%
+          group_by(acceptance_rule_id) %>%
+          summarise(parameters = paste(parameter, collapse = ", ")) %>%
+          ungroup()
+
+        # With our data frame, we'll rename some of the columns to look better (we can always drop the ID if we want)
+        names(df)[names(df) == 'acceptance_rule_id'] <- 'Acceptance Rule No.'
+        names(df)[names(df) == 'parameters'] <- 'Parameter Values'
+
+        # Put it into a data table now
+        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+      })
+    }
+  })
+
+  # Brings the user to the acceptance methods page
+  observeEvent(input$add_linkage_iteration_to_add_acceptance_methods, {
+
+    # Set the return page to the add linkage iterations page
+    acceptance_methods_return_page <<- "add_linkage_iterations_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "acceptance_methods_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "acceptance_methods_page")
+  })
+
+  # Brings the user to the acceptance rules page
+  observeEvent(input$add_linkage_iteration_to_add_acceptance_rules, {
+    selected_row <- input$add_acceptance_method_iteration_selected
+
+    if (!is.null(selected_row)) {
+      # Perform a query to get the acceptance methods
+      query <- paste('SELECT * from acceptance_methods')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      # Retrieve the acceptance method id of the selected row
+      selected_method <<- df[selected_row, "acceptance_method_id"]
+    }
+
+    # Set the return page to the add linkage iterations page and the selected method to user input
+    acceptance_method_id_add_rule <<- selected_method
+    acceptance_rules_return_page  <<- "add_linkage_iterations_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "acceptance_rules_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "acceptance_rules_page")
+  })
+  #----------------------------------------#
+
+  #-- BLOCKING KEY RELATED EVENTS --#
+  # Appending pair of fields and linkage rule to be blocking fields + the rule
+  observeEvent(input$prepare_blocking_variables, {
+    # Get the values that we're inserting into a new record
+    #----#
+    left_blocking_field  <- input$left_blocking_field_add
+    right_blocking_field <- input$right_blocking_field_add
+    linkage_rule_id      <- blocking_linkage_rule_to_add
+    #----#
+
+    # Error Handling
+    #----#
+    # Make sure neither of the blocking fields are null
+    if(left_blocking_field == 'null' || right_blocking_field == 'null'){
+      showNotification("Failed to Prepare Blocking Keys - Missing Blocking Key(s)", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure this pair of fields isn't already in use
+    if(length(left_blocking_keys_to_add) > 0){
+      for(index in 1:length(left_blocking_keys_to_add)){
+        if(left_blocking_keys_to_add[index] == left_blocking_field && right_blocking_keys_to_add[index] == right_blocking_field){
+          showNotification("Failed to Prepare Blocking Keys - Combination Already Prepared", type = "error", closeButton = FALSE)
+          return()
+        }
+      }
+    }
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    left_blocking_keys_to_add <<- append(left_blocking_keys_to_add, left_blocking_field)
+    right_blocking_keys_to_add <<- append(right_blocking_keys_to_add, right_blocking_field)
+    blocking_linkage_rules_to_add <<- append(blocking_linkage_rules_to_add, linkage_rule_id)
+    #----#
+
+    # Reset Data Tables, UI Renders, and global variables
+    #----#
+    output$add_blocking_variables_table <- renderDataTable({
+      get_blocking_keys_to_add()
+    })
+    output$add_left_blocking_field_input <- renderUI({
+      get_left_dataset_blocking_fields_to_add()
+    })
+    output$add_right_blocking_field_input <- renderUI({
+      get_right_dataset_blocking_fields_to_add()
+    })
+    blocking_linkage_rule_to_add <<- NA
+    # Render the output text
+    output$blocking_linkage_rules_add <- renderText({
+      ""
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Blocking Keys Successfully Prepared", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Observes what row the user selects to update and will pre-populate the parameter key updating fields
+  observe({
+    row_selected <- input$add_blocking_variables_table_rows_selected
+
+    # Make sure a row is selected
+    if(is.null(row_selected)) return()
+
+    # Get the the parameter key and desc from the prepared values
+    left_blocking_field  <- left_blocking_keys_to_add[row_selected]
+    right_blocking_field <- right_blocking_keys_to_add[row_selected]
+    linkage_rule_id      <- blocking_linkage_rules_to_add[row_selected]
+
+    # Now update the input fields
+    updateSelectInput(session, "left_blocking_field_update",  selected = left_blocking_field)
+    updateSelectInput(session, "right_blocking_field_update", selected = right_blocking_field)
+    if(!is.na(linkage_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+      # We'll start with "Alternative Field"
+      alt_field_val <- method_df$alternate_field_value
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+      }
+
+      # Next we'll handle the "Integer Variance"
+      int_variance <- method_df$integer_value_variance
+      if(!is.na(int_variance)){
+        method_df$integer_value_variance <- paste0("±", int_variance)
+      }
+
+      # Next we'll handle "Name Substring"
+      name_substring <- method_df$substring_length
+      if(!is.na(name_substring)){
+        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+      }
+
+      # With standardized names, we'll replace the [0, 1] with [No, Yes]
+      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+      # Rename the column names to be easier to read when printed in table format
+      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+      # Drop the linkage_rule_id from the table
+      method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+      # Initialize an empty list to store non-NA values
+      non_na_values <- list()
+
+      # Loop through each column in the current row
+      for (col_name in colnames(method_df)) {
+        value <- method_df[1, col_name]
+
+        # If the value is not NA, add it to the list
+        if (!is.na(value)) {
+          non_na_values <- c(non_na_values, paste0(value))
+        }
+      }
+
+      # Combine the non-NA values into a single string, separated by commas
+      combined_values <- paste(non_na_values, collapse = ", ")
+
+      # Render the output text
+      output$blocking_linkage_rules_update <- renderText({
+        combined_values
+      })
+    }
+    else{
+      # Render the output text
+      output$blocking_linkage_rules_update <- renderText({
+        ""
+      })
+    }
+
+    # Global variable for the blocking linkage rule
+    blocking_linkage_rule_to_update <<- linkage_rule_id
+  })
+
+  # Updating a prepared combination of blocking fields and linkage rule
+  observeEvent(input$prepare_blocking_variables_update, {
+    # Get the values that we're inserting into a new record + the selected row
+    #----#
+    row_selected          <- input$add_blocking_variables_table_rows_selected
+    left_blocking_field   <- input$left_blocking_field_update
+    right_blocking_field  <- input$right_blocking_field_update
+    linkage_rule_id       <- blocking_linkage_rule_to_update
+    #----#
+
+    # Error Handling
+    #----#
+    # Make sure neither of the blocking fields are null
+    if(left_blocking_field == 'null' || right_blocking_field == 'null'){
+      showNotification("Failed to Prepare Blocking Keys - Missing Blocking Key(s)", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure this pair of fields isn't already in use
+    if(length(left_blocking_keys_to_add) > 0){
+      for(index in 1:length(left_blocking_keys_to_add)){
+        if(left_blocking_keys_to_add[index] == left_blocking_field && right_blocking_keys_to_add[index] == right_blocking_field && row_selected != index){
+          showNotification("Failed to Prepare Blocking Keys - Combination Already Prepared", type = "error", closeButton = FALSE)
+          return()
+        }
+      }
+    }
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    left_blocking_keys_to_add[row_selected]     <<- left_blocking_field
+    right_blocking_keys_to_add[row_selected]    <<- right_blocking_field
+    blocking_linkage_rules_to_add[row_selected] <<- linkage_rule_id
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$add_blocking_variables_table <- renderDataTable({
+      get_blocking_keys_to_add()
+    })
+    blocking_linkage_rule_to_update <<- NA
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Prepared Blocking Keys Successfully Updated", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Dropping a prepared combination of blocking fields and linkage rule
+  observeEvent(input$drop_blocking_variables, {
+    # Get the row to drop
+    #----#
+    row_selected <- input$add_blocking_variables_table_rows_selected
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    left_blocking_keys_to_add <<- left_blocking_keys_to_add[-c(row_selected)]
+    right_blocking_keys_to_add <<- right_blocking_keys_to_add[-c(row_selected)]
+    blocking_linkage_rules_to_add <<- blocking_linkage_rules_to_add[-c(row_selected)]
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$add_blocking_variables_table <- renderDataTable({
+      get_blocking_keys_to_add()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Prepared Blocking Keys Successfully Dropped", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Selecting a linkage rule for ADDING blocking keys
+  observeEvent(input$prepare_blocking_linkage_rule, {
+    showModal(modalDialog(
+      title = "Choose Linkage Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidRow(
+        # Linkage rule table
+        h5(strong("Select a Linkage Rule Below to Use for the Blocking Variables:")),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            dataTableOutput("blocking_keys_add_linkage_rules"),
+          )
+        ),
+
+        # If NO row is selected, the user may add a new linkage rule by clicking
+        # a button that will take them to the linkage rule page
+        conditionalPanel(
+          condition = "input.blocking_keys_add_linkage_rules_rows_selected <= 0",
+          HTML("<br>"),
+          h5(strong("Or, Create a New Rule Here:")),
+
+          # Button for going to the linkage rules page from this modal
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("blocking_keys_add_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # If a row IS SELECTED, the user can then click then choose that rule
+        conditionalPanel(
+          condition = "input.blocking_keys_add_linkage_rules_rows_selected > 0",
+          HTML("<br>"),
+
+          # Button for preparing the selected linkage rule to add
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("blocking_keys_add_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
+              )
+            ),
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Brings the user to the linkage rules page
+  observeEvent(input$blocking_keys_add_linkage_rules_to_linkage_rules, {
+
+    # Set the return page to the add linkage iterations page
+    linkage_rules_return_page <<- "add_linkage_iterations_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "linkage_rule_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
+  })
+
+  # Selects the linkage rule the user wanted
+  observeEvent(input$blocking_keys_add_prepare_linkage_rule, {
+    # Get the selected row
+    selected_row <- input$blocking_keys_add_linkage_rules_rows_selected
+
+    # Query to get all linkage rule information from the 'linkage_rules' table
+    query <- paste('SELECT * FROM linkage_rules
+               ORDER BY linkage_rule_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the linkage rule
+    linkage_rule_id <- df[selected_row, "linkage_rule_id"]
+
+    # Set the global variable to the selected linkage rule id
+    blocking_linkage_rule_to_add <<- linkage_rule_id
+
+    # Render the UI output text
+    if(!is.na(linkage_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+      # We'll start with "Alternative Field"
+      alt_field_val <- method_df$alternate_field_value
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+      }
+
+      # Next we'll handle the "Integer Variance"
+      int_variance <- method_df$integer_value_variance
+      if(!is.na(int_variance)){
+        method_df$integer_value_variance <- paste0("±", int_variance)
+      }
+
+      # Next we'll handle "Name Substring"
+      name_substring <- method_df$substring_length
+      if(!is.na(name_substring)){
+        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+      }
+
+      # With standardized names, we'll replace the [0, 1] with [No, Yes]
+      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+      # Rename the column names to be easier to read when printed in table format
+      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+      # Drop the linkage_rule_id from the table
+      method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+      # Initialize an empty list to store non-NA values
+      non_na_values <- list()
+
+      # Loop through each column in the current row
+      for (col_name in colnames(method_df)) {
+        value <- method_df[1, col_name]
+
+        # If the value is not NA, add it to the list
+        if (!is.na(value)) {
+          non_na_values <- c(non_na_values, paste0(value))
+        }
+      }
+
+      # Combine the non-NA values into a single string, separated by commas
+      combined_values <- paste(non_na_values, collapse = ", ")
+
+      # Render the output text
+      output$blocking_linkage_rules_add <- renderText({
+        combined_values
+      })
+    }
+
+    # Dismiss the modal
+    removeModal()
+  })
+
+  # Generates the table of linkage rules
+  output$blocking_keys_add_linkage_rules <- renderDataTable({
+    get_linkage_rules()
+  })
+
+  # Selecting a linkage rule for UPDATING blocking keys
+  observeEvent(input$prepare_blocking_linkage_rule_update, {
+    showModal(modalDialog(
+      title = "Choose Linkage Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidRow(
+        # Linkage rule table
+        h5(strong("Select a Linkage Rule Below to Use for the Blocking Variables:")),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            dataTableOutput("blocking_keys_update_linkage_rules"),
+          )
+        ),
+
+        # If NO row is selected, the user may add a new linkage rule by clicking
+        # a button that will take them to the linkage rule page
+        conditionalPanel(
+          condition = "input.blocking_keys_update_linkage_rules_rows_selected <= 0",
+          HTML("<br>"),
+          h5(strong("Or, Create a New Rule Here:")),
+
+          # Button for going to the linkage rules page from this modal
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("blocking_keys_update_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # If a row IS SELECTED, the user can then click then choose that rule
+        conditionalPanel(
+          condition = "input.blocking_keys_update_linkage_rules_rows_selected > 0",
+          HTML("<br>"),
+
+          # Button for preparing the selected linkage rule to add
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("blocking_keys_update_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
+              )
+            ),
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Brings the user to the linkage rules page
+  observeEvent(input$blocking_keys_update_linkage_rules_to_linkage_rules, {
+
+    # Set the return page to the add linkage iterations page
+    linkage_rules_return_page <<- "add_linkage_iterations_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "linkage_rule_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
+  })
+
+  # Selects the linkage rule the user wanted
+  observeEvent(input$blocking_keys_update_prepare_linkage_rule, {
+    # Get the selected row
+    selected_row <- input$blocking_keys_update_linkage_rules_rows_selected
+
+    # Query to get all linkage rule information from the 'linkage_rules' table
+    query <- paste('SELECT * FROM linkage_rules
+               ORDER BY linkage_rule_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the linkage rule
+    linkage_rule_id <- df[selected_row, "linkage_rule_id"]
+
+    # Set the global variable to the selected linkage rule id
+    blocking_linkage_rule_to_update <<- linkage_rule_id
+
+    # Render the UI output text
+    if(!is.na(linkage_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+      # We'll start with "Alternative Field"
+      alt_field_val <- method_df$alternate_field_value
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+      }
+
+      # Next we'll handle the "Integer Variance"
+      int_variance <- method_df$integer_value_variance
+      if(!is.na(int_variance)){
+        method_df$integer_value_variance <- paste0("±", int_variance)
+      }
+
+      # Next we'll handle "Name Substring"
+      name_substring <- method_df$substring_length
+      if(!is.na(name_substring)){
+        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+      }
+
+      # With standardized names, we'll replace the [0, 1] with [No, Yes]
+      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+      # Rename the column names to be easier to read when printed in table format
+      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+      # Drop the linkage_rule_id from the table
+      method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+      # Initialize an empty list to store non-NA values
+      non_na_values <- list()
+
+      # Loop through each column in the current row
+      for (col_name in colnames(method_df)) {
+        value <- method_df[1, col_name]
+
+        # If the value is not NA, add it to the list
+        if (!is.na(value)) {
+          non_na_values <- c(non_na_values, paste0(value))
+        }
+      }
+
+      # Combine the non-NA values into a single string, separated by commas
+      combined_values <- paste(non_na_values, collapse = ", ")
+
+      # Render the output text
+      output$blocking_linkage_rules_update <- renderText({
+        combined_values
+      })
+    }
+
+    # Dismiss the modal
+    removeModal()
+  })
+
+  # Generates the table of linkage rules
+  output$blocking_keys_update_linkage_rules <- renderDataTable({
+    get_linkage_rules()
+  })
+  #---------------------------------#
+
+  #-- MATCHING KEY RELATED EVENTS --#
+  # Appending pair of fields, linkage rule, and comparison rule to be matching fields + the rules
+  observeEvent(input$prepare_matching_variables, {
+    # Get the values that we're inserting into a new record
+    #----#
+    left_matching_field  <- input$left_matching_field_add
+    right_matching_field <- input$right_matching_field_add
+    linkage_rule_id      <- matching_linkage_rule_to_add
+    comparison_rule_id   <- matching_comparison_rule_to_add
+    #----#
+
+    # Error Handling
+    #----#
+    # Make sure neither of the blocking fields are null
+    if(left_matching_field == 'null' || right_matching_field == 'null'){
+      showNotification("Failed to Prepare Matching Keys - Missing Matching Key(s)", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure this pair of fields isn't already in use
+    if(length(left_matching_keys_to_add) > 0){
+      for(index in 1:length(left_matching_keys_to_add)){
+        if(left_matching_keys_to_add[index] == left_matching_field && right_blocking_keys_to_add[index] == right_matching_field){
+          showNotification("Failed to Prepare Matching Keys - Combination Already Prepared", type = "error", closeButton = FALSE)
+          return()
+        }
+      }
+    }
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    left_matching_keys_to_add <<- append(left_matching_keys_to_add, left_matching_field)
+    right_matching_keys_to_add <<- append(right_matching_keys_to_add, right_matching_field)
+    matching_linkage_rules_to_add <<- append(matching_linkage_rules_to_add, linkage_rule_id)
+    matching_comparison_rules_to_add <<- append(matching_comparison_rules_to_add, comparison_rule_id)
+    #----#
+
+    # Reset Data Tables, UI Renders, and global variables
+    #----#
+    output$add_matching_variables_table <- renderDataTable({
+      get_matching_keys_to_add()
+    })
+    output$add_left_matching_field_input <- renderUI({
+      get_left_dataset_matching_fields_to_add()
+    })
+    output$add_right_matching_field_input <- renderUI({
+      get_right_dataset_matching_fields_to_add()
+    })
+    matching_linkage_rule_to_add <<- NA
+    output$matching_linkage_rules_add <- renderText({
+      ""
+    })
+    matching_comparison_rule_to_add <<- NA
+    output$matching_comparison_rules_add <- renderText({
+      ""
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Matching Keys Successfully Prepared", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Observes what row the user selects to update and will pre-populate the parameter key updating fields
+  observe({
+    row_selected <- input$add_matching_variables_table_rows_selected
+
+    # Make sure a row is selected
+    if(is.null(row_selected)) return()
+
+    # Get the the parameter key and desc from the prepared values
+    left_matching_field  <- left_matching_keys_to_add[row_selected]
+    right_matching_field <- right_matching_keys_to_add[row_selected]
+    linkage_rule_id      <- matching_linkage_rules_to_add[row_selected]
+    comparison_rule_id   <- matching_comparison_rules_to_add[row_selected]
+
+    # Now update the input fields
+    updateSelectInput(session, "left_matching_field_update",  selected = left_matching_field)
+    updateSelectInput(session, "right_matching_field_update", selected = right_matching_field)
+    if(!is.na(linkage_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+      # We'll start with "Alternative Field"
+      alt_field_val <- method_df$alternate_field_value
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+      }
+
+      # Next we'll handle the "Integer Variance"
+      int_variance <- method_df$integer_value_variance
+      if(!is.na(int_variance)){
+        method_df$integer_value_variance <- paste0("±", int_variance)
+      }
+
+      # Next we'll handle "Name Substring"
+      name_substring <- method_df$substring_length
+      if(!is.na(name_substring)){
+        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+      }
+
+      # With standardized names, we'll replace the [0, 1] with [No, Yes]
+      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+      # Rename the column names to be easier to read when printed in table format
+      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+      # Drop the linkage_rule_id from the table
+      method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+      # Initialize an empty list to store non-NA values
+      non_na_values <- list()
+
+      # Loop through each column in the current row
+      for (col_name in colnames(method_df)) {
+        value <- method_df[1, col_name]
+
+        # If the value is not NA, add it to the list
+        if (!is.na(value)) {
+          non_na_values <- c(non_na_values, paste0(value))
+        }
+      }
+
+      # Combine the non-NA values into a single string, separated by commas
+      combined_values <- paste(non_na_values, collapse = ", ")
+
+      # Render the output text
+      output$matching_linkage_rules_update <- renderText({
+        combined_values
+      })
+    }
+    else{
+      # Render the output text
+      output$matching_linkage_rules_update <- renderText({
+        ""
+      })
+    }
+
+    if(!is.na(comparison_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT method_name FROM comparison_rules cr
+                           JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                           WHERE comparison_rule_id =', comparison_rule_id)
+      method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+      # Query to get the associated parameters for the comparison_rule_id
+      params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+      params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+      # Combine the parameters into a string
+      params_str <- paste(params_df$parameter, collapse = ", ")
+
+      # Create the final string "method_name (key1=value1, key2=value2)"
+      method_with_params <- paste0(method_name, " (", params_str, ")")
+
+      # Render the output text
+      output$matching_comparison_rules_update <- renderText({
+        method_with_params
+      })
+    }
+    else{
+      # Render the output text
+      output$matching_comparison_rules_update <- renderText({
+        ""
+      })
+    }
+
+    # Global variable for the matching linkage rule and comparison rule
+    matching_linkage_rule_to_update    <<- linkage_rule_id
+    matching_comparison_rule_to_update <<- comparison_rule_id
+  })
+
+  # Updating a prepared combination of matching fields and linkage rule
+  observeEvent(input$prepare_matching_variables_update, {
+    # Get the values that we're inserting into a new record + the selected row
+    #----#
+    row_selected          <- input$add_matching_variables_table_rows_selected
+    left_matching_field   <- input$left_matching_field_update
+    right_matching_field  <- input$right_matching_field_update
+    linkage_rule_id       <- matching_linkage_rule_to_update
+    comparison_rule_id    <- matching_comparison_rule_to_update
+    #----#
+
+    # Error Handling
+    #----#
+    # Make sure neither of the blocking fields are null
+    if(left_matching_field == 'null' || right_matching_field == 'null'){
+      showNotification("Failed to Prepare Matching Keys - Missing Matching Key(s)", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure this pair of fields isn't already in use
+    if(length(left_matching_keys_to_add) > 0){
+      for(index in 1:length(left_matching_keys_to_add)){
+        if(left_matching_keys_to_add[index] == left_matching_field && right_matching_keys_to_add[index] == right_matching_field && row_selected != index){
+          showNotification("Failed to Prepare Matching Keys - Combination Already Prepared", type = "error", closeButton = FALSE)
+          return()
+        }
+      }
+    }
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    left_matching_keys_to_add[row_selected]        <<- left_matching_field
+    right_matching_keys_to_add[row_selected]       <<- right_matching_field
+    matching_linkage_rules_to_add[row_selected]    <<- linkage_rule_id
+    matching_comparison_rules_to_add[row_selected] <<- comparison_rule_id
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$add_matching_variables_table <- renderDataTable({
+      get_matching_keys_to_add()
+    })
+    matching_linkage_rule_to_update <<- NA
+    matching_comparison_rule_to_update <<- NA
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Prepared Matching Keys Successfully Updated", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Dropping a prepared combination of matching fields and linkage rule
+  observeEvent(input$drop_matching_variables, {
+    # Get the row to drop
+    #----#
+    row_selected <- input$add_matching_variables_table_rows_selected
+    #----#
+
+    # Append the data to our global variables
+    #----#
+    left_matching_keys_to_add        <<- left_matching_keys_to_add[-c(row_selected)]
+    right_matching_keys_to_add       <<- right_matching_keys_to_add[-c(row_selected)]
+    matching_linkage_rules_to_add    <<- matching_linkage_rules_to_add[-c(row_selected)]
+    matching_comparison_rules_to_add <<- matching_comparison_rules_to_add[-c(row_selected)]
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$add_matching_variables_table <- renderDataTable({
+      get_matching_keys_to_add()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Prepared Matching Keys Successfully Dropped", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Selecting a linkage rule for ADDING matching keys
+  observeEvent(input$prepare_matching_linkage_rule, {
+    showModal(modalDialog(
+      title = "Choose Linkage Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidRow(
+        # Linkage rule table
+        h5(strong("Select a Linkage Rule Below to Use for the Matching Variables:")),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            dataTableOutput("matching_keys_add_linkage_rules"),
+          )
+        ),
+
+        # If NO row is selected, the user may add a new linkage rule by clicking
+        # a button that will take them to the linkage rule page
+        conditionalPanel(
+          condition = "input.matching_keys_add_linkage_rules_rows_selected <= 0",
+          HTML("<br>"),
+          h5(strong("Or, Create a New Rule Here:")),
+
+          # Button for going to the linkage rules page from this modal
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("matching_keys_add_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # If a row IS SELECTED, the user can then click then choose that rule
+        conditionalPanel(
+          condition = "input.matching_keys_add_linkage_rules_rows_selected > 0",
+          HTML("<br>"),
+
+          # Button for preparing the selected linkage rule to add
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("matching_keys_add_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
+              )
+            ),
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Brings the user to the linkage rules page
+  observeEvent(input$matching_keys_add_linkage_rules_to_linkage_rules, {
+
+    # Set the return page to the add linkage iterations page
+    linkage_rules_return_page <<- "add_linkage_iterations_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "linkage_rule_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
+  })
+
+  # Selects the linkage rule the user wanted
+  observeEvent(input$matching_keys_add_prepare_linkage_rule, {
+    # Get the selected row
+    selected_row <- input$matching_keys_add_linkage_rules_rows_selected
+
+    # Query to get all linkage rule information from the 'linkage_rules' table
+    query <- paste('SELECT * FROM linkage_rules
+               ORDER BY linkage_rule_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the linkage rule
+    linkage_rule_id <- df[selected_row, "linkage_rule_id"]
+
+    # Set the global variable to the selected linkage rule id
+    matching_linkage_rule_to_add <<- linkage_rule_id
+
+    # Render the UI output text
+    if(!is.na(linkage_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+      # We'll start with "Alternative Field"
+      alt_field_val <- method_df$alternate_field_value
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+      }
+
+      # Next we'll handle the "Integer Variance"
+      int_variance <- method_df$integer_value_variance
+      if(!is.na(int_variance)){
+        method_df$integer_value_variance <- paste0("±", int_variance)
+      }
+
+      # Next we'll handle "Name Substring"
+      name_substring <- method_df$substring_length
+      if(!is.na(name_substring)){
+        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+      }
+
+      # With standardized names, we'll replace the [0, 1] with [No, Yes]
+      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+      # Rename the column names to be easier to read when printed in table format
+      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+      # Drop the linkage_rule_id from the table
+      method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+      # Initialize an empty list to store non-NA values
+      non_na_values <- list()
+
+      # Loop through each column in the current row
+      for (col_name in colnames(method_df)) {
+        value <- method_df[1, col_name]
+
+        # If the value is not NA, add it to the list
+        if (!is.na(value)) {
+          non_na_values <- c(non_na_values, paste0(value))
+        }
+      }
+
+      # Combine the non-NA values into a single string, separated by commas
+      combined_values <- paste(non_na_values, collapse = ", ")
+
+      # Render the output text
+      output$matching_linkage_rules_add <- renderText({
+        combined_values
+      })
+    }
+
+    # Dismiss the modal
+    removeModal()
+  })
+
+  # Generates the table of linkage rules
+  output$matching_keys_add_linkage_rules <- renderDataTable({
+    get_linkage_rules()
+  })
+
+  # Selecting a linkage rule for UPDATING matching keys
+  observeEvent(input$prepare_matching_linkage_rule_update, {
+    showModal(modalDialog(
+      title = "Choose Linkage Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidRow(
+        # Linkage rule table
+        h5(strong("Select a Linkage Rule Below to Use for the Matching Variables:")),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            dataTableOutput("matching_keys_update_linkage_rules"),
+          )
+        ),
+
+        # If NO row is selected, the user may add a new linkage rule by clicking
+        # a button that will take them to the linkage rule page
+        conditionalPanel(
+          condition = "input.matching_keys_update_linkage_rules_rows_selected <= 0",
+          HTML("<br>"),
+          h5(strong("Or, Create a New Rule Here:")),
+
+          # Button for going to the linkage rules page from this modal
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("matching_keys_update_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # If a row IS SELECTED, the user can then click then choose that rule
+        conditionalPanel(
+          condition = "input.matching_keys_update_linkage_rules_rows_selected > 0",
+          HTML("<br>"),
+
+          # Button for preparing the selected linkage rule to add
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("matching_keys_update_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
+              )
+            ),
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Brings the user to the linkage rules page
+  observeEvent(input$matching_keys_update_linkage_rules_to_linkage_rules, {
+
+    # Set the return page to the add linkage iterations page
+    linkage_rules_return_page <<- "add_linkage_iterations_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "linkage_rule_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
+  })
+
+  # Selects the linkage rule the user wanted
+  observeEvent(input$matching_keys_update_prepare_linkage_rule, {
+    # Get the selected row
+    selected_row <- input$matching_keys_update_linkage_rules_rows_selected
+
+    # Query to get all linkage rule information from the 'linkage_rules' table
+    query <- paste('SELECT * FROM linkage_rules
+               ORDER BY linkage_rule_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the linkage rule
+    linkage_rule_id <- df[selected_row, "linkage_rule_id"]
+
+    # Set the global variable to the selected linkage rule id
+    matching_linkage_rule_to_update <<- linkage_rule_id
+
+    # Render the UI output text
+    if(!is.na(linkage_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+      # We'll start with "Alternative Field"
+      alt_field_val <- method_df$alternate_field_value
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+      }
+
+      # Next we'll handle the "Integer Variance"
+      int_variance <- method_df$integer_value_variance
+      if(!is.na(int_variance)){
+        method_df$integer_value_variance <- paste0("±", int_variance)
+      }
+
+      # Next we'll handle "Name Substring"
+      name_substring <- method_df$substring_length
+      if(!is.na(name_substring)){
+        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+      }
+
+      # With standardized names, we'll replace the [0, 1] with [No, Yes]
+      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+      # Rename the column names to be easier to read when printed in table format
+      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+      # Drop the linkage_rule_id from the table
+      method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+      # Initialize an empty list to store non-NA values
+      non_na_values <- list()
+
+      # Loop through each column in the current row
+      for (col_name in colnames(method_df)) {
+        value <- method_df[1, col_name]
+
+        # If the value is not NA, add it to the list
+        if (!is.na(value)) {
+          non_na_values <- c(non_na_values, paste0(value))
+        }
+      }
+
+      # Combine the non-NA values into a single string, separated by commas
+      combined_values <- paste(non_na_values, collapse = ", ")
+
+      # Render the output text
+      output$matching_linkage_rules_update <- renderText({
+        combined_values
+      })
+    }
+
+    # Dismiss the modal
+    removeModal()
+  })
+
+  # Generates the table of linkage rules
+  output$matching_keys_update_linkage_rules <- renderDataTable({
+    get_linkage_rules()
+  })
+  #---------------------------------#
+
   #----
   #---------------------------------------#
 
   #-- ACCEPTANCE METHODS & PARAMETERS PAGE EVENTS --#
   #----
-  acceptance_methods_return_page  <- "home_page"
+  acceptance_methods_return_page <- "home_page"
 
   # Back button will bring you back to whichever page you came from
   observeEvent(input$acceptance_methods_back, {
+    # Show the page we need to return to
+    nav_show("main_navbar", acceptance_methods_return_page)
+
     # Show return to the page you came from
     updateNavbarPage(session, "main_navbar", selected = acceptance_methods_return_page)
   })
@@ -4136,6 +5434,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   # Back button will bring you back to whichever page you came from
   observeEvent(input$acceptance_rules_back, {
+    # Show the page we need to return to
+    nav_show("main_navbar", acceptance_rules_return_page)
+
     # Show return to the page you came from
     updateNavbarPage(session, "main_navbar", selected = acceptance_rules_return_page)
   })
@@ -4335,6 +5636,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   # Back button will bring you back to whichever page you came from
   observeEvent(input$comparison_methods_back, {
+    # Show the page we need to return to
+    nav_show("main_navbar", comparison_methods_return_page)
+
     # Show return to the page you came from
     updateNavbarPage(session, "main_navbar", selected = comparison_methods_return_page)
   })
@@ -4925,6 +6229,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   # Back button will bring you back to whichever page you came from
   observeEvent(input$comparison_rules_back, {
+    # Show the page we need to return to
+    nav_show("main_navbar", comparison_rules_return_page)
+
     # Show return to the page you came from
     updateNavbarPage(session, "main_navbar", selected = comparison_rules_return_page)
   })
@@ -5124,13 +6431,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   # Back button will bring you back to whichever page you came from
   observeEvent(input$linkage_rules_back, {
-    # Show return to the page you came from
+    # Show the page we need to return to
+    nav_show("main_navbar", linkage_rules_return_page)
+
+    # Return to the page you came from
     updateNavbarPage(session, "main_navbar", selected = linkage_rules_return_page)
   })
 
   # Gets the linkage rules from the database and puts them into a data table
   get_linkage_rules <- function(){
-    # Query to get all acceptance method information from the 'acceptance_methods' table
+    # Query to get all linkage rule information from the 'linkage_rules' table
     query <- paste('SELECT * FROM linkage_rules
                ORDER BY linkage_rule_id ASC;')
     df <- dbGetQuery(linkage_metadata_conn, query)
@@ -5264,7 +6574,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     output_df <- dbFetch(get_query)
     num_of_databases <- nrow(output_df)
     dbClearResult(get_query)
-    print(output_df)
     if(num_of_databases != 0){
       showNotification("Failed to Add Linkage Rule - Linkage Rule Already Exists", type = "error", closeButton = FALSE)
       return()
@@ -5293,6 +6602,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     output$currently_added_linkage_rules <- renderDataTable({
       get_linkage_rules()
     })
+    output$blocking_keys_add_linkage_rules <- renderDataTable({
+      get_linkage_rules()
+    })
+    output$matching_keys_add_linkage_rules <- renderDataTable({
+      get_linkage_rules()
+    })
     #----#
 
     # Show success notification
@@ -5302,66 +6617,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   })
   #----
   #-------------------------------#
-
-  # TEST FOR SELECTING AN ACCEPTANCE RULE FOR AN ITERATION
-  # THIS CAN ALSO BE FOR HOW YOU SELECT MATCHING AND BLOCKING VARIABLES
-  #----
-  observeEvent(input$iteration_acceptance_rule, {
-    showModal(modalDialog(
-      title = "Choose Acceptance Rule",
-      fluidRow(
-        # Left table (Acceptance Methods)
-        column(width = 6,
-               div(style = "width: 100%;",
-                   tags$div("Select the Desired Acceptance Method:", style = "font-size: 16px; font-weight: bold; color: black; text-align: center; margin-bottom: 10px;"),
-                   dataTableOutput("test")
-               )
-        ),
-        # Right table (Acceptance Rules) - Conditional
-        column(width = 6,
-               conditionalPanel(
-                 condition = "input.test_rows_selected > 0",
-                 div(style = "width: 100%;",
-                     tags$div("Select the Desired Acceptance Rule:", style = "font-size: 16px; font-weight: bold; color: black; text-align: center; margin-bottom: 10px;"),
-                     dataTableOutput("test2")
-                 )
-               )
-        )
-      ),
-      size = "l"  # Large modal size to fit both tables
-    ))
-  })
-
-  output$test <- renderDataTable({
-    query <- paste('SELECT * FROM acceptance_methods')
-    df <- dbGetQuery(linkage_metadata_conn, query)
-    datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
-  })
-
-  observeEvent(input$test_rows_selected, {
-    selected_row <- input$test_rows_selected
-
-    if (!is.null(selected_row)) {
-      query <- paste('SELECT * from acceptance_methods')
-      df <- dbGetQuery(linkage_metadata_conn, query)
-      # Retrieve the dataset_id of the selected row
-      selected_method <<- df[selected_row, "acceptance_method_id"]
-
-      output$test2 <- renderDataTable({
-        query <- paste('SELECT arp.acceptance_rule_id, parameter_id, parameter FROM acceptance_rules ar
-                   JOIN acceptance_rules_parameters arp ON ar.acceptance_rule_id = arp.acceptance_rule_id
-                   WHERE acceptance_method_id =', selected_method)
-        df <- dbGetQuery(linkage_metadata_conn, query)
-        # Aggregate parameters by acceptance_rule_id
-        df <- df %>%
-          group_by(acceptance_rule_id) %>%
-          summarise(parameters = paste(parameter, collapse = ", ")) %>%
-          ungroup()
-        datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
-      })
-    }
-  })
-  #----
 
   observeEvent(input$to_methods, {
     nav_show('main_navbar', 'linkage_rule_page')
