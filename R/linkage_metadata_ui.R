@@ -2904,6 +2904,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     add_linkage_iterations_return_page  <<- "view_linkage_iterations_page"
     add_linkage_iterations_left_dataset_id  <<- view_linkage_iterations_left_dataset_id
     add_linkage_iterations_right_dataset_id <<- view_linkage_iterations_right_dataset_id
+    existing_iteration_id <<- 0
 
     # Update the table of matching and blocking keys on that page
     output$add_blocking_variables_table <- renderDataTable({
@@ -3017,6 +3018,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     add_linkage_iterations_return_page  <<- "view_linkage_iterations_page"
     add_linkage_iterations_left_dataset_id  <<- view_linkage_iterations_left_dataset_id
     add_linkage_iterations_right_dataset_id <<- view_linkage_iterations_right_dataset_id
+    existing_iteration_id <<- 0
 
     # Update the table of matching and blocking keys on that page
     output$add_blocking_variables_table <- renderDataTable({
@@ -3106,10 +3108,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   #-- ADD LINKAGE ITERATION PAGE EVENTS --#
   #----
   # GLOBAL VARIABLES FOR RETURNING TO PREVIOUS PAGE
+  add_linkage_iterations_return_page  <- "view_linkage_algorithms_page"
+
+  # GLOBAL VARIABLES FOR ITERATION SPECIFIC INFORMATION
   add_linkage_iterations_algorithm_id <- 1
   add_linkage_iterations_left_dataset_id  <- 1
   add_linkage_iterations_right_dataset_id <- 1
-  add_linkage_iterations_return_page  <- "view_linkage_algorithms_page"
+  existing_iteration_id <- 0
 
   # GLOBAL VARIABLES FOR STORING THE TEMPORARY BLOCKING AND MATCHING KEYS + THEIR RULES
   left_blocking_keys_to_add        <- c()
@@ -3471,7 +3476,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       comp_rules = if(length(matching_comparison_rules_to_add) == 0) numeric() else matching_comparison_rules_to_add
     )
 
-    # If we have rows, perform queries to conver the IDs into actual text
+    # If we have rows, perform queries to convert the IDs into actual text
     if(nrow(df) > 0){
       # Loop through each row in the dataframe to replace the linkage_rule_id with the method name and parameters
       for (i in 1:nrow(df)) {
@@ -3727,6 +3732,66 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     }
   })
 
+  # Selects the acceptance rule the user wanted
+  observeEvent(input$prepare_iteration_acceptance_rule_to_add, {
+    # Get the selected row
+    selected_row <- input$add_acceptance_method_iteration_rows_selected
+
+    # Query to get all linkage rule information from the 'acceptance_methods' table
+    query <- paste('SELECT * FROM acceptance_methods
+               ORDER BY acceptance_method_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the linkage rule
+    acceptance_method_id <- df[selected_row, "acceptance_method_id"]
+
+    # Query to get all acceptance method information from the 'acceptance_method_parameters' table
+    query <- paste('SELECT arp.acceptance_rule_id, parameter_id, parameter FROM acceptance_rules ar
+                   JOIN acceptance_rules_parameters arp ON ar.acceptance_rule_id = arp.acceptance_rule_id
+                   WHERE acceptance_method_id =', acceptance_method_id)
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Aggregate parameters by acceptance_rule_id
+    df <- df %>%
+      group_by(acceptance_rule_id) %>%
+      summarise(parameters = paste(parameter, collapse = ", ")) %>%
+      ungroup()
+
+    # Get the selected row for this table
+    selected_row <- input$add_acceptance_rule_iteration_rows_selected
+
+    # Get the acceptance rule ID
+    acceptance_rule_id <- df[selected_row, "acceptance_rule_id"]
+
+    # Set the global variable to the selected acceptance rule id
+    iteration_acceptance_rule_to_add <<- acceptance_rule_id
+
+    # Render the output text to make the method readable
+    if(!is.na(acceptance_rule_id)){
+      # Query to get the acceptance method name from the acceptance_rules table
+      method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                           JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                           WHERE acceptance_rule_id =', acceptance_rule_id)
+      method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+      # Query to get the associated parameters for the acceptance_rule_id
+      params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+      params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+      # Combine the parameters into a string
+      params_str <- paste(params_df$parameter, collapse = ", ")
+
+      # Create the final string "method_name (key1=value1, key2=value2)"
+      method_with_params <- paste0(method_name, " (", params_str, ")")
+      output$selected_iteration_acceptance_rule <- renderText({
+        method_with_params
+      })
+    }
+
+    # Dismiss the modal
+    removeModal()
+  })
+
   # Brings the user to the acceptance methods page
   observeEvent(input$add_linkage_iteration_to_add_acceptance_methods, {
 
@@ -3742,11 +3807,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   # Brings the user to the acceptance rules page
   observeEvent(input$add_linkage_iteration_to_add_acceptance_rules, {
-    selected_row <- input$add_acceptance_method_iteration_selected
+    selected_row <- input$add_acceptance_method_iteration_rows_selected
 
     if (!is.null(selected_row)) {
       # Perform a query to get the acceptance methods
-      query <- paste('SELECT * from acceptance_methods')
+      query <- paste('SELECT * from acceptance_methods
+                     ORDER BY acceptance_method_id ASC')
       df <- dbGetQuery(linkage_metadata_conn, query)
       # Retrieve the acceptance method id of the selected row
       selected_method <<- df[selected_row, "acceptance_method_id"]
@@ -3755,6 +3821,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Set the return page to the add linkage iterations page and the selected method to user input
     acceptance_method_id_add_rule <<- selected_method
     acceptance_rules_return_page  <<- "add_linkage_iterations_page"
+
+    # Update the table of acceptance rules on that page
+    output$currently_added_acceptance_rules <- renderDataTable({
+      get_acceptance_rules()
+    })
+
+    # Update the UI inputs for the acceptance rules on that page
+    output$acceptance_rules_inputs <- renderUI({
+      get_acceptance_rules_inputs()
+    })
 
     # Show the linkage rule page
     nav_show("main_navbar", "acceptance_rules_page")
@@ -4284,6 +4360,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     right_matching_field <- input$right_matching_field_add
     linkage_rule_id      <- matching_linkage_rule_to_add
     comparison_rule_id   <- matching_comparison_rule_to_add
+    print(linkage_rule_id)
+    print(comparison_rule_id)
     #----#
 
     # Error Handling
@@ -4463,6 +4541,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     right_matching_field  <- input$right_matching_field_update
     linkage_rule_id       <- matching_linkage_rule_to_update
     comparison_rule_id    <- matching_comparison_rule_to_update
+    print(linkage_rule_id)
+    print(comparison_rule_id)
     #----#
 
     # Error Handling
@@ -4752,7 +4832,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     df <- dbGetQuery(linkage_metadata_conn, query)
 
     # Get the linkage rule
-    linkage_rule_id <- df[selected_row, "linkage_rule_id"]
+    linkage_rule_id <- df[selected_row, "linkage_rule_id"] # If this breaks, use "df$linkage_rule_id[selected_row]"
 
     # Set the global variable to the selected linkage rule id
     matching_linkage_rule_to_update <<- linkage_rule_id
@@ -4824,7 +4904,510 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   output$matching_keys_update_linkage_rules <- renderDataTable({
     get_linkage_rules()
   })
+
+  ### ADDING COMPARISON RULE
+
+  # Selecting an comparison rule for the iteration (ADD)
+  observeEvent(input$prepare_matching_comparison_rule, {
+    showModal(modalDialog(
+      title = "Choose Comparison Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidPage(
+        # Comparison rule table
+        fluidRow(
+          h5(strong("Select A Comparison Method And Corresponding Comparison Rule Below for the Iteration:")),
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
+              dataTableOutput("add_comparison_method_iteration"),
+            )
+          ),
+          # Once an comparison method is selected, show the other table
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
+              conditionalPanel(
+                condition = "input.add_comparison_method_iteration_rows_selected > 0",
+                dataTableOutput("add_comparison_rule_iteration"),
+              ),
+            )
+          ),
+        ),
+
+        # OPTION 1: User may enter a new comparison method & parameters
+        conditionalPanel(
+          condition = "input.add_comparison_method_iteration_rows_selected <= 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the comparison methods page
+          fluidRow(
+            h5(strong("Or, create a new comparison method below:")),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_iteration_to_add_comparison_methods", "Create Comparison Method", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # OPTION 2: User may enter a new comparison rule via selected method
+        conditionalPanel(
+          condition = "input.add_comparison_method_iteration_rows_selected > 0 &&
+                       input.add_comparison_rule_iteration_rows_selected <= 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the comparison rules page
+          fluidRow(
+            h5(strong("Or, create a new comparison rule below:")),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_iteration_to_add_comparison_rules", "Create Comparison Rule", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # OPTION 3: User can submit which comparison rule they'd like to use
+        conditionalPanel(
+          condition = "input.add_comparison_method_iteration_rows_selected > 0 &&
+                       input.add_comparison_rule_iteration_rows_selected > 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the comparison rules page
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("prepare_iteration_comparison_rule_to_add", "Add Comparison Rule", class = "btn-success"),
+              )
+            ),
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Generates the table of comparison methods (ADD)
+  output$add_comparison_method_iteration <- renderDataTable({
+    get_comparison_methods_and_parameters()
+  })
+
+  # Generates the table of comparison rules & parameters (ADD)
+  observeEvent(input$add_comparison_method_iteration_rows_selected, {
+    selected_row <- input$add_comparison_method_iteration_rows_selected
+
+    if (!is.null(selected_row)) {
+      # Perform a query to get the acceptance methods
+      query <- paste('SELECT * from comparison_methods')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      # Retrieve the acceptance method id of the selected row
+      selected_method <<- df[selected_row, "comparison_method_id"]
+
+      output$add_comparison_rule_iteration <- renderDataTable({
+        comparison_method_id <- selected_method
+
+        # Query to get all acceptance method information from the 'acceptance_method_parameters' table
+        query <- paste('SELECT crp.comparison_rule_id, parameter_id, parameter FROM comparison_rules cr
+                   JOIN comparison_rules_parameters crp ON cr.comparison_rule_id = crp.comparison_rule_id
+                   WHERE comparison_method_id =', comparison_method_id)
+        df <- dbGetQuery(linkage_metadata_conn, query)
+
+        # Aggregate parameters by comparison_rule_id
+        df <- df %>%
+          group_by(comparison_rule_id) %>%
+          summarise(parameters = paste(parameter, collapse = ", ")) %>%
+          ungroup()
+
+        # With our data frame, we'll rename some of the columns to look better (we can always drop the ID if we want)
+        names(df)[names(df) == 'comparison_rule_id'] <- 'Comparison Rule No.'
+        names(df)[names(df) == 'parameters'] <- 'Parameter Values'
+
+        # Put it into a data table now
+        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+      })
+    }
+  })
+
+  # Selects the comparison rule the user wanted (ADD)
+  observeEvent(input$prepare_iteration_comparison_rule_to_add, {
+    # Get the selected row
+    selected_row <- input$add_comparison_method_iteration_rows_selected
+
+    # Query to get all comparison rule information from the 'comparison_methods' table
+    query <- paste('SELECT * FROM comparison_methods
+               ORDER BY comparison_method_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the comparison rule
+    comparison_method_id <- df[selected_row, "comparison_method_id"]
+
+    # Query to get all acceptance method information from the 'acceptance_method_parameters' table
+    query <- paste('SELECT crp.comparison_rule_id, parameter_id, parameter FROM comparison_rules cr
+                   JOIN comparison_rules_parameters crp ON cr.comparison_rule_id = crp.comparison_rule_id
+                   WHERE comparison_method_id =', comparison_method_id)
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Aggregate parameters by comparison_rule_id
+    df <- df %>%
+      group_by(comparison_rule_id) %>%
+      summarise(parameters = paste(parameter, collapse = ", ")) %>%
+      ungroup()
+
+    # Get the selected row for this table
+    selected_row <- input$add_comparison_rule_iteration_rows_selected
+
+    # Get the acceptance rule ID
+    comparison_rule_id <- df$comparison_rule_id[selected_row]
+
+    # Set the global variable to the selected acceptance rule id
+    matching_comparison_rule_to_add <<- comparison_rule_id
+
+    # Render the output text to make the method readable
+    if(!is.na(comparison_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT method_name FROM comparison_rules cr
+                           JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                           WHERE comparison_rule_id =', comparison_rule_id)
+      method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+      # Query to get the associated parameters for the comparison_rule_id
+      params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+      params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+      # Combine the parameters into a string
+      params_str <- paste(params_df$parameter, collapse = ", ")
+
+      # Create the final string "method_name (key1=value1, key2=value2)"
+      method_with_params <- paste0(method_name, " (", params_str, ")")
+
+      # Render the output text
+      output$matching_comparison_rules_add <- renderText({
+        method_with_params
+      })
+    }
+
+    # Dismiss the modal
+    removeModal()
+  })
+
+  # Brings the user to the comparison methods page (ADD)
+  observeEvent(input$add_linkage_iteration_to_add_comparison_methods, {
+
+    # Set the return page to the add linkage iterations page
+    comparison_methods_return_page <<- "add_linkage_iterations_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "comparison_methods_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "comparison_methods_page")
+  })
+
+  # Brings the user to the comparison rules page (ADD)
+  observeEvent(input$add_linkage_iteration_to_add_comparison_rules, {
+    selected_row <- input$add_comparison_method_iteration_rows_selected
+
+    if (!is.null(selected_row)) {
+      # Perform a query to get the comparison methods
+      query <- paste('SELECT * from comparison_methods')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      # Retrieve the comparison method id of the selected row
+      selected_method <<- df[selected_row, "comparison_method_id"]
+    }
+
+    # Set the return page to the add linkage iterations page and the selected method to user input
+    comparison_method_id_add_rule <<- selected_method
+    comparison_rules_return_page  <<- "add_linkage_iterations_page"
+
+    # Update the table of acceptance rules on that page
+    output$currently_added_comparison_rules <- renderDataTable({
+      get_comparison_rules()
+    })
+
+    # Update the UI inputs for the acceptance rules on that page
+    output$comparison_rules_inputs <- renderUI({
+      get_comparison_rules_inputs()
+    })
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "comparison_rules_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "comparison_rules_page")
+  })
+
+  ### UPDATING COMPARISON RULE
+
+  # Selecting an comparison rule for the iteration (ADD)
+  observeEvent(input$prepare_matching_comparison_rule_update, {
+    showModal(modalDialog(
+      title = "Choose Comparison Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidPage(
+        # Comparison rule table
+        fluidRow(
+          h5(strong("Select A Comparison Method And Corresponding Comparison Rule Below for the Iteration:")),
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
+              dataTableOutput("update_comparison_method_iteration"),
+            )
+          ),
+          # Once an comparison method is selected, show the other table
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
+              conditionalPanel(
+                condition = "input.update_comparison_method_iteration_rows_selected > 0",
+                dataTableOutput("update_comparison_rule_iteration"),
+              ),
+            )
+          ),
+        ),
+
+        # OPTION 1: User may enter a new comparison method & parameters
+        conditionalPanel(
+          condition = "input.update_comparison_method_iteration_rows_selected <= 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the comparison methods page
+          fluidRow(
+            h5(strong("Or, create a new comparison method below:")),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_iteration_to_add_comparison_methods_update", "Create Comparison Method", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # OPTION 2: User may enter a new comparison rule via selected method
+        conditionalPanel(
+          condition = "input.update_comparison_method_iteration_rows_selected > 0 &&
+                       input.update_comparison_rule_iteration_rows_selected <= 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the comparison rules page
+          fluidRow(
+            h5(strong("Or, create a new comparison rule below:")),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_iteration_to_add_comparison_rules_update", "Create Comparison Rule", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # OPTION 3: User can submit which comparison rule they'd like to use
+        conditionalPanel(
+          condition = "input.update_comparison_method_iteration_rows_selected > 0 &&
+                       input.update_comparison_rule_iteration_rows_selected > 0",
+          HTML("<br>"),
+
+          # Button for moving the user to the comparison rules page
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("prepare_iteration_comparison_rule_to_update", "Add Comparison Rule", class = "btn-success"),
+              )
+            ),
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Generates the table of comparison methods (ADD)
+  output$update_comparison_method_iteration <- renderDataTable({
+    get_comparison_methods_and_parameters()
+  })
+
+  # Generates the table of comparison rules & parameters (ADD)
+  observeEvent(input$update_comparison_method_iteration_rows_selected, {
+    selected_row <- input$update_comparison_method_iteration_rows_selected
+
+    if (!is.null(selected_row)) {
+      # Perform a query to get the acceptance methods
+      query <- paste('SELECT * from comparison_methods')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      # Retrieve the acceptance method id of the selected row
+      selected_method <<- df[selected_row, "comparison_method_id"]
+
+      output$update_comparison_rule_iteration <- renderDataTable({
+        comparison_method_id <- selected_method
+
+        # Query to get all acceptance method information from the 'acceptance_method_parameters' table
+        query <- paste('SELECT crp.comparison_rule_id, parameter_id, parameter FROM comparison_rules cr
+                   JOIN comparison_rules_parameters crp ON cr.comparison_rule_id = crp.comparison_rule_id
+                   WHERE comparison_method_id =', comparison_method_id)
+        df <- dbGetQuery(linkage_metadata_conn, query)
+
+        # Aggregate parameters by comparison_rule_id
+        df <- df %>%
+          group_by(comparison_rule_id) %>%
+          summarise(parameters = paste(parameter, collapse = ", ")) %>%
+          ungroup()
+
+        # With our data frame, we'll rename some of the columns to look better (we can always drop the ID if we want)
+        names(df)[names(df) == 'comparison_rule_id'] <- 'Comparison Rule No.'
+        names(df)[names(df) == 'parameters'] <- 'Parameter Values'
+
+        # Put it into a data table now
+        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+      })
+    }
+  })
+
+  # Selects the comparison rule the user wanted (ADD)
+  observeEvent(input$prepare_iteration_comparison_rule_to_update, {
+    # Get the selected row
+    selected_row <- input$update_comparison_method_iteration_rows_selected
+
+    # Query to get all comparison rule information from the 'comparison_methods' table
+    query <- paste('SELECT * FROM comparison_methods
+               ORDER BY comparison_method_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the comparison rule
+    comparison_method_id <- df[selected_row, "comparison_method_id"]
+
+    # Query to get all acceptance method information from the 'acceptance_method_parameters' table
+    query <- paste('SELECT crp.comparison_rule_id, parameter_id, parameter FROM comparison_rules cr
+                   JOIN comparison_rules_parameters crp ON cr.comparison_rule_id = crp.comparison_rule_id
+                   WHERE comparison_method_id =', comparison_method_id)
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Aggregate parameters by comparison_rule_id
+    df <- df %>%
+      group_by(comparison_rule_id) %>%
+      summarise(parameters = paste(parameter, collapse = ", ")) %>%
+      ungroup()
+
+    # Get the selected row for this table
+    selected_row <- input$update_comparison_rule_iteration_rows_selected
+
+    # Get the acceptance rule ID
+    comparison_rule_id <- df$comparison_rule_id[selected_row]
+    # Set the global variable to the selected acceptance rule id
+    matching_comparison_rule_to_update <<- comparison_rule_id
+
+    # Render the output text to make the method readable
+    if(!is.na(comparison_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT method_name FROM comparison_rules cr
+                           JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                           WHERE comparison_rule_id =', comparison_rule_id)
+      method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+      # Query to get the associated parameters for the comparison_rule_id
+      params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+      params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+      # Combine the parameters into a string
+      params_str <- paste(params_df$parameter, collapse = ", ")
+
+      # Create the final string "method_name (key1=value1, key2=value2)"
+      method_with_params <- paste0(method_name, " (", params_str, ")")
+
+      # Render the output text
+      output$matching_comparison_rules_update <- renderText({
+        method_with_params
+      })
+    }
+
+    # Dismiss the modal
+    removeModal()
+  })
+
+  # Brings the user to the comparison methods page (ADD)
+  observeEvent(input$add_linkage_iteration_to_add_comparison_methods_update, {
+    # Set the return page to the add linkage iterations page
+    comparison_methods_return_page <<- "add_linkage_iterations_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "comparison_methods_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "comparison_methods_page")
+  })
+
+  # Brings the user to the comparison rules page (ADD)
+  observeEvent(input$add_linkage_iteration_to_add_comparison_rules_update, {
+    selected_row <- input$update_comparison_method_iteration_rows_selected
+
+    if (!is.null(selected_row)) {
+      # Perform a query to get the comparison methods
+      query <- paste('SELECT * from comparison_methods')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      # Retrieve the comparison method id of the selected row
+      selected_method <<- df[selected_row, "comparison_method_id"]
+    }
+
+    # Set the return page to the add linkage iterations page and the selected method to user input
+    comparison_method_id_add_rule <<- selected_method
+    comparison_rules_return_page  <<- "add_linkage_iterations_page"
+
+    # Update the table of acceptance rules on that page
+    output$currently_added_comparison_rules <- renderDataTable({
+      get_comparison_rules()
+    })
+
+    # Update the UI inputs for the acceptance rules on that page
+    output$comparison_rules_inputs <- renderUI({
+      get_comparison_rules_inputs()
+    })
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "comparison_rules_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "comparison_rules_page")
+  })
+
   #---------------------------------#
+
+  #-- SAVE/MODIFY ITERATION --#
+  # If user clicks on "Save Iteration" we'll either create a new iteration ID or update an existing one
+  observeEvent(input$save_iteration, {
+    # Get the user input values
+    iteration_name     <- input$add_iteration_name
+    iteration_priority <- input$add_iteration_order
+    linkage_method_id  <- input$add_iteration_linkage_method
+    acceptance_rule_id <- iteration_acceptance_rule_to_add
+
+    # Create a data frame of the blocking keys
+    blocking_keys_df <- data.frame(
+      left_field = left_blocking_keys_to_add,
+      right_field = right_blocking_keys_to_add,
+      linkage_rule = blocking_linkage_rules_to_add
+    )
+
+    # Create a data frame of the matching keys
+    matching_keys_df <- data.frame(
+      left_field = left_matching_keys_to_add,
+      right_field = right_matching_keys_to_add,
+      linkage_rule = matching_linkage_rules_to_add,
+      comparison_rule = matching_comparison_rules_to_add
+    )
+
+    #-- Error Handling --#
+
+    # Make sure the generic inputs are all filled
+    if(trimws(iteration_name) == ""){
+      showNotification("Failed to Save Iteration Changes - Iteration Name is Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+    if(iteration_priority <= 0){
+      showNotification("Failed to Save Iteration Changes - Iteration Priority Must be >= 1", type = "error", closeButton = FALSE)
+      return()
+    }
+
+
+    #--------------------#
+
+    # Get the existing iteration ID (if there is one) and use it to either update
+    # an existing ID, or create a new iteration with an auto-increment primary key
+    iteration_id <- existing_iteration_id
+
+    #If ID == 0, then we aren't updating an iteration
+    if(iteration_id == 0){
+
+    }
+    # If ID != 0, then we got an existing iteration to update
+    else{
+
+    }
+  })
+  #---------------------------#
 
   #----
   #---------------------------------------#
