@@ -1741,12 +1741,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   nav_hide('main_navbar', 'view_linkage_iterations_page')
   nav_hide('main_navbar', 'add_linkage_iterations_page')
   nav_hide('main_navbar', 'update_linkage_iterations_page')
+  nav_hide('main_navbar', 'acceptance_methods_page')
+  nav_hide('main_navbar', 'comparison_methods_page')
+  nav_hide('main_navbar', 'ground_truth_variables_page')
 
   # If the user goes off of an inner tab, hide it
   observeEvent(input$main_navbar, {
     # Get the tabs that are not necessary for the user
     tabs_to_hide <- c("linkage_rule_page", "acceptance_rules_page", "comparison_rules_page",
-                      "view_linkage_iterations_page", "add_linkage_iterations_page", "update_linkage_iterations_page")
+                      "view_linkage_iterations_page", "add_linkage_iterations_page", "update_linkage_iterations_page",
+                      "acceptance_methods_page", "comparison_methods_page", "ground_truth_variables_page")
     selected_panel <- input$main_navbar
 
     # Hide the page if its not the one you're currently on
@@ -3761,7 +3765,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     selected_row <- input$add_acceptance_rule_iteration_rows_selected
 
     # Get the acceptance rule ID
-    acceptance_rule_id <- df[selected_row, "acceptance_rule_id"]
+    acceptance_rule_id <- df$acceptance_rule_id[selected_row]
 
     # Set the global variable to the selected acceptance rule id
     iteration_acceptance_rule_to_add <<- acceptance_rule_id
@@ -4360,8 +4364,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     right_matching_field <- input$right_matching_field_add
     linkage_rule_id      <- matching_linkage_rule_to_add
     comparison_rule_id   <- matching_comparison_rule_to_add
-    print(linkage_rule_id)
-    print(comparison_rule_id)
     #----#
 
     # Error Handling
@@ -5359,10 +5361,18 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   # If user clicks on "Save Iteration" we'll either create a new iteration ID or update an existing one
   observeEvent(input$save_iteration, {
     # Get the user input values
+    algorithm_id       <- add_linkage_iterations_algorithm_id
     iteration_name     <- input$add_iteration_name
     iteration_priority <- input$add_iteration_order
     linkage_method_id  <- input$add_iteration_linkage_method
     acceptance_rule_id <- iteration_acceptance_rule_to_add
+    modified_by <- username
+    modified_date <- format(Sys.Date(), format = "%Y-%m-%d")
+    # print(paste0("Algorithm ID: ", algorithm_id))
+    # print(paste0("Iteration Name: ", iteration_name))
+    # print(paste0("Iteration Priority: ", iteration_priority))
+    # print(paste0("Linkage Method: ", linkage_method_id))
+    # print(paste0("Acceptance Rule: ", acceptance_rule_id))
 
     # Create a data frame of the blocking keys
     blocking_keys_df <- data.frame(
@@ -5386,26 +5396,296 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       showNotification("Failed to Save Iteration Changes - Iteration Name is Missing", type = "error", closeButton = FALSE)
       return()
     }
-    if(iteration_priority <= 0){
+    if(is.na(iteration_priority) || iteration_priority <= 0){
       showNotification("Failed to Save Iteration Changes - Iteration Priority Must be >= 1", type = "error", closeButton = FALSE)
       return()
     }
-
-
+    if(linkage_method_id == 'null'){
+      showNotification("Failed to Save Iteration Changes - Linkage Method Must Be Selected", type = "error", closeButton = FALSE)
+      return()
+    }
     #--------------------#
 
     # Get the existing iteration ID (if there is one) and use it to either update
     # an existing ID, or create a new iteration with an auto-increment primary key
-    iteration_id <- existing_iteration_id
+    stored_iteration_id <- existing_iteration_id
+
+    # Variable to determine whether we modified the iteration successfully
+    successful <- TRUE
 
     #If ID == 0, then we aren't updating an iteration
-    if(iteration_id == 0){
+    if(stored_iteration_id == 0){
+      tryCatch({
+        # Start a transaction
+        dbBegin(linkage_metadata_conn)
 
+        # Make sure no two iterations share the same iteration number by updating any that may require it
+        #----#
+        query <- paste('SELECT * FROM linkage_iterations
+                        WHERE algorithm_id =', algorithm_id,
+                       'ORDER BY iteration_num ASC;')
+        df <- dbGetQuery(linkage_metadata_conn, query)
+
+        # For each row in the data frame, make sure no two rows have the same priority
+        if(nrow(df) > 0){
+          # Start by storing the 'previous' iteration priority
+          previous_iteration_priority <- iteration_priority
+          for(index in 1:nrow(df)){
+            # If the previous iteration priority equals the priority stored in the database, add +1 to it
+            if(df$iteration_num[index] == previous_iteration_priority){
+              df$iteration_num[index] <- df$iteration_num[index] + 1
+              previous_iteration_priority <- df$iteration_num[index]
+            }
+          }
+
+          # After we update all the iteration priorities, update their values in the database
+          for(index in 1:nrow(df)){
+            # Update query
+            update_query <- paste("UPDATE linkage_iterations
+                                   SET iteration_num = ?
+                                   WHERE iteration_id = ?")
+            update <- dbSendStatement(linkage_metadata_conn, update_query)
+            dbBind(update, list(df$iteration_num[index], df$iteration_id[index]))
+            dbClearResult(update)
+          }
+        }
+
+        #print("STEP 1")
+        #----#
+
+        # Create a new iteration
+        #----#
+        # print(class(algorithm_id))
+        # print(class(iteration_name))
+        # print(class(iteration_priority))
+        # print(class(linkage_method_id))
+        # print(class(acceptance_rule_id))
+        # print(class(modified_date))
+        # print(class(modified_by))
+
+        new_entry_query <- paste("INSERT INTO linkage_iterations (algorithm_id, iteration_name, iteration_num, linkage_method_id, acceptance_rule_id, modified_date, modified_by, enabled)",
+                                 "VALUES(?, ?, ?, ?, ?, ?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(algorithm_id, iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, 1))
+        dbClearResult(new_entry)
+        #----#
+
+        #print("STEP 2")
+
+        # Get the most recently inserted iteration_id value
+        iteration_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS iteration_id;")$iteration_id
+
+        # Add each of the blocking keys into the database
+        if(nrow(blocking_keys_df) > 0){
+          for(index in 1:nrow(blocking_keys_df)){
+            # Get the blocking key data for the current row
+            right_dataset_field_id  <- blocking_keys_df$right_field[index]
+            left_dataset_field_id   <- blocking_keys_df$left_field[index]
+            linkage_rule_id         <- blocking_keys_df$linkage_rule[index]
+
+            # Insert the pair of keys + linkage rules into the database
+            new_entry_query <- paste("INSERT INTO blocking_variables (iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id)",
+                                     "VALUES(?, ?, ?, ?);")
+            new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+            dbBind(new_entry, list(iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id))
+            dbClearResult(new_entry)
+          }
+        }
+
+        #print("STEP 3")
+
+        # Finally, add each of the matching keys into the database
+        if(nrow(matching_keys_df) > 0){
+          for(index in 1:nrow(matching_keys_df)){
+            # Get the blocking key data for the current row
+            right_dataset_field_id  <- matching_keys_df$right_field[index]
+            left_dataset_field_id   <- matching_keys_df$left_field[index]
+            linkage_rule_id         <- matching_keys_df$linkage_rule[index]
+            comparison_rule_id      <- matching_keys_df$comparison_rule[index]
+
+            # Insert the pair of keys + linkage rule & comparison rule into the database
+            new_entry_query <- paste("INSERT INTO matching_variables (iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id, comparison_rule_id)",
+                                     "VALUES(?, ?, ?, ?, ?);")
+            new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+            dbBind(new_entry, list(iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id, comparison_rule_id))
+            dbClearResult(new_entry)
+          }
+        }
+
+        #print("STEP 4")
+
+        # Commit transaction
+        dbCommit(linkage_metadata_conn)
+      },
+      error = function(e){
+        print(geterrmessage())
+        # We were unsuccessful
+        successful <<- FALSE
+
+        # If we throw an error because of timeout, or bad insert, then rollback and return
+        dbRollback(linkage_metadata_conn)
+        showNotification("Failed to Create Iteration - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+        return()
+      })
     }
     # If ID != 0, then we got an existing iteration to update
     else{
+      tryCatch({
+        # Start a transaction
+        dbBegin(linkage_metadata_conn)
 
+        # Make sure no two iterations share the same iteration number by updating any that may require it
+        #----#
+        query <- paste('SELECT * FROM linkage_iterations
+                        WHERE algorithm_id =', algorithm_id, 'AND iteration_id !=', stored_iteration_id,
+                       'ORDER BY iteration_num ASC;')
+        df <- dbGetQuery(linkage_metadata_conn, query)
+
+        # For each row in the data frame, make sure no two rows have the same priority
+        if(nrow(df) > 0){
+          # Start by storing the 'previous' iteration priority
+          previous_iteration_priority <- iteration_priority
+          for(index in 1:nrow(df)){
+            # If the previous iteration priority equals the priority stored in the database, add +1 to it
+            if(df$iteration_num[index] == previous_iteration_priority){
+              df$iteration_num[index] <- df$iteration_num[index] + 1
+              previous_iteration_priority <- df$iteration_num[index]
+            }
+          }
+
+          # After we update all the iteration priorities, update their values in the database
+          for(index in 1:nrow(df)){
+            # Update query
+            update_query <- paste("UPDATE linkage_iterations
+                                   SET iteration_num = ?
+                                   WHERE iteration_id = ?")
+            update <- dbSendStatement(linkage_metadata_conn, update_query)
+            dbBind(update, list(df$iteration_num[index], df$iteration_id[index]))
+            dbClearResult(update)
+          }
+        }
+        #----#
+
+        # Create a new entry query for updating the linkage iteration
+        #----#
+        update_query <- paste("UPDATE linkage_iterations
+                          SET iteration_name = ?, iteration_num = ?, linkage_method_id = ?, acceptance_rule_id = ?, modified_date = ?, modified_by = ?
+                          WHERE iteration_id = ?")
+        update <- dbSendStatement(linkage_metadata_conn, update_query)
+        dbBind(update, list(iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, stored_iteration_id))
+        dbClearResult(update)
+        #----#
+
+        # To update the blocking and matching keys, we'll need to delete them and add the prepared keys
+
+        # Create a new entry query for deleting the blocking variable
+        #----#
+        delete_query <- paste("DELETE FROM blocking_variables
+                               WHERE iteration_id = ?")
+        delete <- dbSendStatement(linkage_metadata_conn, delete_query)
+        dbBind(delete, list(stored_iteration_id))
+        dbClearResult(delete)
+        #----#
+
+        # Create a new entry query for deleting the matching variable
+        #----#
+        delete_query <- paste("DELETE FROM matching_variables
+                               WHERE iteration_id = ?")
+        delete <- dbSendStatement(linkage_metadata_conn, delete_query)
+        dbBind(delete, list(stored_iteration_id))
+        dbClearResult(delete)
+        #----#
+
+        # Add each of the blocking keys into the database
+        if(nrow(blocking_keys_df) > 0){
+          for(index in 1:nrow(blocking_keys_df)){
+            # Get the blocking key data for the current row
+            right_dataset_field_id  <- blocking_keys_df$right_field[index]
+            left_dataset_field_id   <- blocking_keys_df$left_field[index]
+            linkage_rule_id         <- blocking_keys_df$linkage_rule[index]
+
+            # Insert the pair of keys + linkage rules into the database
+            new_entry_query <- paste("INSERT INTO blocking_variables (iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id)",
+                                     "VALUES(?, ?, ?, ?);")
+            new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+            dbBind(new_entry, list(stored_iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id))
+            dbClearResult(new_entry)
+          }
+        }
+
+        # Finally, add each of the matching keys into the database
+        if(nrow(matching_keys_df) > 0){
+          for(index in 1:nrow(matching_keys_df)){
+            # Get the blocking key data for the current row
+            right_dataset_field_id  <- matching_keys_df$right_field[index]
+            left_dataset_field_id   <- matching_keys_df$left_field[index]
+            linkage_rule_id         <- matching_keys_df$linkage_rule[index]
+            comparison_rule_id      <- matching_keys_df$comparison_rule[index]
+
+            # Insert the pair of keys + linkage rule & comparison rule into the database
+            new_entry_query <- paste("INSERT INTO matching_variables (iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id, comparison_rule_id)",
+                                     "VALUES(?, ?, ?, ?, ?);")
+            new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+            dbBind(new_entry, list(stored_iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id, comparison_rule_id))
+            dbClearResult(new_entry)
+          }
+        }
+
+        # Commit transaction
+        dbCommit(linkage_metadata_conn)
+      },
+      error = function(e){
+        # We were unsuccessful
+        successful <- FALSE
+
+        # If we throw an error because of timeout, or bad insert, then rollback and return
+        dbRollback(linkage_metadata_conn)
+        showNotification("Failed to Modify Iteration - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+        return()
+      })
     }
+
+    # If we were unsuccessful, return here
+    if(successful == FALSE) return()
+
+    # Show success notification
+    if(stored_iteration_id == 0){
+      showNotification("Linkage Iteration Successfully Created", type = "message", closeButton = FALSE)
+    }
+    else{
+      showNotification("Linkage Iteration Successfully Updated", type = "message", closeButton = FALSE)
+    }
+
+    # GLOBAL VARIABLES FOR STORING THE TEMPORARY BLOCKING AND MATCHING KEYS + THEIR RULES
+    left_blocking_keys_to_add        <<- c()
+    right_blocking_keys_to_add       <<- c()
+    blocking_linkage_rules_to_add    <<- c()
+
+    left_matching_keys_to_add        <<- c()
+    right_matching_keys_to_add       <<- c()
+    matching_linkage_rules_to_add    <<- c()
+    matching_comparison_rules_to_add <<- c()
+
+    # GLOBAL VARIABLES FOR STORING THE ACCEPTANCE RULES, PREPARED LINKAGE RULES, AND PREPARED COMPARISON RULES
+    iteration_acceptance_rule_to_add   <<- NA
+    blocking_linkage_rule_to_add       <<- NA
+    blocking_linkage_rule_to_update    <<- NA
+    matching_linkage_rule_to_add       <<- NA
+    matching_linkage_rule_to_update    <<- NA
+    matching_comparison_rule_to_add    <<- NA
+    matching_comparison_rule_to_update <<- NA
+
+    # Update the table of iterations on the 'view iterations' page
+    output$currently_added_linkage_iterations <- renderDataTable({
+      get_linkage_iterations_view()
+    })
+    output$previously_used_iterations <- renderDataTable({
+      get_linkage_iterations_add_existing()
+    })
+
+    # Bring the user back to the view iterations page
+    nav_show("main_navbar", add_linkage_iterations_return_page)
+    updateNavbarPage(session, "main_navbar", selected = add_linkage_iterations_return_page)
   })
   #---------------------------#
 
