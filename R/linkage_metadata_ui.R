@@ -374,7 +374,7 @@ linkage_ui <- page_navbar(
 
       # Once the user selects their LEFT and RIGHT dataset, show them the table of linkage algorithms
       conditionalPanel(
-        condition = "input.linkage_algorithm_left_dataset != 'null' && input.linkage_algorithm_right_dataset != 'null'
+        condition = "input.linkage_algorithm_left_dataset != '' && input.linkage_algorithm_right_dataset != ''
                     && input.linkage_algorithm_left_dataset != input.linkage_algorithm_right_dataset",
 
         # Generate the table
@@ -617,7 +617,7 @@ linkage_ui <- page_navbar(
                   )
                 ),
                 column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                    actionButton("modify_linkage_iterations", "Modify", class = "btn-warning"),
+                    actionButton("modify_linkage_iteration", "Modify", class = "btn-warning"),
 
                     # Add the popover manually
                     h1(tooltip(bs_icon("question-circle"),
@@ -960,22 +960,81 @@ linkage_ui <- page_navbar(
   #----
   #----------------------------#
 
-  #-- UPDATE LINKAGE ITERATIONS --#
-  #----
-  nav_panel(title = "Update Linkage Iterations", value = "update_linkage_iterations_page",
-
-  ),
-  #----
-  #-------------------------------#
-
   #-- GROUND TRUTH VARIABLES PAGE --#
   #----
   nav_panel(title = "Ground Truth Variables", value = "ground_truth_variables_page",
-            fluidPage(
-              "You are on the ground truth variables page. Here, you can view, add, modify, and drop the ground truth variables used
-        in a specific linkage algorithm. Each algorithm has its own variables that can be added to, modified, or deleted, without
-        affecting the variables of any other algorithm.",
+    fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+          actionButton("modify_ground_truth_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some space
+      HTML("<br>"),
+
+      # Render the data table of this algorithms ground truth variables
+      h5(strong("Select A Pair of Ground Truth Variables to Drop:")),
+      h6(p(strong("NOTE: "), "No duplicate ground truth pairs are allowed.")),
+      dataTableOutput("currently_added_ground_truth_variables"),
+
+      # If now row is selected, the user can enter a new pair of ground truth variables + linkage rules
+      conditionalPanel(
+        condition = "input.currently_added_ground_truth_variables_rows_selected <= 0",
+
+        # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
+        card(width = 1, height = 350, full_screen = FALSE, card_header("Add Ground Truth Variables"),
+          fluidPage(
+            fluidRow(
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("ground_truth_left_field_input"),
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("ground_truth_right_field_input"),
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Linkage Rule:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                       div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("selected_ground_truth_linkage_rule")
+                      ),
+                      # Add linkage rule button
+                      actionButton("prepare_ground_truth_linkage_rule", label = "", shiny::icon("plus")),
+                    ))
+                  )
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("add_ground_truth", "Add Ground Truth Pair", class = "btn-success"),
+                )
+              )
             )
+          )
+        )
+      ),
+      # If a row is selected, the user can drop the selected pair of ground truth variables
+      conditionalPanel(
+        condition = "input.currently_added_ground_truth_variables_rows_selected > 0",
+
+        # Show a card for users to drop the selected row
+        card(width = 0.25, max_height = 125, full_screen = FALSE, card_header("Drop Ground Truth Variables"),
+          fluidPage(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("drop_ground_truth", "Drop Ground Truth Pair", class = "btn-danger"),
+              )
+            )
+          )
+        )
+      )
+    )
   ),
   #----
   #---------------------------------#
@@ -2286,12 +2345,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$dataset_id, query_result$dataset_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("linkage_algorithm_left_dataset", label = "Left Dataset:",
-                     choices = choices, width = validateCssUnit(500)))
+    span(selectizeInput("linkage_algorithm_left_dataset", label = "Left Dataset:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(500),
+                     options = list(
+                       placeholder = 'Select a Left Dataset',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Creates the select input UI for the left dataset
@@ -2307,8 +2367,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     choices <- c(" " = "null", choices)
 
     # Create select input with dynamic choices
-    span(selectInput("linkage_algorithm_right_dataset", label = "Right Dataset:",
-                     choices = choices, width = validateCssUnit(500)))
+    span(selectizeInput("linkage_algorithm_right_dataset", label = "Right Dataset:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(500),
+                     options = list(
+                       placeholder = 'Select a Right Dataset',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Renders the UI for the left dataset select input
@@ -2325,6 +2389,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   get_linkage_algorithms <- function(){
     left_dataset_id  <- input$linkage_algorithm_left_dataset
     right_dataset_id <- input$linkage_algorithm_right_dataset
+
+    # Convert the dataset IDs to numeric
+    left_dataset_id <- as.numeric(left_dataset_id)
+    right_dataset_id <- as.numeric(right_dataset_id)
 
     # Query to get all linkage method information from the 'linkage_methods' table
     query <- paste('SELECT * FROM linkage_algorithms
@@ -2549,8 +2617,201 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       showNotification("Algorithm Successfully Enabled", type = "message", closeButton = FALSE)
     }
   })
+
+  # Modify the ground truth variables of the selected algorithm
+  observeEvent(input$linkage_algorithms_to_ground_truth, {
+    # Get the selected row
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    # Grab the algorithm id
+    algorithm_id <- df[selected_row, "algorithm_id"]
+
+    # Update the global variable for the acceptance method id and the return page
+    modify_ground_truth_algorithm_id     <<- algorithm_id
+    modify_ground_truth_left_dataset_id  <<- left_dataset_id
+    modify_ground_truth_right_dataset_id <<- right_dataset_id
+    modify_ground_truth_return_page      <<- "linkage_algorithms_page"
+
+    # Update the table of iterations on that page
+    output$ground_truth_left_field_input <- renderUI({
+      left_dataset_ground_truth_fields()
+    })
+    output$ground_truth_right_field_input <- renderUI({
+      right_dataset_ground_truth_fields()
+    })
+    output$currently_added_ground_truth_variables <- renderDataTable({
+      get_ground_truth_variables()
+    })
+
+    # Show the iterations page
+    nav_show('main_navbar', 'ground_truth_variables_page')
+    updateNavbarPage(session, "main_navbar", selected = "ground_truth_variables_page")
+  })
+
   #----
   #------------------------------------#
+
+  #-- MODIFY GROUND TRUTH VARIABLES PAGE EVENTS --#
+  #----
+  modify_ground_truth_algorithm_id     <- 1
+  modify_ground_truth_left_dataset_id  <- 1
+  modify_ground_truth_right_dataset_id <- 1
+  modify_ground_truth_return_page      <- "linkage_algorithms_page"
+
+  # Back button will bring you back to whichever page you came from
+  observeEvent(input$modify_ground_truth_back, {
+    # Show return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = modify_ground_truth_return_page)
+  })
+
+  # Function for creating the table of the currently selected algorithms iterations
+  get_ground_truth_variables <- function(){
+    algorithm_id <- modify_ground_truth_algorithm_id
+
+    # Query to get blocking variables with left and right dataset field names
+    query <- paste('SELECT gt.*,
+                       dfl.field_name AS left_field_name,
+                       dfr.field_name AS right_field_name
+                FROM ground_truth_variables gt
+                LEFT JOIN dataset_fields dfl
+                  ON gt.left_dataset_field_id = dfl.field_id
+                LEFT JOIN dataset_fields dfr
+                  ON gt.right_dataset_field_id = dfr.field_id
+                WHERE gt.algorithm_id =', algorithm_id,
+                   'ORDER BY gt.parameter_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Loop through each row in the dataframe to replace the linkage_rule_id with the method name and parameters
+    for (i in 1:nrow(df)) {
+
+      # Get the linkage_rule_id for the current row
+      linkage_rule_id <- df$linkage_rule_id[i]
+      if (nrow(df) > 0 && !is.na(linkage_rule_id)){
+        # Query to get the acceptance method name from the comparison_rules table
+        method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+        method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+        # We'll start with "Alternative Field"
+        alt_field_val <- method_df$alternate_field_value
+        if(!is.na(alt_field_val)){
+          method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+        }
+
+        # Next we'll handle the "Integer Variance"
+        int_variance <- method_df$integer_value_variance
+        if(!is.na(int_variance)){
+          method_df$integer_value_variance <- paste0("±", int_variance)
+        }
+
+        # Next we'll handle "Name Substring"
+        name_substring <- method_df$substring_length
+        if(!is.na(name_substring)){
+          method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+        }
+
+        # With standardized names, we'll replace the [0, 1] with [No, Yes]
+        method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+        # Rename the column names to be easier to read when printed in table format
+        names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+        names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+        names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+        names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+        # Drop the linkage_rule_id from the table
+        method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+        # Initialize an empty list to store non-NA values
+        non_na_values <- list()
+
+        # Loop through each column in the current row
+        for (col_name in colnames(method_df)) {
+          value <- method_df[1, col_name]
+
+          # If the value is not NA, add it to the list
+          if (!is.na(value)) {
+            non_na_values <- c(non_na_values, paste0(value))
+          }
+        }
+
+        # Combine the non-NA values into a single string, separated by commas
+        combined_values <- paste(non_na_values, collapse = ", ")
+
+        # Place the combined values into the data frame
+        df$linkage_rule_id[i] <- combined_values
+      }
+    }
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'right_field_name'] <- 'Right Dataset Field'
+    names(df)[names(df) == 'left_field_name'] <- 'Left Dataset Field'
+    names(df)[names(df) == 'linkage_rule_id'] <- 'Linkage Rules'
+
+    # Drop the algorithm_id, parameter_id, and dataset field ID columns from the table
+    df <- subset(df, select = -c(algorithm_id, parameter_id, right_dataset_field_id, left_dataset_field_id))
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+  }
+
+  # Renders the data table of iterations that can be modified
+  output$currently_added_ground_truth_variables <- renderDataTable({
+    get_ground_truth_variables()
+  })
+
+  # Creates the select input UI for available left fields
+  left_dataset_ground_truth_fields <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", modify_ground_truth_left_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Create select input with dynamic choices
+    span(selectizeInput("left_ground_truth_field", label = "Left Dataset Field:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Left Ground Truth Field',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
+  }
+
+  # Creates the select input UI for available right fields
+  right_dataset_ground_truth_fields <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", modify_ground_truth_right_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Create select input with dynamic choices
+    span(selectizeInput("right_ground_truth_field", label = "Right Dataset Field:",
+                        choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                        options = list(
+                          placeholder = 'Select a Right Ground Truth Field',
+                          onInitialize = I('function() { this.setValue(""); }')
+                        )))
+  }
+
+  # Renders the UI for the left ground truth field add select input
+  output$ground_truth_left_field_input <- renderUI({
+    left_dataset_ground_truth_fields()
+  })
+
+  # Renders the UI for the right ground truth field add select input
+  output$ground_truth_right_field_input <- renderUI({
+    right_dataset_ground_truth_fields()
+  })
+  #----
+  #-----------------------------------------------#
 
   #-- VIEW LINKAGE ITERATIONS PAGE EVENTS --#
   #----
@@ -3073,7 +3334,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Pre-populate the general information from the database
     updateTextAreaInput(session, "add_iteration_name", value = iteration_name)
     updateNumericInput(session, "add_iteration_order", value = iteration_num)
-    updateSelectInput(session, "add_iteration_linkage_method", selected = linkage_method_id)
+    updateSelectizeInput(session, "add_iteration_linkage_method", selected = linkage_method_id)
     iteration_acceptance_rule_to_add <<- acceptance_rule_id
     if(!is.na(acceptance_rule_id)){
       # Query to get the acceptance method name from the acceptance_rules table
@@ -3100,6 +3361,192 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     nav_show('main_navbar', 'add_linkage_iterations_page')
     updateNavbarPage(session, "main_navbar", selected = "add_linkage_iterations_page")
   })
+
+  # If the user wants to toggle an iteration
+  observeEvent(input$toggle_linkage_iteration, {
+    # Get the row that we're supposed to be toggling
+    #----#
+    algorithm_id <- view_linkage_iterations_algorithm_id
+    selected_row     <- input$currently_added_linkage_iterations_rows_selected
+    # Query to get all linkage iteration information from the 'linkage_iterations' table
+    query <- paste('SELECT * FROM linkage_iterations
+                WHERE algorithm_id =', algorithm_id,
+                   'ORDER BY iteration_num ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    iteration_id   <- df$iteration_id[selected_row]
+    iteration_name <- df$iteration_name[selected_row]
+    enabled_value  <- df$enabled[selected_row]
+    #----#
+
+    # Create a query for updating the enabled value of the record
+    #----#
+    if(enabled_value == 1){
+      update_query <- paste("UPDATE linkage_iterations
+                          SET enabled = 0
+                          WHERE iteration_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(iteration_id))
+      dbClearResult(update)
+    }else{
+      # Error handling - don't allow user to have two iterations enabled with the same name
+      #----#
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_iterations WHERE algorithm_id = ? AND iteration_name = ? AND enabled = 1;')
+      dbBind(get_query, list(algorithm_id, iteration_name))
+      output_df <- dbFetch(get_query)
+      enabled_databases <- nrow(output_df)
+      dbClearResult(get_query)
+
+      if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
+        showNotification("Failed to Enable Algorithm - Algorithm with the same name is already enabled", type = "error", closeButton = FALSE)
+        return()
+      }
+      #----#
+
+      update_query <- paste("UPDATE linkage_iterations
+                          SET enabled = 1
+                          WHERE iteration_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(iteration_id))
+      dbClearResult(update)
+    }
+    #----#
+
+    # Re-render data tables and reset UI
+    #----#
+    output$currently_added_linkage_iterations <- renderDataTable({
+      get_linkage_iterations_view()
+    })
+    #----#
+
+    # Send a success notification
+    #----#
+    if(enabled_value == 1){
+      showNotification("Iteration Successfully Disabled", type = "message", closeButton = FALSE)
+    }else{
+      showNotification("Iteration Successfully Enabled", type = "message", closeButton = FALSE)
+    }
+  })
+
+  # If the user wants to update the iteration (and its fields)
+  observeEvent(input$modify_linkage_iteration, {
+    # Get the selected algorithm ID and the selected row
+    algorithm_id <- view_linkage_iterations_algorithm_id
+    selected_row <- input$currently_added_linkage_iterations_rows_selected
+
+    # Query to get all linkage iteration information from the 'linkage_iterations' table
+    query <- paste('SELECT * FROM linkage_iterations
+                WHERE algorithm_id =', algorithm_id,
+                   'ORDER BY iteration_num ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Grab the iteration id
+    iteration_id <- df$iteration_id[selected_row]
+
+    # Get the blocking variables for this iteration
+    query <- paste('SELECT * FROM blocking_variables
+                WHERE iteration_id =', iteration_id,
+                   'ORDER BY iteration_id ASC;')
+    df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Prepare the global variables
+    left_blocking_keys_to_add        <<- df_temp$left_dataset_field_id
+    right_blocking_keys_to_add       <<- df_temp$right_dataset_field_id
+    blocking_linkage_rules_to_add    <<- df_temp$linkage_rule_id
+
+    # Get the blocking variables for this iteration
+    query <- paste('SELECT * FROM matching_variables
+                WHERE iteration_id =', iteration_id,
+                   'ORDER BY iteration_id ASC;')
+    df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Prepare the global variables
+    left_matching_keys_to_add        <<- df_temp$left_dataset_field_id
+    right_matching_keys_to_add       <<- df_temp$right_dataset_field_id
+    matching_linkage_rules_to_add    <<- df_temp$linkage_rule_id
+    matching_comparison_rules_to_add <<- df_temp$comparison_rule_id
+
+    # Set the back page to here and give them the algorithm ID we're part of
+    add_linkage_iterations_algorithm_id     <<- view_linkage_iterations_algorithm_id
+    add_linkage_iterations_return_page      <<- "view_linkage_iterations_page"
+    add_linkage_iterations_left_dataset_id  <<- view_linkage_iterations_left_dataset_id
+    add_linkage_iterations_right_dataset_id <<- view_linkage_iterations_right_dataset_id
+    existing_iteration_id                   <<- iteration_id
+
+    # Update the table of matching and blocking keys on that page
+    output$add_blocking_variables_table <- renderDataTable({
+      get_blocking_keys_to_add()
+    })
+    output$add_matching_variables_table <- renderDataTable({
+      get_matching_keys_to_add()
+    })
+    output$add_left_blocking_field_input <- renderUI({
+      get_left_dataset_blocking_fields_to_add()
+    })
+    output$add_right_blocking_field_input <- renderUI({
+      get_right_dataset_blocking_fields_to_add()
+    })
+    output$update_left_blocking_field_input <- renderUI({
+      get_left_dataset_blocking_fields_to_update()
+    })
+    output$update_right_blocking_field_input <- renderUI({
+      get_right_dataset_blocking_fields_to_update()
+    })
+    output$add_left_matching_field_input <- renderUI({
+      get_left_dataset_matching_fields_to_add()
+    })
+    output$add_right_matching_field_input <- renderUI({
+      get_right_dataset_matching_fields_to_add()
+    })
+    output$update_left_matching_field_input <- renderUI({
+      get_left_dataset_matching_fields_to_update()
+    })
+    output$update_right_matching_field_input <- renderUI({
+      get_right_dataset_matching_fields_to_update()
+    })
+
+    # Get the general iteration information from the database
+    query <- paste('SELECT * FROM linkage_iterations
+                WHERE iteration_id =', iteration_id,
+                   'ORDER BY iteration_id ASC;')
+    df_temp <- dbGetQuery(linkage_metadata_conn, query)
+
+    iteration_name     <- df_temp$iteration_name
+    iteration_num      <- df_temp$iteration_num
+    linkage_method_id  <- df_temp$linkage_method_id
+    acceptance_rule_id <- df_temp$acceptance_rule_id
+
+    # Pre-populate the general information from the database
+    updateTextAreaInput(session, "add_iteration_name", value = iteration_name)
+    updateNumericInput(session, "add_iteration_order", value = iteration_num)
+    updateSelectizeInput(session, "add_iteration_linkage_method", selected = linkage_method_id)
+    iteration_acceptance_rule_to_add <<- acceptance_rule_id
+    if(!is.na(acceptance_rule_id)){
+      # Query to get the acceptance method name from the acceptance_rules table
+      method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                           JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                           WHERE acceptance_rule_id =', acceptance_rule_id)
+      method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+      # Query to get the associated parameters for the acceptance_rule_id
+      params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+      params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+      # Combine the parameters into a string
+      params_str <- paste(params_df$parameter, collapse = ", ")
+
+      # Create the final string "method_name (key1=value1, key2=value2)"
+      method_with_params <- paste0(method_name, " (", params_str, ")")
+      output$selected_iteration_acceptance_rule <- renderText({
+        method_with_params
+      })
+    }
+
+    # Show the add linkage iteration page
+    nav_show('main_navbar', 'add_linkage_iterations_page')
+    updateNavbarPage(session, "main_navbar", selected = "add_linkage_iterations_page")
+  })
+
   #----
   #-----------------------------------------#
 
@@ -3149,12 +3596,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$field_id, query_result$field_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("left_blocking_field_add", label = "Left Dataset Field:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("left_blocking_field_add", label = "Left Dataset Field:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Left Blocking Field',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Creates the select input UI for available right fields
@@ -3166,12 +3614,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$field_id, query_result$field_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("right_blocking_field_add", label = "Right Dataset Field:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("right_blocking_field_add", label = "Right Dataset Field:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Right Blocking Field',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Creates the select input UI for available left fields
@@ -3183,12 +3632,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$field_id, query_result$field_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("left_blocking_field_update", label = "Left Dataset Field:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("left_blocking_field_update", label = "Left Dataset Field:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Left Blocking Field',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Creates the select input UI for available right fields
@@ -3200,12 +3650,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$field_id, query_result$field_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("right_blocking_field_update", label = "Right Dataset Field:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("right_blocking_field_update", label = "Right Dataset Field:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Right Blocking Field',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Renders the UI for the left blocking field add select input
@@ -3239,12 +3690,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$field_id, query_result$field_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("left_matching_field_add", label = "Left Dataset Field:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("left_matching_field_add", label = "Left Dataset Field:",
+                        choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                        options = list(
+                          placeholder = 'Select a Left Matching Field',
+                          onInitialize = I('function() { this.setValue(""); }')
+                        )))
   }
 
   # Creates the select input UI for available right fields
@@ -3256,12 +3708,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$field_id, query_result$field_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("right_matching_field_add", label = "Right Dataset Field:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("right_matching_field_add", label = "Right Dataset Field:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Right Matching Field',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Creates the select input UI for available left fields
@@ -3273,12 +3726,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$field_id, query_result$field_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("left_matching_field_update", label = "Left Dataset Field:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("left_matching_field_update", label = "Left Dataset Field:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Left Matching Field',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Creates the select input UI for available right fields
@@ -3290,12 +3744,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$field_id, query_result$field_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("right_matching_field_update", label = "Right Dataset Field:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("right_matching_field_update", label = "Right Dataset Field:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Right Matching Field',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Renders the UI for the left blocking field add select input
@@ -3339,12 +3794,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(df$linkage_method_id, df$implementation_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
-    span(selectInput("add_iteration_linkage_method", label = "Linkage Method & Technique:",
-                     choices = choices, width = validateCssUnit(300)))
+    span(selectizeInput("add_iteration_linkage_method", label = "Linkage Method & Technique:",
+                     choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                     options = list(
+                       placeholder = 'Select a Linkage Method',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     )))
   }
 
   # Renders the UI for the linkage method select input
@@ -3917,8 +4373,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     linkage_rule_id      <- blocking_linkage_rules_to_add[row_selected]
 
     # Now update the input fields
-    updateSelectInput(session, "left_blocking_field_update",  selected = left_blocking_field)
-    updateSelectInput(session, "right_blocking_field_update", selected = right_blocking_field)
+    updateSelectizeInput(session, "left_blocking_field_update",  selected = left_blocking_field)
+    updateSelectizeInput(session, "right_blocking_field_update", selected = right_blocking_field)
     if(!is.na(linkage_rule_id)){
       # Query to get the acceptance method name from the comparison_rules table
       method_query <- paste('SELECT * FROM linkage_rules
@@ -4434,8 +4890,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     comparison_rule_id   <- matching_comparison_rules_to_add[row_selected]
 
     # Now update the input fields
-    updateSelectInput(session, "left_matching_field_update",  selected = left_matching_field)
-    updateSelectInput(session, "right_matching_field_update", selected = right_matching_field)
+    updateSelectizeInput(session, "left_matching_field_update",  selected = left_matching_field)
+    updateSelectizeInput(session, "right_matching_field_update", selected = right_matching_field)
     if(!is.na(linkage_rule_id)){
       # Query to get the acceptance method name from the comparison_rules table
       method_query <- paste('SELECT * FROM linkage_rules
@@ -5415,6 +5871,23 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     #If ID == 0, then we aren't updating an iteration
     if(stored_iteration_id == 0){
+      # Make sure the iteration name isn't being used yet
+      #----#
+      query <- paste('SELECT * FROM linkage_iterations
+                        WHERE algorithm_id =', algorithm_id,
+                     'ORDER BY iteration_num ASC;')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+
+      # Get the iteration names currently being used
+      iteration_names <- df$iteration_name
+
+      # Check if the name the user passed exists in the database
+      if(iteration_name %in% iteration_names){
+        showNotification("Failed to Save Iteration Changes - Iteration Name Already Being Used", type = "error", closeButton = FALSE)
+        return()
+      }
+      #----#
+
       tryCatch({
         # Start a transaction
         dbBegin(linkage_metadata_conn)
@@ -5530,6 +6003,23 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     }
     # If ID != 0, then we got an existing iteration to update
     else{
+      # Make sure the iteration name isn't being used yet
+      #----#
+      query <- paste('SELECT * FROM linkage_iterations
+                        WHERE algorithm_id =', algorithm_id, 'AND iteration_id !=', stored_iteration_id,
+                     'ORDER BY iteration_num ASC;')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+
+      # Get the iteration names currently being used
+      iteration_names <- df$iteration_name
+
+      # Check if the name the user passed exists in the database
+      if(iteration_name %in% iteration_names){
+        showNotification("Failed to Save Iteration Changes - Iteration Name Already Being Used", type = "error", closeButton = FALSE)
+        return()
+      }
+      #----#
+
       tryCatch({
         # Start a transaction
         dbBegin(linkage_metadata_conn)
