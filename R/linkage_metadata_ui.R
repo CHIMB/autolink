@@ -93,6 +93,31 @@ linkage_ui <- page_navbar(
         }"
       )
     ),
+    tags$style(HTML("
+      .btn-circle {
+        border-radius: 50%;
+        width: 40px; /* Adjust as needed */
+        height: 40px; /* Adjust as needed */
+        padding: 0; /* Remove padding */
+        font-size: 18px; /* Adjust icon size */
+      }
+      .btn-green {
+        background-color: lightgreen;
+        border: none;
+        color: white;
+      }
+      .btn-red {
+        background-color: lightcoral;
+        border: none;
+        color: white;
+      }
+      .btn-green:hover {
+        background-color: green; /* Darker shade on hover */
+      }
+      .btn-red:hover {
+        background-color: red; /* Darker shade on hover */
+      }
+    ")),
     tags$head(tags$style('h6 {color:red;}')),
   ),
   #----
@@ -583,7 +608,9 @@ linkage_ui <- page_navbar(
       # Render the data table of currently available iterations
       h5(strong("Select An Existing Iteration to Update, or to Enable/Disable:")),
       h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
-      dataTableOutput("currently_added_linkage_iterations"),
+      card(full_screen = TRUE, card_header("Current Iterations", class = "bg-dark"), height = 500,
+        dataTableOutput("currently_added_linkage_iterations")
+      ),
 
       # If now row is selected, the user may either create a new iteration, or add a previously used iteration
       # belonging to the same algorithm.
@@ -602,7 +629,7 @@ linkage_ui <- page_navbar(
             width = 1,
             height = 125,
             full_screen = FALSE,
-            card_header("Create New Linkage Iteration"),
+            card_header("Create New Linkage Iteration", class = "bg-dark"),
             card_body(
               fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -620,27 +647,23 @@ linkage_ui <- page_navbar(
         HTML("<br>"),
 
         h5(strong("Or, select a previously used iteration to use here:")),
-        layout_column_wrap(
-          width = 1,
-          height = 400,
-          # CARD FOR EXISTING LINKAGE ITERATIONS
-          card(full_screen = TRUE, card_header("Previously Used Linkage Iterations"),
-            card_body(
+        # CARD FOR EXISTING LINKAGE ITERATIONS
+        card(full_screen = TRUE, card_header("Previously Used Linkage Iterations", class = "bg-dark"), height = 500,
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  dataTableOutput("previously_used_iterations"),
+                )
+              ),
+            ),
+            # If a row is selected, allow them to review and add the iteration
+            conditionalPanel(
+              condition = "input.previously_used_iterations_rows_selected > 0",
               fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    dataTableOutput("previously_used_iterations"),
+                    actionButton("add_existing_linkage_iteration", "Review And Add Iteration", class = "btn-success"),
                   )
                 ),
-              ),
-              # If a row is selected, allow them to review and add the iteration
-              conditionalPanel(
-                condition = "input.previously_used_iterations_rows_selected > 0",
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("add_existing_linkage_iteration", "Review And Add Iteration", class = "btn-success"),
-                    )
-                  ),
-                )
               )
             )
           )
@@ -709,69 +732,68 @@ linkage_ui <- page_navbar(
       # Line break between the table
       HTML("<br>"),
 
+      # CARD FOR GENERAL INFORMATION
       h5(strong("Step 1: Enter General Information About The Linkage Iteration")),
       h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
+      card(
+        width = 1,
+        height = 300,
+        full_screen = FALSE,
+        card_header("Create New Linkage Iteration", class = "bg-dark"),
+        card_body(
+          fluidRow(
+            column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                textAreaInput("add_iteration_name", label = "Iteration/Pass Name:", value = "",
+                              width = validateCssUnit(500), resize = "none"),
 
-      # Create a card for the general information inputs
-      div(style = "display: flex; justify-content: center; align-items: center;",
-        card(
-          width = 1,
-          height = 300,
-          full_screen = FALSE,
-          card_header("Create New Linkage Iteration"),
-          card_body(
-            fluidRow(
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  textAreaInput("add_iteration_name", label = "Iteration/Pass Name:", value = "",
-                                width = validateCssUnit(500), resize = "none"),
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The iteration/pass name is a short descriptor to help identify what was linked",
+                                 "on what specific iteration/pass."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )
+            ),
+            column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                numericInput("add_iteration_order", label = "Iteration Order/Priority:", value = NULL,
+                              width = validateCssUnit(500)),
 
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The iteration/pass name is a short descriptor to help identify what was linked",
-                                   "on what specific iteration/pass."),
-                             placement = "right",
-                             options = list(container = "body")))
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  numericInput("add_iteration_order", label = "Iteration Order/Priority:", value = NULL,
-                                width = validateCssUnit(500)),
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The iteration order determines the order in which the iterations/passes of",
+                                 "the selected algorithm are ran in."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )
+            ),
+            column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                uiOutput("add_iteration_linkage_method_input"),
 
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The iteration order determines the order in which the iterations/passes of",
-                                   "the selected algorithm are ran in."),
-                             placement = "right",
-                             options = list(container = "body")))
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The linkage method determines which class will perform the data linkage process."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )
+            ),
+            column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                    # Label for the uploaded file name
+                    div(style = "margin-right: 10px;", "Acceptance Rule:"),
+                  )),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    # Boxed text output for showing the uploaded file name
+                    div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                        textOutput("selected_iteration_acceptance_rule")
+                    ),
+                    # Add acceptance rule button
+                    actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                    # Remove acceptance rule button
+                    actionButton("remove_iteration_acceptance_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                  ))
                 )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("add_iteration_linkage_method_input"),
-
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The linkage method determines which class will perform the data linkage process."),
-                             placement = "right",
-                             options = list(container = "body")))
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Acceptance Rule:"),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                          textOutput("selected_iteration_acceptance_rule")
-                      ),
-                      # Add linkage rule button
-                      actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("plus")),
-                    ))
-                  )
-                )
-              ),
+              )
             )
           )
         )
@@ -780,222 +802,233 @@ linkage_ui <- page_navbar(
       # Line break between the previous card
       HTML("<br>"),
 
-      # IF THIS LOOKS TOO BAD, JUST HAVE 3 CARDS TOTAL (GENERAL INFO, BLOCKING KEYS, MATCHING KEYS)!!!
-
-      h5(strong("Step 2: Select the Blocking and Matching Variables")),
-      layout_column_wrap(
-        width = 1,
-        height = 500,
-        # CARD FOR BLOCKING VARIABLES
-        card(full_screen = TRUE, card_header("Blocking Variables"),
-          card_body(
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  dataTableOutput("add_blocking_variables_table"),
-                )
-              ),
+      # CARD FOR BLOCKING VARIABLES
+      h5(strong("Step 2: Select the Blocking Variables")),
+      h6(p(strong("NOTE: "), "Blocking variables cannot contain duplicate pairs.")),
+      # CARD FOR BLOCKING VARIABLES
+      card(full_screen = TRUE, card_header("Blocking Variables", class = "bg-dark"), height = 400,
+        card_body(
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                dataTableOutput("add_blocking_variables_table"),
+              )
             ),
-            # If NO ROW IS SELECTED, allow them to add blocking variables
-            conditionalPanel(
-              condition = "input.add_blocking_variables_table_rows_selected <= 0",
-              fluidRow(
-                column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
-                    uiOutput("add_left_blocking_field_input"),
-                  )
-                ),
-                column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                    uiOutput("add_right_blocking_field_input"),
-                  )
-                ),
-                column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
-                    fluidRow(
-                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                        # Label for the uploaded file name
-                        div(style = "margin-right: 10px;", "Linkage Rules:"),
-                      )),
-                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                        # Boxed text output for showing the uploaded file name
-                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                            textOutput("blocking_linkage_rules_add")
-                        ),
-                        # Add linkage rule button
-                        actionButton("prepare_blocking_linkage_rule", label = "", shiny::icon("plus")),
-
-                      ))
-                    )
-                  )
+          ),
+          # If NO ROW IS SELECTED, allow them to add blocking variables
+          conditionalPanel(
+            condition = "input.add_blocking_variables_table_rows_selected <= 0",
+            fluidRow(
+              column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                  uiOutput("add_left_blocking_field_input"),
                 )
               ),
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("prepare_blocking_variables", "Add Blocking Variables", class = "btn-success"),
+              column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("add_right_blocking_field_input"),
+                )
+              ),
+              column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Linkage Rules:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("blocking_linkage_rules_add")
+                      ),
+                      # Add linkage rule button
+                      actionButton("prepare_blocking_linkage_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      # Remove linkage rule button
+                      actionButton("remove_blocking_linkage_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                    ))
                   )
                 )
               )
             ),
-            # If a row IS selected, allow them to update or drop blocking variables
-            conditionalPanel(
-              condition = "input.add_blocking_variables_table_rows_selected > 0",
-              fluidRow(
-                column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
-                    uiOutput("update_left_blocking_field_input"),
-                  )
-                ),
-                column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                    uiOutput("update_right_blocking_field_input"),
-                  )
-                ),
-                column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
-                    fluidRow(
-                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                        # Label for the uploaded file name
-                        div(style = "margin-right: 10px;", "Linkage Rules:"),
-                      )),
-                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                        # Boxed text output for showing the uploaded file name
-                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                            textOutput("blocking_linkage_rules_update")
-                        ),
-                        # Add linkage rule button
-                        actionButton("prepare_blocking_linkage_rule_update", label = "", shiny::icon("plus")),
-
-                      ))
-                    )
-                  )
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("prepare_blocking_variables", "Add Blocking Variables", class = "btn-success"),
+                )
+              )
+            )
+          ),
+          # If a row IS selected, allow them to update or drop blocking variables
+          conditionalPanel(
+            condition = "input.add_blocking_variables_table_rows_selected > 0",
+            fluidRow(
+              column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                  uiOutput("update_left_blocking_field_input"),
                 )
               ),
-              fluidRow(
-                column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                    actionButton("prepare_blocking_variables_update", "Update Blocking Variables", class = "btn-warning"),
+              column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("update_right_blocking_field_input"),
+                )
+              ),
+              column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Linkage Rules:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("blocking_linkage_rules_update")
+                      ),
+                      # Add linkage rule button
+                      actionButton("prepare_blocking_linkage_rule_update", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      # Remove linkage rule button
+                      actionButton("remove_blocking_linkage_rule_update", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                    ))
                   )
-                ),
-                column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                    actionButton("drop_blocking_variables", "Drop Blocking Variables", class = "btn-danger"),
-                  )
+                )
+              )
+            ),
+            fluidRow(
+              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                  actionButton("prepare_blocking_variables_update", "Update Blocking Variables", class = "btn-warning"),
+                )
+              ),
+              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                  actionButton("drop_blocking_variables", "Drop Blocking Variables", class = "btn-danger"),
                 )
               )
             )
           )
-        ),
+        )
+      ),
 
-        # CARD FOR MATCHING VARIABLES
-        card(full_screen = TRUE, card_header("Matching Variables"),
-          card_body(
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  dataTableOutput("add_matching_variables_table"),
-                )
-              ),
+      # LINE BREAK BETWEEN CARDS
+      HTML("<br>"),
+
+      # CARD FOR MATCHING VARIABLES
+      h5(strong("Step 3: Select the Matching Variables")),
+      h6(p(strong("NOTE: "), "Matching variables cannot contain duplicate pairs.")),
+      card(full_screen = TRUE, card_header("Matching Variables", class = "bg-dark"), height = 400,
+        card_body(
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                dataTableOutput("add_matching_variables_table"),
+              )
             ),
-            # If a row IS NOT selected, allow them to add matching variables
-            conditionalPanel(
-              condition = "input.add_matching_variables_table_rows_selected <= 0",
-              fluidRow(
-                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                    uiOutput("add_left_matching_field_input"),
-                  )
-                ),
-                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                    uiOutput("add_right_matching_field_input"),
-                  )
-                ),
-                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                    fluidRow(
-                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                        # Label for the uploaded file name
-                        div(style = "margin-right: 10px;", "Linkage Rules:"),
-                      )),
-                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                        # Boxed text output for showing the uploaded file name
-                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                          textOutput("matching_linkage_rules_add")
-                        ),
-                        # Add linkage rule button
-                        actionButton("prepare_matching_linkage_rule", label = "", shiny::icon("plus")),
-                      ))
-                    )
-                  )
-                ),
-                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                    fluidRow(
-                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                        # Label for the uploaded file name
-                        div(style = "margin-right: 10px;", "Comparison Rules:"),
-                      )),
-                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                        # Boxed text output for showing the uploaded file name
-                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                            textOutput("matching_comparison_rules_add")
-                        ),
-                        # Add linkage rule button
-                        actionButton("prepare_matching_comparison_rule", label = "", shiny::icon("plus")),
-                      ))
-                    )
+          ),
+          # If a row IS NOT selected, allow them to add matching variables
+          conditionalPanel(
+            condition = "input.add_matching_variables_table_rows_selected <= 0",
+            fluidRow(
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("add_left_matching_field_input"),
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("add_right_matching_field_input"),
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Linkage Rules:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                        textOutput("matching_linkage_rules_add")
+                      ),
+                      # Add linkage rule button
+                      actionButton("prepare_matching_linkage_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      # Remove linkage rule button
+                      actionButton("remove_matching_linkage_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                    ))
                   )
                 )
               ),
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("prepare_matching_variables", "Add Matching Variables", class = "btn-success"),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Comparison Rules:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("matching_comparison_rules_add")
+                      ),
+                      # Add comparison rule button
+                      actionButton("prepare_matching_comparison_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      # Remove comparison rule button
+                      actionButton("remove_matching_comparison_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                    ))
                   )
                 )
               )
             ),
-            # If a row IS selected, allow them to update or drop matching variables
-            conditionalPanel(
-              condition = "input.add_matching_variables_table_rows_selected > 0",
-              fluidRow(
-                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                    uiOutput("update_left_matching_field_input"),
-                  )
-                ),
-                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                    uiOutput("update_right_matching_field_input"),
-                  )
-                ),
-                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                    fluidRow(
-                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                        # Label for the uploaded file name
-                        div(style = "margin-right: 10px;", "Linkage Rules:"),
-                      )),
-                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                        # Boxed text output for showing the uploaded file name
-                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                            textOutput("matching_linkage_rules_update")
-                        ),
-                        # Add linkage rule button
-                        actionButton("prepare_matching_linkage_rule_update", label = "", shiny::icon("plus")),
-                      ))
-                    )
-                  )
-                ),
-                column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                    fluidRow(
-                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                        # Label for the uploaded file name
-                        div(style = "margin-right: 10px;", "Comparison Rules:"),
-                      )),
-                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                        # Boxed text output for showing the uploaded file name
-                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                            textOutput("matching_comparison_rules_update")
-                        ),
-                        # Add linkage rule button
-                        actionButton("prepare_matching_comparison_rule_update", label = "", shiny::icon("plus")),
-                      ))
-                    )
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("prepare_matching_variables", "Add Matching Variables", class = "btn-success"),
+                )
+              )
+            )
+          ),
+          # If a row IS selected, allow them to update or drop matching variables
+          conditionalPanel(
+            condition = "input.add_matching_variables_table_rows_selected > 0",
+            fluidRow(
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("update_left_matching_field_input"),
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  uiOutput("update_right_matching_field_input"),
+                )
+              ),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Linkage Rules:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("matching_linkage_rules_update")
+                      ),
+                      # Add linkage rule button
+                      actionButton("prepare_matching_linkage_rule_update", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      # Remove linkage rule button
+                      actionButton("remove_matching_linkage_rule_update", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                    ))
                   )
                 )
               ),
-              fluidRow(
-                column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                    actionButton("prepare_matching_variables_update", "Update Matching Variables", class = "btn-warning"),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Comparison Rules:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("matching_comparison_rules_update")
+                      ),
+                      # Add comparison rule button
+                      actionButton("prepare_matching_comparison_rule_update", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      # Remove comparison rule button
+                      actionButton("remove_matching_comparison_rule_update", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                    ))
                   )
-                ),
-                column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                    actionButton("drop_matching_variables", "Drop Matching Variables", class = "btn-danger"),
-                  )
+                )
+              )
+            ),
+            fluidRow(
+              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                  actionButton("prepare_matching_variables_update", "Update Matching Variables", class = "btn-warning"),
+                )
+              ),
+              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                  actionButton("drop_matching_variables", "Drop Matching Variables", class = "btn-danger"),
                 )
               )
             )
@@ -1013,7 +1046,10 @@ linkage_ui <- page_navbar(
             actionButton("save_iteration", "Save and Modify Iteration", class = "btn-success"),
           )
         ),
-      )
+      ),
+
+      # Final line break
+      HTML("<br><br>")
     )
   ),
   #----
@@ -1066,7 +1102,9 @@ linkage_ui <- page_navbar(
                           textOutput("selected_ground_truth_linkage_rule")
                       ),
                       # Add linkage rule button
-                      actionButton("prepare_ground_truth_linkage_rule", label = "", shiny::icon("plus")),
+                      actionButton("prepare_ground_truth_linkage_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      # Remove linkage rule button
+                      actionButton("remove_ground_truth_linkage_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -2745,7 +2783,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   # Global variables for the linkage audits page
   linkage_audits_algorithm_id <- 1
   linkage_audits_return_page  <- "linkage_algorithms_page"
-  #updateDateRangeInput(session, "audit_date_range", start = "1983-01-01")
 
   # Back button will bring you back to whichever page you came from
   observeEvent(input$linkage_audits_back, {
@@ -2764,6 +2801,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     lower_date <- as.character(as.Date(lower_date, "%Y-%m-%d"))
     upper_date <- as.character(as.Date(upper_date, "%Y-%m-%d"))
 
+    # Create a variable for getting the query results
+    audit_df <- data.frame()
+
     # QUERY 1 (Both date ranges were provided)
     if(!is.na(lower_date) && !is.na(upper_date)){
       # Query for obtaining the performance measures
@@ -2772,35 +2812,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       # Execute the query and bind parameters
       df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, upper_date, algorithm_id))
 
-      # If there are rows for this data frame, convert JSON to a readable format
-      if(nrow(df) > 0){
-        for(row_num in 1:nrow(df)){
-          # Get the stored JSON value
-          json_audit <- df$performance_measures_json[row_num]
-
-          # Parse the JSON into a list
-          parsed_json <- jsonlite::fromJSON(json_audit)
-
-          # Convert the list to a comma-separated string (key: value pairs)
-          json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
-
-          # Replace the original JSON with the string in the same row
-          df$performance_measures_json[row_num] <- json_string
-        }
-      }
-
-      # Drop the audit_id
-      df <- subset(df, select = -c(audit_id))
-
-      # With our data frame, we'll rename some of the columns to look better
-      names(df)[names(df) == 'algorithm_id']              <- 'Algorithm Name'
-      names(df)[names(df) == 'audit_by']                  <- 'Audited By'
-      names(df)[names(df) == 'audit_date']                <- 'Date Audited'
-      names(df)[names(df) == 'performance_measures_json'] <- 'Performance Measures'
-
-      # Put it into a data table now
-      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
-      return(dt)
+      # Pass back the audit_df
+      audit_df <- df
     }
 
     # QUERY 2 (Only lower date range was provided)
@@ -2811,35 +2824,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       # Execute the query and bind parameters
       df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, algorithm_id))
 
-      # If there are rows for this data frame, convert JSON to a readable format
-      if(nrow(df) > 0){
-        for(row_num in 1:nrow(df)){
-          # Get the stored JSON value
-          json_audit <- df$performance_measures_json[row_num]
-
-          # Parse the JSON into a list
-          parsed_json <- jsonlite::fromJSON(json_audit)
-
-          # Convert the list to a comma-separated string (key: value pairs)
-          json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
-
-          # Replace the original JSON with the string in the same row
-          df$performance_measures_json[row_num] <- json_string
-        }
-      }
-
-      # Drop the audit_id
-      df <- subset(df, select = -c(audit_id))
-
-      # With our data frame, we'll rename some of the columns to look better
-      names(df)[names(df) == 'algorithm_id']              <- 'Algorithm Name'
-      names(df)[names(df) == 'audit_by']                  <- 'Audited By'
-      names(df)[names(df) == 'audit_date']                <- 'Date Audited'
-      names(df)[names(df) == 'performance_measures_json'] <- 'Performance Measures'
-
-      # Put it into a data table now
-      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
-      return(dt)
+      # Pass back the audit_df
+      audit_df <- df
     }
 
     # QUERY 3 (Only upper date range was provided)
@@ -2850,35 +2836,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       # Execute the query and bind parameters
       df <- dbGetQuery(linkage_metadata_conn, query, params = list(upper_date, algorithm_id))
 
-      # If there are rows for this data frame, convert JSON to a readable format
-      if(nrow(df) > 0){
-        for(row_num in 1:nrow(df)){
-          # Get the stored JSON value
-          json_audit <- df$performance_measures_json[row_num]
-
-          # Parse the JSON into a list
-          parsed_json <- jsonlite::fromJSON(json_audit)
-
-          # Convert the list to a comma-separated string (key: value pairs)
-          json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
-
-          # Replace the original JSON with the string in the same row
-          df$performance_measures_json[row_num] <- json_string
-        }
-      }
-
-      # Drop the audit_id
-      df <- subset(df, select = -c(audit_id))
-
-      # With our data frame, we'll rename some of the columns to look better
-      names(df)[names(df) == 'algorithm_id']              <- 'Algorithm Name'
-      names(df)[names(df) == 'audit_by']                  <- 'Audited By'
-      names(df)[names(df) == 'audit_date']                <- 'Date Audited'
-      names(df)[names(df) == 'performance_measures_json'] <- 'Performance Measures'
-
-      # Put it into a data table now
-      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
-      return(dt)
+      # Pass back the audit_df
+      audit_df <- df
     }
 
     # QUERY 4 (No date range was provided)
@@ -2889,36 +2848,38 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       # Execute the query and bind parameters
       df <- dbGetQuery(linkage_metadata_conn, query, params = list(algorithm_id))
 
-      # If there are rows for this data frame, convert JSON to a readable format
-      if(nrow(df) > 0){
-        for(row_num in 1:nrow(df)){
-          # Get the stored JSON value
-          json_audit <- df$performance_measures_json[row_num]
-
-          # Parse the JSON into a list
-          parsed_json <- jsonlite::fromJSON(json_audit)
-
-          # Convert the list to a comma-separated string (key: value pairs)
-          json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
-
-          # Replace the original JSON with the string in the same row
-          df$performance_measures_json[row_num] <- json_string
-        }
-      }
-
-      # Drop the audit_id
-      df <- subset(df, select = -c(audit_id))
-
-      # With our data frame, we'll rename some of the columns to look better
-      names(df)[names(df) == 'algorithm_id']              <- 'Algorithm Name'
-      names(df)[names(df) == 'audit_by']                  <- 'Audited By'
-      names(df)[names(df) == 'audit_date']                <- 'Date Audited'
-      names(df)[names(df) == 'performance_measures_json'] <- 'Performance Measures'
-
-      # Put it into a data table now
-      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
-      return(dt)
+      # Pass back the audit_df
+      audit_df <- df
     }
+
+    # If there are rows for this data frame, convert JSON to a readable format
+    if(nrow(audit_df) > 0){
+      for(row_num in 1:nrow(audit_df)){
+        # Get the stored JSON value
+        json_audit <- audit_df$performance_measures_json[row_num]
+
+        # Parse the JSON into a list
+        parsed_json <- jsonlite::fromJSON(json_audit)
+
+        # Convert the list to a comma-separated string (key: value pairs)
+        json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
+
+        # Replace the original JSON with the string in the same row
+        audit_df$performance_measures_json[row_num] <- json_string
+      }
+    }
+
+    # Drop the audit_id
+    audit_df <- subset(audit_df, select = -c(audit_id, algorithm_id))
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(audit_df)[names(audit_df) == 'audit_by']                  <- 'Audited By'
+    names(audit_df)[names(audit_df) == 'audit_date']                <- 'Date Audited'
+    names(audit_df)[names(audit_df) == 'performance_measures_json'] <- 'Performance Measures'
+
+    # Put it into a data table now
+    dt <- datatable(audit_df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+    return(dt)
   }
 
   # Renders the table of audit information
@@ -3381,6 +3342,17 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   # Generates the table of linkage rules
   output$ground_truth_add_linkage_rules <- renderDataTable({
     get_linkage_rules()
+  })
+
+  # Remove the linkage rule for this ground truth variable
+  observeEvent(input$remove_ground_truth_linkage_rule, {
+    # Set the global variable value to NA
+    ground_truth_linkage_rule_to_add <<- NA
+
+    # Render the text output to not include anything
+    output$selected_ground_truth_linkage_rule <- renderText({
+      " "
+    })
   })
   #----#
 
@@ -4434,6 +4406,85 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   # Renders the UI for the right blocking field update select input
   output$update_right_matching_field_input <- renderUI({
     get_right_dataset_matching_fields_to_update()
+  })
+  #-------------------------------------------------------------#
+
+  #-- REMOVE ACCEPTANCE, LINKAGE, AND COMPARISON RULE BUTTONS --#
+  # Remove the acceptance rule for this iteration
+  observeEvent(input$remove_iteration_acceptance_rule, {
+    # Set the global variable value to NA
+    iteration_acceptance_rule_to_add <<- NA
+
+    # Render the text output to not include anything
+    output$selected_iteration_acceptance_rule <- renderText({
+      " "
+    })
+  })
+
+  # Remove the linkage rule from blocking variable being added
+  observeEvent(input$remove_blocking_linkage_rule, {
+    # Set the global variable value to NA
+    blocking_linkage_rule_to_add <<- NA
+
+    # Render the text output to not include anything
+    output$blocking_linkage_rules_add <- renderText({
+      " "
+    })
+  })
+
+  # Remove the linkage rule from blocking variable being updated
+  observeEvent(input$remove_blocking_linkage_rule_update, {
+    # Set the global variable value to NA
+    blocking_linkage_rule_to_update <<- NA
+
+    # Render the text output to not include anything
+    output$blocking_linkage_rules_update <- renderText({
+      " "
+    })
+  })
+
+  # Remove the linkage rule from matching variable being added
+  observeEvent(input$remove_matching_linkage_rule, {
+    # Set the global variable value to NA
+    matching_linkage_rule_to_add <<- NA
+
+    # Render the text output to not include anything
+    output$matching_linkage_rules_add <- renderText({
+      " "
+    })
+  })
+
+  # Remove the linkage rule from matching variable being updated
+  observeEvent(input$remove_matching_linkage_rule_update, {
+    # Set the global variable value to NA
+    matching_linkage_rule_to_update <<- NA
+
+    # Render the text output to not include anything
+    output$matching_linkage_rules_update <- renderText({
+      " "
+    })
+  })
+
+  # Remove the comparison rule from matching variable being added
+  observeEvent(input$remove_matching_comparison_rule, {
+    # Set the global variable value to NA
+    matching_comparison_rule_to_add <<- NA
+
+    # Render the text output to not include anything
+    output$matching_comparison_rules_add <- renderText({
+      " "
+    })
+  })
+
+  # Remove the comparison rule from matching variable being updated
+  observeEvent(input$remove_matching_comparison_rule_update, {
+    # Set the global variable value to NA
+    matching_comparison_rule_to_update <<- NA
+
+    # Render the text output to not include anything
+    output$matching_comparison_rules_update <- renderText({
+      " "
+    })
   })
   #-------------------------------------------------------------#
 
