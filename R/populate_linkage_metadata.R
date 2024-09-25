@@ -27,7 +27,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   # for the metadata UI and data linkage.
   #----
 
-  ### DATASETS AND AUDITING
+  ### DATASETS
   dbExecute(my_db, "
     CREATE TABLE datasets (
       dataset_id INTEGER PRIMARY KEY,
@@ -43,16 +43,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       dataset_id INTEGER REFERENCES datasets(dataset_id),
       field_id INTEGER PRIMARY KEY,
       field_name VARCHAR(255)
-    );
-  ")
-
-  dbExecute(my_db, "
-    CREATE TABLE performance_measures_audit (
-      audit_id INTEGER PRIMARY KEY,
-      left_dataset_id INTEGER REFERENCES datasets(dataset_id),
-      right_dataset_id INTEGER REFERENCES datasets(dataset_id),
-      audit_date TEXT,
-      performance_measures_json TEXT
     );
   ")
 
@@ -193,6 +183,30 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       modified_date TEXT,
       modified_by VARCHAR (255),
       enabled INTEGER
+    );
+  ")
+
+  ### AUDITING
+  #-- V1 --#
+  # dbExecute(my_db, "
+  #   CREATE TABLE performance_measures_audit (
+  #     audit_id INTEGER PRIMARY KEY,
+  #     left_dataset_id INTEGER REFERENCES datasets(dataset_id),
+  #     right_dataset_id INTEGER REFERENCES datasets(dataset_id),
+  #     audit_date TEXT,
+  #     performance_measures_json TEXT
+  #   );
+  # ")
+  #--------#
+
+  # V2
+  dbExecute(my_db, "
+    CREATE TABLE performance_measures_audit (
+      audit_id INTEGER PRIMARY KEY,
+      algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
+      audit_by VARCHAR(255),
+      audit_date TEXT,
+      performance_measures_json TEXT
     );
   ")
 

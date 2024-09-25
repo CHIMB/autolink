@@ -397,7 +397,7 @@ linkage_ui <- page_navbar(
               card_header("Algorithm Specific Information"),
               card_body(
                 fluidRow(
-                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                  column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
                       actionButton("toggle_algorithm", "Toggle Selected Algorithm", class = "btn-success"),
 
                       # Add the popover manually
@@ -412,7 +412,7 @@ linkage_ui <- page_navbar(
                       ))
                     )
                   ),
-                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                  column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
                       actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes", class = "btn-warning"),
 
                       # Add the popover manually
@@ -423,12 +423,23 @@ linkage_ui <- page_navbar(
                       ))
                     )
                   ),
-                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                  column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
                       actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables", class = "btn-info"),
 
                       # Add the popover manually
                       h1(tooltip(bs_icon("question-circle"),
                                  paste("View, add, and modify the ground truth variables for this algorithm."),
+                                 placement = "right",
+                                 options = list(container = "body")
+                      ))
+                    )
+                  ),
+                  column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("linkage_algorithms_to_audits", "Saved Performance Measures", class = "btn-info"),
+
+                      # Add the popover manually
+                      h1(tooltip(bs_icon("question-circle"),
+                                 paste("View and export saved performance measure audits for this algorithm."),
                                  placement = "right",
                                  options = list(container = "body")
                       ))
@@ -500,9 +511,57 @@ linkage_ui <- page_navbar(
   #-- LINKAGE AUDITS --#
   #----
   nav_panel(title = "Linkage Audits", value = "audits_page",
-            "You are on the Audits page. Here, you can view all stored auditing information observed during data linkage, being able
-      to sort by datasets, and date of capture. Further, the option to select and export selected auditing information is available
-      to the user."
+    fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+          actionButton("linkage_audits_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some space
+      HTML("<br>"),
+
+      # Render the data table of currently available iterations
+      h5(strong("View The List of Performance Measures, or Select A Row to Export:")),
+
+      # Card for the data table
+      div(style = "display: flex; justify-content: center; align-items: center; width: 75%; margin: 0 auto;",
+        card(
+          full_screen = TRUE,
+          height = 500,
+          page_fillable(
+            dataTableOutput("algorithm_specific_audits"),
+          )
+        )
+      ),
+      #dataTableOutput("algorithm_specific_audits"),
+
+      # If NO ROW IS SELECTED, the user can limit results by choosing a range of years
+      conditionalPanel(
+        condition = "input.algorithm_specific_audits_rows_selected <= 0",
+
+        # UI date range input
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              dateRangeInput("audit_date_range", label = "Limit Audit Date Range", start = "1983-01-01", end = NULL),
+            )
+          ),
+        )
+      ),
+
+      # If A ROW IS SELECTED, the user can export the results by clicking the button
+      conditionalPanel(
+        condition = "input.algorithm_specific_audits_rows_selected > 0",
+        # Export Audit Button
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              actionButton("export_selected_audit", label = "Export Audit", class = "btn-success")
+            )
+          ),
+        )
+      )
+    )
   ),
   #----
   #--------------------#
@@ -640,7 +699,7 @@ linkage_ui <- page_navbar(
 
   #-- ADD LINKAGE ITERATIONS --#
   #----
-  nav_panel(title = "Add Linkage Iterations", value = "add_linkage_iterations_page",
+  nav_panel(title = "Modify Linkage Iterations", value = "add_linkage_iterations_page",
     fluidPage(
       # Render the data table of currently available iterations
       # h5(strong("Select An Existing Iteration to Update, or to Enable/Disable:")),
@@ -1803,13 +1862,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   nav_hide('main_navbar', 'acceptance_methods_page')
   nav_hide('main_navbar', 'comparison_methods_page')
   nav_hide('main_navbar', 'ground_truth_variables_page')
+  nav_hide('main_navbar', 'audits_page')
 
   # If the user goes off of an inner tab, hide it
   observeEvent(input$main_navbar, {
     # Get the tabs that are not necessary for the user
     tabs_to_hide <- c("linkage_rule_page", "acceptance_rules_page", "comparison_rules_page",
                       "view_linkage_iterations_page", "add_linkage_iterations_page", "update_linkage_iterations_page",
-                      "acceptance_methods_page", "comparison_methods_page", "ground_truth_variables_page")
+                      "acceptance_methods_page", "comparison_methods_page", "ground_truth_variables_page", "audits_page")
     selected_panel <- input$main_navbar
 
     # Hide the page if its not the one you're currently on
@@ -2363,9 +2423,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Extract columns from query result
     choices <- setNames(query_result$dataset_id, query_result$dataset_name)
 
-    # Add the additional look up value where the first choice is 'null'
-    choices <- c(" " = "null", choices)
-
     # Create select input with dynamic choices
     span(selectizeInput("linkage_algorithm_right_dataset", label = "Right Dataset:",
                      choices = choices, multiple = FALSE, width = validateCssUnit(500),
@@ -2426,7 +2483,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   observeEvent(input$add_linkage_algorithm, {
     left_dataset_id  <- input$linkage_algorithm_left_dataset
     right_dataset_id <- input$linkage_algorithm_right_dataset
-    algorithm_name   <- input$linkage_algorithm_descriptor
+    algorithm_name   <- trimws(input$linkage_algorithm_descriptor)
     modified_by <- username
     modified_date <- format(Sys.Date(), format = "%Y-%m-%d")
 
@@ -2653,8 +2710,365 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     updateNavbarPage(session, "main_navbar", selected = "ground_truth_variables_page")
   })
 
+  # View and export the saved performance measures of the selected algorithm
+  observeEvent(input$linkage_algorithms_to_audits, {
+    # Get the selected row
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    # Grab the algorithm id
+    algorithm_id <- df[selected_row, "algorithm_id"]
+
+    # Update the global variable for the acceptance method id and the return page
+    linkage_audits_algorithm_id <<- algorithm_id
+    linkage_audits_return_page  <<- "linkage_algorithms_page"
+
+    # Update the table of performance measures and the date range element
+    output$algorithm_specific_audits <- renderDataTable({
+      get_audit_information()
+    })
+    updateDateRangeInput(session, "audit_date_range", start = "1983-01-01", end = format(Sys.Date(), format = "%Y-%m-%d"))
+
+    # Show the iterations page
+    nav_show('main_navbar', 'audits_page')
+    updateNavbarPage(session, "main_navbar", selected = "audits_page")
+  })
   #----
   #------------------------------------#
+
+  #-- VIEW/EXPORT LINKAGE AUDITS PAGE EVENTS --#
+  #----
+  # Global variables for the linkage audits page
+  linkage_audits_algorithm_id <- 1
+  linkage_audits_return_page  <- "linkage_algorithms_page"
+  #updateDateRangeInput(session, "audit_date_range", start = "1983-01-01")
+
+  # Back button will bring you back to whichever page you came from
+  observeEvent(input$linkage_audits_back, {
+    # Show return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = linkage_audits_return_page)
+  })
+
+  # Function for generating the table of audit information
+  get_audit_information <- function(){
+    # Get the user input information (ID, date ranges)
+    algorithm_id <- linkage_audits_algorithm_id
+    lower_date   <- input$audit_date_range[1]
+    upper_date   <- input$audit_date_range[2]
+
+    # Format the dates
+    lower_date <- as.character(as.Date(lower_date, "%Y-%m-%d"))
+    upper_date <- as.character(as.Date(upper_date, "%Y-%m-%d"))
+
+    # QUERY 1 (Both date ranges were provided)
+    if(!is.na(lower_date) && !is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date >= ? AND audit_date <= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, upper_date, algorithm_id))
+
+      # If there are rows for this data frame, convert JSON to a readable format
+      if(nrow(df) > 0){
+        for(row_num in 1:nrow(df)){
+          # Get the stored JSON value
+          json_audit <- df$performance_measures_json[row_num]
+
+          # Parse the JSON into a list
+          parsed_json <- jsonlite::fromJSON(json_audit)
+
+          # Convert the list to a comma-separated string (key: value pairs)
+          json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
+
+          # Replace the original JSON with the string in the same row
+          df$performance_measures_json[row_num] <- json_string
+        }
+      }
+
+      # Drop the audit_id
+      df <- subset(df, select = -c(audit_id))
+
+      # With our data frame, we'll rename some of the columns to look better
+      names(df)[names(df) == 'algorithm_id']              <- 'Algorithm Name'
+      names(df)[names(df) == 'audit_by']                  <- 'Audited By'
+      names(df)[names(df) == 'audit_date']                <- 'Date Audited'
+      names(df)[names(df) == 'performance_measures_json'] <- 'Performance Measures'
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+      return(dt)
+    }
+
+    # QUERY 2 (Only lower date range was provided)
+    if(!is.na(lower_date) && is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date >= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, algorithm_id))
+
+      # If there are rows for this data frame, convert JSON to a readable format
+      if(nrow(df) > 0){
+        for(row_num in 1:nrow(df)){
+          # Get the stored JSON value
+          json_audit <- df$performance_measures_json[row_num]
+
+          # Parse the JSON into a list
+          parsed_json <- jsonlite::fromJSON(json_audit)
+
+          # Convert the list to a comma-separated string (key: value pairs)
+          json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
+
+          # Replace the original JSON with the string in the same row
+          df$performance_measures_json[row_num] <- json_string
+        }
+      }
+
+      # Drop the audit_id
+      df <- subset(df, select = -c(audit_id))
+
+      # With our data frame, we'll rename some of the columns to look better
+      names(df)[names(df) == 'algorithm_id']              <- 'Algorithm Name'
+      names(df)[names(df) == 'audit_by']                  <- 'Audited By'
+      names(df)[names(df) == 'audit_date']                <- 'Date Audited'
+      names(df)[names(df) == 'performance_measures_json'] <- 'Performance Measures'
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+      return(dt)
+    }
+
+    # QUERY 3 (Only upper date range was provided)
+    if(is.na(lower_date) && !is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date <= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(upper_date, algorithm_id))
+
+      # If there are rows for this data frame, convert JSON to a readable format
+      if(nrow(df) > 0){
+        for(row_num in 1:nrow(df)){
+          # Get the stored JSON value
+          json_audit <- df$performance_measures_json[row_num]
+
+          # Parse the JSON into a list
+          parsed_json <- jsonlite::fromJSON(json_audit)
+
+          # Convert the list to a comma-separated string (key: value pairs)
+          json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
+
+          # Replace the original JSON with the string in the same row
+          df$performance_measures_json[row_num] <- json_string
+        }
+      }
+
+      # Drop the audit_id
+      df <- subset(df, select = -c(audit_id))
+
+      # With our data frame, we'll rename some of the columns to look better
+      names(df)[names(df) == 'algorithm_id']              <- 'Algorithm Name'
+      names(df)[names(df) == 'audit_by']                  <- 'Audited By'
+      names(df)[names(df) == 'audit_date']                <- 'Date Audited'
+      names(df)[names(df) == 'performance_measures_json'] <- 'Performance Measures'
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+      return(dt)
+    }
+
+    # QUERY 4 (No date range was provided)
+    if(is.na(lower_date) && is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(algorithm_id))
+
+      # If there are rows for this data frame, convert JSON to a readable format
+      if(nrow(df) > 0){
+        for(row_num in 1:nrow(df)){
+          # Get the stored JSON value
+          json_audit <- df$performance_measures_json[row_num]
+
+          # Parse the JSON into a list
+          parsed_json <- jsonlite::fromJSON(json_audit)
+
+          # Convert the list to a comma-separated string (key: value pairs)
+          json_string <- paste(names(parsed_json), parsed_json, sep = ": ", collapse = ", ")
+
+          # Replace the original JSON with the string in the same row
+          df$performance_measures_json[row_num] <- json_string
+        }
+      }
+
+      # Drop the audit_id
+      df <- subset(df, select = -c(audit_id))
+
+      # With our data frame, we'll rename some of the columns to look better
+      names(df)[names(df) == 'algorithm_id']              <- 'Algorithm Name'
+      names(df)[names(df) == 'audit_by']                  <- 'Audited By'
+      names(df)[names(df) == 'audit_date']                <- 'Date Audited'
+      names(df)[names(df) == 'performance_measures_json'] <- 'Performance Measures'
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+      return(dt)
+    }
+  }
+
+  # Renders the table of audit information
+  output$algorithm_specific_audits <- renderDataTable({
+    get_audit_information()
+  })
+
+  # Observe Whenever the user selects a new data range and re-render the table
+  observe({
+    # If the user changes either the lower or upper date, re-render
+    lower_date   <- input$audit_date_range[1]
+    upper_date   <- input$audit_date_range[2]
+
+    # Re-render the audit table
+    output$algorithm_specific_audits <- renderDataTable({
+      get_audit_information()
+    })
+  })
+
+  # Observes when the user exports a selected audit
+  observeEvent(input$export_selected_audit, {
+    # Get the user input information (ID, date ranges)
+    selected_row <- input$algorithm_specific_audits_rows_selected
+    algorithm_id <- linkage_audits_algorithm_id
+    lower_date   <- input$audit_date_range[1]
+    upper_date   <- input$audit_date_range[2]
+
+    # Format the dates
+    lower_date <- as.character(as.Date(lower_date, "%Y-%m-%d"))
+    upper_date <- as.character(as.Date(upper_date, "%Y-%m-%d"))
+
+    # Keep a data frame variable to obtain the table the user selected from
+    audit_df <- data.frame()
+
+    # QUERY 1 (Both date ranges were provided)
+    if(!is.na(lower_date) && !is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date >= ? AND audit_date <= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, upper_date, algorithm_id))
+
+      # Return the queried data frame to our audit_df variable
+      audit_df <- df
+    }
+
+    # QUERY 2 (Only lower date range was provided)
+    if(!is.na(lower_date) && is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date >= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, algorithm_id))
+
+      # Return the queried data frame to our audit_df variable
+      audit_df <- df
+    }
+
+    # QUERY 3 (Only upper date range was provided)
+    if(is.na(lower_date) && !is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date <= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(upper_date, algorithm_id))
+
+      # Return the queried data frame to our audit_df variable
+      audit_df <- df
+    }
+
+    # QUERY 4 (No date range was provided)
+    if(is.na(lower_date) && is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(algorithm_id))
+
+      # Return the queried data frame to our audit_df variable
+      audit_df <- df
+    }
+
+    # Get the algorithm name
+    df <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+    algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+    # Get the performance measure information
+    audit_by                  <- audit_df$audit_by[selected_row]
+    audit_date                <- audit_df$audit_date[selected_row]
+    performance_measures_json <- audit_df$performance_measures_json[selected_row]
+
+    # Create a data frame which will contain the auditing information to export
+    export_df <- data.frame(matrix(ncol = 0, nrow = 1))
+
+    # Add the date and author as columns
+    export_df[["Audited By"]]   <- audit_by
+    export_df[["Audited Date"]] <- audit_date
+
+    # Convert the performance measures_json to a data frame
+    performance_measures_df <- jsonlite::fromJSON(performance_measures_json, simplifyDataFrame = TRUE)
+
+    # Bind the columns
+    export_df <- cbind(export_df, performance_measures_df)
+
+    # Get user input by requiring them to supply a directory for output
+    output_dir <- choose.dir(getwd(), "Choose a Folder")
+
+    # Two things can happen, if no directory is chosen, or NA happens, write it to the working directory, otherwise use user input
+    if(!is.na(output_dir)){
+      # Define base file name
+      base_filename <- paste0(algorithm_name, '_performance_measures_', audit_date)
+
+      # Start with the base file name
+      full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+      counter <- 1
+
+      # While the file exists, append a number and keep checking
+      while (file.exists(full_filename)) {
+        full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+        counter <- counter + 1
+      }
+
+      # Save the csv file
+      fwrite(export_df, file = full_filename, append = TRUE)
+    }
+    else{
+      # Define base file name
+      base_filename <- paste0(algorithm_name, '_performance_measures_', audit_date)
+
+      # Start with the base file name
+      full_filename <- file.path(getwd(), paste0(base_filename, ".csv"))
+      counter <- 1
+
+      # While the file exists, append a number and keep checking
+      while (file.exists(full_filename)) {
+        full_filename <- file.path(getwd(), paste0(base_filename, " (", counter, ")", ".csv"))
+        counter <- counter + 1
+      }
+
+      # Save the csv file
+      fwrite(export_df, file = full_filename, append = TRUE)
+    }
+
+    # Show success notification
+    full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+    showNotification(paste0("Performance Measures Exported to: ", full_filename), type = "message", closeButton = FALSE)
+  })
+
+  #----
+  #--------------------------------------------#
 
   #-- MODIFY GROUND TRUTH VARIABLES PAGE EVENTS --#
   #----
@@ -2662,6 +3076,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   modify_ground_truth_left_dataset_id  <- 1
   modify_ground_truth_right_dataset_id <- 1
   modify_ground_truth_return_page      <- "linkage_algorithms_page"
+
+  # Some global variables for the linkage rule that needs to be added
+  ground_truth_linkage_rule_to_add     <- NA
 
   # Back button will bring you back to whichever page you came from
   observeEvent(input$modify_ground_truth_back, {
@@ -2756,6 +3173,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Drop the algorithm_id, parameter_id, and dataset field ID columns from the table
     df <- subset(df, select = -c(algorithm_id, parameter_id, right_dataset_field_id, left_dataset_field_id))
 
+    # Reorder the columns
+    df <- df[, c('Right Dataset Field', 'Left Dataset Field', 'Linkage Rules')]
+
     # Put it into a data table now
     dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
   }
@@ -2810,6 +3230,255 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   output$ground_truth_right_field_input <- renderUI({
     right_dataset_ground_truth_fields()
   })
+
+  ### LINKAGE RULE EVENTS ###
+  #----#
+  # Selecting a linkage rule for adding ground truth variables
+  observeEvent(input$prepare_ground_truth_linkage_rule, {
+    # Re-render the data table
+    output$ground_truth_add_linkage_rules <- renderDataTable({
+      get_linkage_rules()
+    })
+
+    showModal(modalDialog(
+      title = "Choose Linkage Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidRow(
+        # Linkage rule table
+        h5(strong("Select a Linkage Rule Below to Use for the Ground Truth Variables:")),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            dataTableOutput("ground_truth_add_linkage_rules"),
+          )
+        ),
+
+        # If NO row is selected, the user may add a new linkage rule by clicking
+        # a button that will take them to the linkage rule page
+        conditionalPanel(
+          condition = "input.ground_truth_add_linkage_rules_rows_selected <= 0",
+          HTML("<br>"),
+          h5(strong("Or, Create a New Rule Here:")),
+
+          # Button for going to the linkage rules page from this modal
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("ground_truth_add_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
+              )
+            ),
+          )
+        ),
+
+        # If a row IS SELECTED, the user can then click then choose that rule
+        conditionalPanel(
+          condition = "input.ground_truth_add_linkage_rules_rows_selected > 0",
+          HTML("<br>"),
+
+          # Button for preparing the selected linkage rule to add
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("ground_truth_add_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
+              )
+            ),
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Brings the user to the linkage rules page
+  observeEvent(input$ground_truth_add_linkage_rules_to_linkage_rules, {
+
+    # Set the return page to the add linkage iterations page
+    linkage_rules_return_page <<- "ground_truth_variables_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "linkage_rule_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
+  })
+
+  # Selects the linkage rule the user wanted
+  observeEvent(input$ground_truth_add_prepare_linkage_rule, {
+    # Get the selected row
+    selected_row <- input$ground_truth_add_linkage_rules_rows_selected
+
+    # Query to get all linkage rule information from the 'linkage_rules' table
+    query <- paste('SELECT * FROM linkage_rules
+               ORDER BY linkage_rule_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the linkage rule
+    linkage_rule_id <- df$linkage_rule_id[selected_row]
+
+    # Set the global variable to the selected linkage rule id
+    ground_truth_linkage_rule_to_add <<- linkage_rule_id
+
+    # Render the UI output text
+    if(!is.na(linkage_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+      # We'll start with "Alternative Field"
+      alt_field_val <- method_df$alternate_field_value
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+      }
+
+      # Next we'll handle the "Integer Variance"
+      int_variance <- method_df$integer_value_variance
+      if(!is.na(int_variance)){
+        method_df$integer_value_variance <- paste0("±", int_variance)
+      }
+
+      # Next we'll handle "Name Substring"
+      name_substring <- method_df$substring_length
+      if(!is.na(name_substring)){
+        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+      }
+
+      # With standardized names, we'll replace the [0, 1] with [No, Yes]
+      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+      # Rename the column names to be easier to read when printed in table format
+      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+      # Drop the linkage_rule_id from the table
+      method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+      # Initialize an empty list to store non-NA values
+      non_na_values <- list()
+
+      # Loop through each column in the current row
+      for (col_name in colnames(method_df)) {
+        value <- method_df[1, col_name]
+
+        # If the value is not NA, add it to the list
+        if (!is.na(value)) {
+          non_na_values <- c(non_na_values, paste0(value))
+        }
+      }
+
+      # Combine the non-NA values into a single string, separated by commas
+      combined_values <- paste(non_na_values, collapse = ", ")
+
+      # Render the output text
+      output$selected_ground_truth_linkage_rule <- renderText({
+        combined_values
+      })
+    }
+
+    # Dismiss the modal
+    removeModal()
+  })
+
+  # Generates the table of linkage rules
+  output$ground_truth_add_linkage_rules <- renderDataTable({
+    get_linkage_rules()
+  })
+  #----#
+
+  ### ADD/DROP EVENTS ###
+  #----#
+  # Adds the provided ground truth fields + linkage rule into the database
+  observeEvent(input$add_ground_truth, {
+    algorithm_id           <- modify_ground_truth_algorithm_id
+    left_dataset_field_id  <- input$left_ground_truth_field
+    right_dataset_field_id <- input$right_ground_truth_field
+    linkage_rule_id        <- ground_truth_linkage_rule_to_add
+
+    # Error handling
+    #----#
+    # Make sure a left and right dataset was passed
+    if(left_dataset_field_id == '' || right_dataset_field_id == ''){
+      showNotification("Failed to Add Ground Truth Variables - Missing Ground Truth Field Input(s)", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure this ground truth variable isn't already being used
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM ground_truth_variables
+                                                  WHERE right_dataset_field_id = ? AND left_dataset_field_id = ? AND algorithm_id = ?;')
+    dbBind(get_query, list(right_dataset_field_id, left_dataset_field_id, algorithm_id))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_databases != 0){
+      showNotification("Failed to Add Ground Truth Variables - Variable Combination Already Exists", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Create a new entry query for entering into the database
+    #----#
+    new_entry_query <- paste("INSERT INTO ground_truth_variables (algorithm_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id)",
+                             "VALUES(?, ?, ?, ?);")
+    new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+    dbBind(new_entry, list(algorithm_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id))
+    dbClearResult(new_entry)
+    #----#
+
+    ## Reset Data Tables, UI Renders, and global variables
+    #----#
+    output$ground_truth_left_field_input <- renderUI({
+      left_dataset_ground_truth_fields()
+    })
+    output$ground_truth_right_field_input <- renderUI({
+      right_dataset_ground_truth_fields()
+    })
+    output$currently_added_ground_truth_variables <- renderDataTable({
+      get_ground_truth_variables()
+    })
+    output$selected_ground_truth_linkage_rule <- renderText({
+      ""
+    })
+    ground_truth_linkage_rule_to_add <<- NA
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Ground Truth Variables Successfully Added", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Drops the selected pair of ground truth fields
+  observeEvent(input$drop_ground_truth, {
+    algorithm_id <- modify_ground_truth_algorithm_id
+    selected_row <- input$currently_added_ground_truth_variables_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from ground_truth_variables
+                                                WHERE algorithm_id =', algorithm_id,
+                                                  'ORDER BY parameter_id ASC'))
+    # Get the fields to delete
+    parameter_id  <- df$parameter_id[selected_row]
+
+    # Create a new entry query for deleting the blocking variable
+    #----#
+    delete_query <- paste("DELETE FROM ground_truth_variables
+                          WHERE parameter_id = ?")
+    delete <- dbSendStatement(linkage_metadata_conn, delete_query)
+    dbBind(delete, list(parameter_id))
+    dbClearResult(delete)
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$currently_added_ground_truth_variables <- renderDataTable({
+      get_ground_truth_variables()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Ground Truth Variables Successfully Deleted", type = "message", closeButton = FALSE)
+    #----#
+  })
+  #----#
+
   #----
   #-----------------------------------------------#
 
@@ -3550,12 +4219,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   #----
   #-----------------------------------------#
 
-  # IDEA:
-  #   To reuse essentially all of this code, use another global variable called
-  #   "linkage_iteration_updating" <- FALSE, and when we come to this page by
-  #   clicking the "Modify Pass" button, set it to true, and then when we want to
-  #   save and return, we'll perform queries relating to actually UPDATING the
-  #   database. And when its set to false. Behave like normal here!
   #-- ADD LINKAGE ITERATION PAGE EVENTS --#
   #----
   # GLOBAL VARIABLES FOR RETURNING TO PREVIOUS PAGE
@@ -4313,7 +4976,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Error Handling
     #----#
     # Make sure neither of the blocking fields are null
-    if(left_blocking_field == 'null' || right_blocking_field == 'null'){
+    if(left_blocking_field == '' || right_blocking_field == ''){
       showNotification("Failed to Prepare Blocking Keys - Missing Blocking Key(s)", type = "error", closeButton = FALSE)
       return()
     }
@@ -4456,7 +5119,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Error Handling
     #----#
     # Make sure neither of the blocking fields are null
-    if(left_blocking_field == 'null' || right_blocking_field == 'null'){
+    if(left_blocking_field == '' || right_blocking_field == ''){
       showNotification("Failed to Prepare Blocking Keys - Missing Blocking Key(s)", type = "error", closeButton = FALSE)
       return()
     }
@@ -4825,7 +5488,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Error Handling
     #----#
     # Make sure neither of the blocking fields are null
-    if(left_matching_field == 'null' || right_matching_field == 'null'){
+    if(left_matching_field == '' || right_matching_field == ''){
       showNotification("Failed to Prepare Matching Keys - Missing Matching Key(s)", type = "error", closeButton = FALSE)
       return()
     }
@@ -4999,14 +5662,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     right_matching_field  <- input$right_matching_field_update
     linkage_rule_id       <- matching_linkage_rule_to_update
     comparison_rule_id    <- matching_comparison_rule_to_update
-    print(linkage_rule_id)
-    print(comparison_rule_id)
     #----#
 
     # Error Handling
     #----#
     # Make sure neither of the blocking fields are null
-    if(left_matching_field == 'null' || right_matching_field == 'null'){
+    if(left_matching_field == '' || right_matching_field == ''){
       showNotification("Failed to Prepare Matching Keys - Missing Matching Key(s)", type = "error", closeButton = FALSE)
       return()
     }
@@ -5846,7 +6507,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     )
 
     #-- Error Handling --#
-
     # Make sure the generic inputs are all filled
     if(trimws(iteration_name) == ""){
       showNotification("Failed to Save Iteration Changes - Iteration Name is Missing", type = "error", closeButton = FALSE)
@@ -5856,7 +6516,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       showNotification("Failed to Save Iteration Changes - Iteration Priority Must be >= 1", type = "error", closeButton = FALSE)
       return()
     }
-    if(linkage_method_id == 'null'){
+    if(linkage_method_id == ''){
       showNotification("Failed to Save Iteration Changes - Linkage Method Must Be Selected", type = "error", closeButton = FALSE)
       return()
     }

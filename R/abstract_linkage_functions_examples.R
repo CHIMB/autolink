@@ -919,6 +919,9 @@ run_main_linkage <- function(left_dataset, right_dataset, linkage_metadata_db, a
     stop("Error: No iterations found under the provided algorithm, verify that iterations exist and try running again.")
   }
 
+  # Error check, make sure both supplied datasets match columns with what's stored
+  # CODE GOES HERE
+
   # Step 2: For each iteration ID loop through and perform data linkage
   for(row_num in 1:nrow(iterations_df)){
     # IDEA FOR GETTING THE ROWS WE NEED FOR DATASETS
@@ -939,6 +942,9 @@ run_main_linkage <- function(left_dataset, right_dataset, linkage_metadata_db, a
     # Get the current iteration_id
     curr_iteration_id <- row$iteration_id
 
+    # Get the current iteration_name
+    curr_iteration_name <- row$iteration_name
+
     # Get the implementation class name to decide which linkage implementation to call
     implementation_name <- get_implementation_name(linkage_db = linkage_metadata_db, iteration_id = curr_iteration_id)
 
@@ -956,7 +962,8 @@ run_main_linkage <- function(left_dataset, right_dataset, linkage_metadata_db, a
 
     # Track the end time time and get the difference
     end_time = Sys.time()
-    print(paste("Iteration with priority", curr_iteration_priority, "using the", implementation_name, "class finished with a", end_time - start_time))
+    print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished with a ", end_time - start_time))
+    #print(paste("Iteration with priority", curr_iteration_priority, "using the", implementation_name, "class finished with a", end_time - start_time))
 
     # Do whatever we may need with the result, before going onto the next iteration.
 
