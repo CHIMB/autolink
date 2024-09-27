@@ -156,6 +156,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       linkage_method_id INTEGER PRIMARY KEY,
       technique_label VARCHAR(255),
       implementation_name VARCHAR(255),
+      implementation_desc VARCHAR(255),
       version VARCHAR(255)
     );
   ")
@@ -251,13 +252,13 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   ### LINKAGE METHODS INSERT STATEMENTS
   #~~~~
   linkage_methods_insert <- function(){
-    new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, version)',
-                             'VALUES(1, "D", "Reclin2Linkage", "v1");')
+    new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, implementation_desc, version)',
+                             'VALUES(1, "D", "Reclin2Linkage", "Deterministic linkage pass using the Reclin2 package.", "v1");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
-    new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, version)',
-                             'VALUES(2, "P", "Reclin2Linkage", "v1");')
+    new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, implementation_desc, version)',
+                             'VALUES(2, "P", "Reclin2Linkage", "Probabilistic linkage pass using the Reclin2 package.", "v1");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
@@ -268,12 +269,17 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   #~~~~
   acceptance_methods_insert <- function(){
     new_entry_query <- paste('INSERT INTO acceptance_methods (acceptance_method_id, method_name, description)',
-                            'VALUES(1, "Posterior Thresholds", "A minimum threshold between 0 and 1 which a record must exceed to be considered a successful link.");')
+                            'VALUES(1, "Posterior Threshold", "A minimum threshold between 0 and 1 for which a record pair must exceed to be considered a successful link.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO acceptance_methods (acceptance_method_id, method_name, description)',
-                             'VALUES(2, "Weighted Ranges", "A lower (X) and upper (Y) weight where anything less than (X) is considered unlinked, anything greater than (Y) is considered linked, anything between (X) and (Y) requires manual review.");')
+                             'VALUES(2, "Weighted Range", "A lower (X) and upper (Y) weight where anything less than (X) is considered unlinked, anything greater than (Y) is considered linked, anything between (X) and (Y) requires manual review.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_methods (acceptance_method_id, method_name, description)',
+                             'VALUES(3, "Match Weight", "An unbounded match weight between positive and negative infinity for which a record pair must exceed to be considered a successful link.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
@@ -284,17 +290,22 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   #~~~~
   acceptance_methods_parameters_insert <- function(){
     new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(1, 1, "posterior_threshold", "The minimum value for which a record will be considered successful link.");')
+                             'VALUES(1, 1, "posterior_threshold", "The minimum value for which a record pair will be considered successful link.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(2, 2, "lower_weight", "The lower bound weight for determining if a record should be rejected, or manually reviewed.");')
+                             'VALUES(2, 2, "lower_weight", "The lower bound weight for determining if a record pair should be rejected, or manually reviewed.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(2, 3, "upper_weight", "The upper bound weight for determining if a record should be linked, or manually reviewed.");')
+                             'VALUES(2, 3, "upper_weight", "The upper bound weight for determining if a record pair should be linked, or manually reviewed.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(3, 4, "match_weight", "The unbounded weight for determining if a record pair is a successful link.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
@@ -797,17 +808,17 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   #~~~~
   comparison_methods_parameters_insert <- function(){
     new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(1, 1, "min_score", "The floating point minimum value for which a jarowinkler comparison will be accepted (0 < X < 1).");')
+                             'VALUES(1, 1, "jw_score", "The floating point minimum value for which a jarowinkler comparison will be accepted (0 < X < 1).");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(2, 2, "max_cost", "The integer maximum number of replacements in a string before being rejected (X >= 1).");')
+                             'VALUES(2, 2, "osa_string_cost", "The integer maximum number of replacements in a string before being rejected (X >= 1).");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(3, 3, "max_dist", "The maximum number of characters that a comparison can differ before being rejected (X >= 1).");')
+                             'VALUES(3, 3, "levenshtein_string_cost", "The maximum number of characters that a comparison can differ before being rejected (X >= 1).");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 

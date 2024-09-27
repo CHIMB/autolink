@@ -19,14 +19,14 @@ linkage_ui <- page_navbar(
       HTML(".shiny-notification-message {
               background-color:#0ec116;
               color:#000000;
-              opacity: 1;
+              opacity: 1 !important;
               text-align: center;
            }"
       ),
       HTML(".shiny-notification-error {
               background-color:#C90000;
               color:#000000;
-              opacity: 1;
+              opacity: 1 !important;
               text-align: center;
            }"
       ),
@@ -83,6 +83,7 @@ linkage_ui <- page_navbar(
           max-width: 300px;  /* Custom width */
           background-color: #f8f9fa;  /* Light background */
           color: #333;  /* Dark text */
+          opacity: 1 !important; /* Fully solid */
           border: 1px solid #ddd;  /* Border styling */
           padding: 10px;  /* Adjust padding */
         }"
@@ -91,7 +92,16 @@ linkage_ui <- page_navbar(
           .modal{
             z-index: 1150;
         }"
-      )
+      ),
+      HTML("
+          .dataset-field-box {
+            border: 1px solid #ddd; /* Border color */
+            padding: 10px; /* Padding inside the box */
+            background-color: #f9f9f9; /* Background color */
+            border-radius: 5px; /* Rounded corners */
+            margin-bottom: 10px; /* Space below each box */
+          }"
+      ),
     ),
     tags$style(HTML("
       .btn-circle {
@@ -118,11 +128,12 @@ linkage_ui <- page_navbar(
         background-color: red; /* Darker shade on hover */
       }
     ")),
-    tags$head(tags$style('h6 {color:red;}')),
+    tags$head(tags$style('h6 {color:blue;}')),
   ),
   #----
   title = "Data Linkage UI",
-  id = "main_navbar",
+  bg = "#f05a28",
+  id = 'main_navbar',
   #-- HOME PAGE --#
   #----
   nav_panel(title = "Home", value = "home_page",
@@ -140,9 +151,7 @@ linkage_ui <- page_navbar(
         accordion_panel(title = "Linkage Variables - Information"),
         accordion_panel(title = "Acceptance Methods & Rules - Information"),
         accordion_panel(title = "Comparison Methods & Rules - Information"),
-        accordion_panel(title = "Linkage Rules - Information",
-          actionButton("to_methods", "Go To Linkage Rules Page")
-        ),
+        accordion_panel(title = "Linkage Rules - Information"),
      )
     )
   ),
@@ -164,8 +173,6 @@ linkage_ui <- page_navbar(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
             actionButton("toggle_dataset", "Toggle Selected Dataset", class = "btn-success"),
 
-            # Add a question mark icon button with a popover
-            #actionButton("toggle_dataset_help", class = "btn btn-info", shiny::icon("question")) |>
             # Add the popover manually
             h1(tooltip(bs_icon("question-circle"),
                           paste("Toggle whether a dataset is available to be used in data linkage.",
@@ -178,138 +185,154 @@ linkage_ui <- page_navbar(
           ))
         ),
         HTML("<br><br>"),
-        h5(strong("Update the Dataset Fields Here:")),
-        fluidRow(
-          column(width = 4, div(style = "display: flex; align-items: center;",
-                                textAreaInput("update_dataset_code", label = "Dataset Code/File Prefix:", value = "",
-                                              width = validateCssUnit(500), resize = "none"),
-                                # Add a question mark icon button with a popover
-                                #actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+        h5(strong("Update the Dataset Information & View Dataset Fields Here:")),
 
-                                  # Add the popover manually
-                                  h1(tooltip(bs_icon("question-circle"),
-                                          paste("The dataset code is the prefix of the source dataset that you will be using",
-                                                "during the data linkage process. The prefix you enter here should match the",
-                                                "prefix of the file you are using using EXACTLY."),
-                                          placement = "right",
-                                          options = list(container = "body")))
-          )),
-          column(width = 4, div(style = "display: flex; align-items: center;",
-                                textAreaInput("update_dataset_name", label = "Dataset Name:", value = "",
-                                              width = validateCssUnit(500), resize = "none"),
-                                # Add a question mark icon button with a popover
-                                #actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+        # Create a column layout to separate the user inputs and dataset fields
+        layout_column_wrap(
+          width = 1/2,
+          height = 500,
+          # Card for the user inputs
+          card(card_header("Update Dataset Information", class = "bg-dark"),
+            fluidRow(
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                 textAreaInput("update_dataset_code", label = "Dataset Code/File Prefix:", value = "",
+                               width = validateCssUnit(500), resize = "none"),
 
-                                  # Add the popover manually
-                                  h1(tooltip(bs_icon("question-circle"),
-                                          paste("The dataset name should be an identifiable name for the dataset that you can",
-                                                "reasonably identify. The ideal name is the full expanded name of the dataset",
-                                                "that you plan on storing."),
-                                          placement = "right",
-                                          options = list(container = "body")))
-          )),
-          column(width = 4, div(style = "display: flex; align-items: center;",
-                                numericInput("update_dataset_vers", label = "Dataset Version:",
-                                             value = NULL, width = validateCssUnit(500)),
-                                # Add a question mark icon button with a popover
-                                #actionButton("update_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+                 # Add the popover manually
+                 h1(tooltip(bs_icon("question-circle"),
+                            paste("The dataset code is the prefix of the source dataset that you will be using",
+                                  "during the data linkage process. The prefix you enter here should match the",
+                                  "prefix of the file you are using using EXACTLY."),
+                            placement = "right",
+                            options = list(container = "body")))
+               )),
+               column(width = 12, div(style = "display: flex; align-items: center;",
+                 textAreaInput("update_dataset_name", label = "Dataset Name:", value = "",
+                               width = validateCssUnit(500), resize = "none"),
 
-                                  # Add the popover manually
-                                  h1(tooltip(bs_icon("question-circle"),
-                                          paste("The dataset version number can help differentiate dataset names additionally",
-                                                "while also allowing for storing different versions of the same dataset."),
-                                          placement = "right",
-                                          options = list(container = "body")))
-          )),
+                 # Add the popover manually
+                 h1(tooltip(bs_icon("question-circle"),
+                            paste("The dataset name should be an identifiable name for the dataset that you can",
+                                  "reasonably identify. The ideal name is the full expanded name of the dataset",
+                                  "that you plan on storing."),
+                            placement = "right",
+                            options = list(container = "body")))
+               )),
+               column(width = 12, div(style = "display: flex; align-items: center;",
+                 numericInput("update_dataset_vers", label = "Dataset Version:",
+                              value = NULL, width = validateCssUnit(500)),
+
+                 # Add the popover manually
+                 h1(tooltip(bs_icon("question-circle"),
+                            paste("The dataset version number can help differentiate dataset names additionally",
+                                    "while also allowing for storing different versions of the same dataset."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+            ),
+          ),
+
+          # Card for viewing the selected fields
+          card(card_header("View Selected Dataset Fields", class = "bg-dark"),
+            uiOutput("selected_dataset_fields")
+          )
         ),
-        HTML("<br>"),
+
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                                  actionButton("update_dataset", "Update Dataset", class = "btn-success"),
           ))
-        )
+        ),
+        HTML("<br>")
       ),
       # abbreviated
       # If the user has no row selected, then we can ADD a new dataset
       conditionalPanel(
         condition = "input.currently_added_datasets_rows_selected <= 0",
         HTML("<br>"),
-        h5(strong("Or, Add the Dataset Fields Here:")),
-        fluidRow(
-          column(width = 3, div(style = "display: flex; align-items: center;",
-            textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
-                          width = validateCssUnit(500), resize = "none"),
-            # Add a question mark icon button with a popover
-            #actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+        h5(strong("Or, Add the Dataset Information & View Uploaded Fields Here:")),
 
-            # Add the popover manually
-            h1(tooltip(bs_icon("question-circle"),
-                    paste("The dataset code is the prefix of the source dataset that you will be using",
-                          "during the data linkage process. The prefix you enter here should match the",
-                          "prefix of the file you are using using EXACTLY."),
-                    placement = "right",
-                    options = list(container = "body")))
-          )),
-          column(width = 3, div(style = "display: flex; align-items: center;",
-            textAreaInput("add_dataset_name", label = "Dataset Name:", value = "",
-                          width = validateCssUnit(500), resize = "none"),
-            # Add a question mark icon button with a popover
-            #actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+        # Create a column layout for the user inputs and viewable fields
+        layout_column_wrap(
+          width = 1/2,
+          height = 500,
 
-            # Add the popover manually
-            h1(tooltip(bs_icon("question-circle"),
-                    paste("The dataset name should be an identifiable name for the dataset that you can",
-                          "reasonably identify. The ideal name is the full expanded name of the dataset",
-                          "that you plan on storing."),
-                    placement = "right",
-                    options = list(container = "body")))
-          )),
-          column(width = 3, div(style = "display: flex; align-items: center;",
-            numericInput("add_dataset_version", label = "Dataset Version:",
-                        value = NULL, width = validateCssUnit(500)),
-            # Add a question mark icon button with a popover
-            #actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+          # Card for the user inputs
+          card(card_header("Add Dataset Information", class = "bg-dark"),
+           fluidRow(
+             column(width = 12, div(style = "display: flex; align-items: center;",
+               textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
+                             width = validateCssUnit(500), resize = "none"),
 
-            # Add the popover manually
-            h1(tooltip(bs_icon("question-circle"),
-                    paste("The dataset version number can help differentiate dataset names additionally",
-                          "while also allowing for storing different versions of the same dataset."),
-                    placement = "right",
-                    options = list(container = "body")))
-          )),
-          column(width = 3, div(style = "display: flex; align-items: center;",
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                # Label for the uploaded file name
-                div(style = "margin-right: 10px;", "Uploaded File:"),
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                # Boxed text output for showing the uploaded file name
-                div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                    textOutput("uploaded_file_name")
-                ),
-                # Upload button
-                actionButton("add_dataset_file", label = "", shiny::icon("file-arrow-up")), #or use 'upload'
-                # Add a question mark icon button with a popover
-                #actionButton("add_dataset_code_help", class = "btn btn-info", shiny::icon("question")) |>
+               # Add the popover manually
+               h1(tooltip(bs_icon("question-circle"),
+                          paste("The dataset code is the prefix of the source dataset that you will be using",
+                                "during the data linkage process. The prefix you enter here should match the",
+                                "prefix of the file you are using using EXACTLY."),
+                          placement = "right",
+                          options = list(container = "body")))
+             )),
+             column(width = 12, div(style = "display: flex; align-items: center;",
+               textAreaInput("add_dataset_name", label = "Dataset Name:", value = "",
+                             width = validateCssUnit(500), resize = "none"),
 
-                # Add the popover manually
-                h1(tooltip(bs_icon("question-circle"),
-                        paste("The dataset you plan on using to perform data linkage should be uploaded here.",
-                             "The column names will be grabbed from the first row in the source dataset for",
-                             "future use when creating linkage algorithms and passes."),
-                        placement = "right",
-                        options = list(container = "body")))
+               # Add the popover manually
+               h1(tooltip(bs_icon("question-circle"),
+                          paste("The dataset name should be an identifiable name for the dataset that you can",
+                                "reasonably identify. The ideal name is the full expanded name of the dataset",
+                                "that you plan on storing."),
+                          placement = "right",
+                          options = list(container = "body")))
+             )),
+             column(width = 12, div(style = "display: flex; align-items: center;",
+               numericInput("add_dataset_version", label = "Dataset Version:",
+                            value = NULL, width = validateCssUnit(500)),
+
+               # Add the popover manually
+               h1(tooltip(bs_icon("question-circle"),
+                          paste("The dataset version number can help differentiate dataset names additionally",
+                                "while also allowing for storing different versions of the same dataset."),
+                          placement = "right",
+                          options = list(container = "body")))
+             )),
+             column(width = 12, div(style = "display: flex; align-items: center;",
+               fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                                        # Label for the uploaded file name
+                                        div(style = "margin-right: 10px;", "Linkage File (Field Names):"),
+                 )),
+                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  # Boxed text output for showing the uploaded file name
+                  div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                      textOutput("uploaded_file_name")
+                  ),
+                  # Upload button
+                  actionButton("add_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
+
+                  # Add the popover manually
+                  h1(tooltip(bs_icon("question-circle"),
+                             paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                                   "The column names will be grabbed from the first row in the source dataset for",
+                                   "future use when creating linkage algorithms and passes."),
+                             placement = "right",
+                               options = list(container = "body")))
+                 ))
+                )
               ))
-            )
-          ))
+            ),
+          ),
+          # Card for viewing the uploaded fields
+          card(card_header("View Uploaded Dataset Fields", class = "bg-dark"),
+            uiOutput("uploaded_dataset_fields")
+          )
         ),
-        HTML("<br>"),
+
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
            actionButton("add_dataset", "Add Dataset", class = "btn-success"),
           ))
-        )
+        ),
+        HTML("<br><br>"),
       )
     )
   ),
@@ -331,7 +354,7 @@ linkage_ui <- page_navbar(
       # Add linkage method fields here
       h5(strong("Or, Add a New Linkage Method Here:")),
       fluidRow(
-        column(width = 4, div(style = "display: flex; align-items: center;",
+        column(width = 3, div(style = "display: flex; align-items: center;",
           textAreaInput("add_implementation_name", label = "Implementation/Class Name:", value = "",
                         width = validateCssUnit(500), resize = "none"),
 
@@ -343,8 +366,8 @@ linkage_ui <- page_navbar(
                      placement = "right",
                      options = list(container = "body")))
         )),
-        column(width = 4, div(style = "display: flex; align-items: center;",
-          textAreaInput("add_technique_label", label = "Technique Label:", value = "",
+        column(width = 3, div(style = "display: flex; align-items: center;",
+          textAreaInput("add_technique_label", label = "Linkage Method:", value = "",
                         width = validateCssUnit(500), resize = "none"),
 
           # Add the popover manually
@@ -355,7 +378,17 @@ linkage_ui <- page_navbar(
                      placement = "right",
                      options = list(container = "body")))
         )),
-        column(width = 4, div(style = "display: flex; align-items: center;",
+        column(width = 3, div(style = "display: flex; align-items: center;",
+          textAreaInput("add_implementation_desc", label = "Implementation Description:", value = "",
+                        width = validateCssUnit(500), resize = "none"),
+
+          # Add the popover manually
+          h1(tooltip(bs_icon("question-circle"),
+                     paste("Short description of the linkage class being created including its method and name."),
+                     placement = "right",
+                     options = list(container = "body")))
+        )),
+        column(width = 3, div(style = "display: flex; align-items: center;",
           numericInput("add_implementation_vers", label = "Implementation Version:",
                        value = NULL, width = validateCssUnit(500)),
 
@@ -483,7 +516,8 @@ linkage_ui <- page_navbar(
         conditionalPanel(
           condition = "input.currently_added_linkage_algorithms_rows_selected <= 0",
           h5(strong("Or, create an empty linkage algorithm here:")),
-          h6(p(strong("Note: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
+          h6(p(strong("Note 1: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
+          h6(p(strong("Note 2: "), paste("One algorithm may be enabled at a time, creating a new algorithm will require you to enable it manually"))),
           fluidRow(
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
               textAreaInput("linkage_algorithm_descriptor", label = "Algorithm Name/Descriptor:", value = "",
@@ -788,9 +822,9 @@ linkage_ui <- page_navbar(
                         textOutput("selected_iteration_acceptance_rule")
                     ),
                     # Add acceptance rule button
-                    actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                    actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                     # Remove acceptance rule button
-                    actionButton("remove_iteration_acceptance_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                    actionButton("remove_iteration_acceptance_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                   ))
                 )
               )
@@ -838,9 +872,9 @@ linkage_ui <- page_navbar(
                           textOutput("blocking_linkage_rules_add")
                       ),
                       # Add linkage rule button
-                      actionButton("prepare_blocking_linkage_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      actionButton("prepare_blocking_linkage_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                       # Remove linkage rule button
-                      actionButton("remove_blocking_linkage_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                      actionButton("remove_blocking_linkage_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -877,9 +911,9 @@ linkage_ui <- page_navbar(
                           textOutput("blocking_linkage_rules_update")
                       ),
                       # Add linkage rule button
-                      actionButton("prepare_blocking_linkage_rule_update", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      actionButton("prepare_blocking_linkage_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                       # Remove linkage rule button
-                      actionButton("remove_blocking_linkage_rule_update", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                      actionButton("remove_blocking_linkage_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -937,9 +971,9 @@ linkage_ui <- page_navbar(
                         textOutput("matching_linkage_rules_add")
                       ),
                       # Add linkage rule button
-                      actionButton("prepare_matching_linkage_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      actionButton("prepare_matching_linkage_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                       # Remove linkage rule button
-                      actionButton("remove_matching_linkage_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                      actionButton("remove_matching_linkage_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -956,9 +990,9 @@ linkage_ui <- page_navbar(
                           textOutput("matching_comparison_rules_add")
                       ),
                       # Add comparison rule button
-                      actionButton("prepare_matching_comparison_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      actionButton("prepare_matching_comparison_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                       # Remove comparison rule button
-                      actionButton("remove_matching_comparison_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                      actionButton("remove_matching_comparison_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -995,9 +1029,9 @@ linkage_ui <- page_navbar(
                           textOutput("matching_linkage_rules_update")
                       ),
                       # Add linkage rule button
-                      actionButton("prepare_matching_linkage_rule_update", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      actionButton("prepare_matching_linkage_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                       # Remove linkage rule button
-                      actionButton("remove_matching_linkage_rule_update", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                      actionButton("remove_matching_linkage_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -1014,9 +1048,9 @@ linkage_ui <- page_navbar(
                           textOutput("matching_comparison_rules_update")
                       ),
                       # Add comparison rule button
-                      actionButton("prepare_matching_comparison_rule_update", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      actionButton("prepare_matching_comparison_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                       # Remove comparison rule button
-                      actionButton("remove_matching_comparison_rule_update", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                      actionButton("remove_matching_comparison_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -1102,9 +1136,9 @@ linkage_ui <- page_navbar(
                           textOutput("selected_ground_truth_linkage_rule")
                       ),
                       # Add linkage rule button
-                      actionButton("prepare_ground_truth_linkage_rule", label = "", shiny::icon("plus"), class = "btn-circle btn-green"),
+                      actionButton("prepare_ground_truth_linkage_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                       # Remove linkage rule button
-                      actionButton("remove_ground_truth_linkage_rule", label = "", shiny::icon("xmark"), class = "btn-circle btn-red"),
+                      actionButton("remove_ground_truth_linkage_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -1136,7 +1170,7 @@ linkage_ui <- page_navbar(
   #----
   #---------------------------------#
 
-  #-- ACCEPTANCE METHODS --#
+  #-- ACCEPTANCE METHODS PAGE --#
   #----
   nav_panel(title = "Acceptance Methods", value = "acceptance_methods_page",
     fluidPage(
@@ -1165,9 +1199,9 @@ linkage_ui <- page_navbar(
         h5(strong("Or, Add a New Acceptance Method and Parameters Here:")),
         layout_column_wrap(
           width = 1/2,
-          height = 300,
+          height = 500,
           # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Acceptance Method General Information",
+          card(full_screen = TRUE, card_header("Acceptance Method General Information", class = "bg-dark",
                tooltip(bs_icon("question-circle"),
                        paste("Within this card, you can enter general information about the acceptance",
                              "method that you want to add, which includes the name of the method and a",
@@ -1204,7 +1238,7 @@ linkage_ui <- page_navbar(
           ),
 
           # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information",
+          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information", class = "bg-dark",
                tooltip(bs_icon("question-circle"),
                        paste("Within this card, you can add parameters that belong to the acceptance method",
                              "you are wanting to add, each parameter consists of a key which is how it would",
@@ -1297,26 +1331,22 @@ linkage_ui <- page_navbar(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                                  actionButton("add_acceptance_method_and_parameters", "Add Acceptance Method & Parameters", class = "btn-success"),
           ))
-        )
+        ),
+        # Final line break
+        HTML("<br><br>")
       ),
       # If a row is selected, you may update the acceptance method name, descriptions + parameter names and description.
       # You are, however, unable to delete parameter keys or acceptance methods after they've been created.
       # You may also click a button which brings you to a page for adding a new rule
       conditionalPanel(
         condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected > 0",
-        h5(strong("Create a New Acceptance Rule for the Selected Acceptance Method Here:")),
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                                 actionButton("acceptance_methods_to_acceptance_rules", "View and Add Acceptance Rules", class = "btn-info"),
-          ))
-        ),
-        HTML("<br>"),
+
         h5(strong("Update the Selected Acceptance Method and Parameters Here:")),
         layout_column_wrap(
           width = 1/2,
-          height = 300,
+          height = 500,
           # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Acceptance Method General Information",
+          card(full_screen = TRUE, card_header("Acceptance Method General Information", class = "bg-dark",
                                                tooltip(bs_icon("question-circle"),
                                                        paste("Within this card, you can enter general information about the acceptance",
                                                              "method that you want to add, which includes the name of the method and a",
@@ -1353,7 +1383,7 @@ linkage_ui <- page_navbar(
           ),
 
           # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information",
+          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information", class = "bg-dark",
                                                tooltip(bs_icon("question-circle"),
                                                        paste("Within this card, you can add parameters that belong to the acceptance method",
                                                              "you are wanting to add, each parameter consists of a key which is how it would",
@@ -1409,14 +1439,16 @@ linkage_ui <- page_navbar(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                                  actionButton("update_acceptance_method_and_parameters", "Update Acceptance Method & Parameters", class = "btn-success"),
           ))
-        )
+        ),
+        # Final line break
+        HTML("<br><br>")
       )
     )
   ),
   #----
-  #------------------------#
+  #-----------------------------#
 
-  #-- ACCEPTANCE RULES --#
+  #-- ACCEPTANCE RULES PAGE --#
   #----
   nav_panel(title = "Acceptance Rules", value = "acceptance_rules_page",
     fluidPage(
@@ -1438,7 +1470,7 @@ linkage_ui <- page_navbar(
       HTML("<br><br>"),
       div(style = "display: flex; justify-content: center; align-items: center;",
         # CARD FOR ACCEPTANCE RULES
-        card(max_height = 300, full_screen = TRUE, card_header("Acceptance Rules Parameter Values",
+        card(max_height = 300, full_screen = TRUE, card_header("Acceptance Rules Parameter Values", class = "bg-dark",
              tooltip(bs_icon("question-circle"),
                      paste("Within this card, you can enter your desired values for the acceptance",
                            "rule that you would like to use for future linkage iterations. All inputs",
@@ -1458,10 +1490,11 @@ linkage_ui <- page_navbar(
           actionButton("add_acceptance_rule", "Submit Acceptance Rule Values", class = "btn-success"),
         ))
       ),
+      HTML("<br><br>")
     )
   ),
   #----
-  #----------------------#
+  #---------------------------#
 
   #-- COMPARISON METHODS PAGE --#
   #----
@@ -1492,9 +1525,9 @@ linkage_ui <- page_navbar(
         h5(strong("Or, Add a New Comparison Method and Parameters Here:")),
         layout_column_wrap(
           width = 1/2,
-          height = 300,
+          height = 500,
           # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Comparison Method General Information",
+          card(full_screen = TRUE, card_header("Comparison Method General Information", class = "bg-dark",
                                    tooltip(bs_icon("question-circle"),
                                            paste("Within this card, you can enter general information about the comparison",
                                                  "method that you want to add, which includes the name of the method and a",
@@ -1531,7 +1564,7 @@ linkage_ui <- page_navbar(
           ),
 
           # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Comparison Method Parameter Information",
+          card(full_screen = TRUE, card_header("Comparison Method Parameter Information", class = "bg-dark",
                                    tooltip(bs_icon("question-circle"),
                                            paste("Within this card, you can add parameters that belong to the comparison method",
                                                  "you are wanting to add, each parameter consists of a key which is how it would",
@@ -1624,26 +1657,22 @@ linkage_ui <- page_navbar(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
             actionButton("add_comparison_method_and_parameters", "Add Comparison Method & Parameters", class = "btn-success"),
           ))
-        )
+        ),
+        # Final line break
+        HTML("<br><br>")
       ),
       # If a row is selected, you may update the comparison method name, descriptions + parameter names and description.
       # You are, however, unable to delete parameter keys or comparison methods after they've been created.
       # You may also click a button which brings you to a page for adding a new rule
       conditionalPanel(
         condition = "input.currently_added_comparison_methods_and_parameters_rows_selected > 0",
-        h5(strong("Create a New Comparison Rule for the Selected Comparison Method Here:")),
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("comparison_methods_to_comparison_rules", "View and Add Comparison Rules", class = "btn-info"),
-          ))
-        ),
-        HTML("<br>"),
+
         h5(strong("Update the Selected Comparison Method and Parameters Here:")),
         layout_column_wrap(
           width = 1/2,
-          height = 300,
+          height = 500,
           # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Comparison Method General Information",
+          card(full_screen = TRUE, card_header("Comparison Method General Information", class = "bg-dark",
                                    tooltip(bs_icon("question-circle"),
                                            paste("Within this card, you can enter general information about the comparison",
                                                  "method that you want to add, which includes the name of the method and a",
@@ -1680,7 +1709,7 @@ linkage_ui <- page_navbar(
           ),
 
           # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Comparison Method Parameter Information",
+          card(full_screen = TRUE, card_header("Comparison Method Parameter Information", class = "bg-dark",
                                    tooltip(bs_icon("question-circle"),
                                            paste("Within this card, you can add parameters that belong to the comparison method",
                                                  "you are wanting to add, each parameter consists of a key which is how it would",
@@ -1736,7 +1765,9 @@ linkage_ui <- page_navbar(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                                  actionButton("update_comparison_method_and_parameters", "Update Comparison Method & Parameters", class = "btn-success"),
           ))
-        )
+        ),
+        # Final line break
+        HTML("<br><br>")
       )
     )
   ),
@@ -1765,7 +1796,7 @@ linkage_ui <- page_navbar(
       HTML("<br><br>"),
       div(style = "display: flex; justify-content: center; align-items: center;",
           # CARD FOR COMPARISON RULES
-          card(max_height = 300, full_screen = TRUE, card_header("Comparison Rules Parameter Values",
+          card(max_height = 300, full_screen = TRUE, card_header("Comparison Rules Parameter Values", class = "bg-dark",
                tooltip(bs_icon("question-circle"),
                        paste("Within this card, you can enter your desired values for the comparison",
                              "rule that you would like to use for future linkage iterations. All inputs",
@@ -1785,6 +1816,7 @@ linkage_ui <- page_navbar(
           actionButton("add_comparison_rule", "Submit Comparison Rule Values", class = "btn-success"),
         ))
       ),
+      HTML("<br><br>")
     )
   ),
   #----
@@ -1879,6 +1911,7 @@ linkage_ui <- page_navbar(
   ),
   #----
   #------------------------#
+
   nav_spacer(),
   nav_menu(
     title = "Links",
@@ -1997,7 +2030,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       )
     },
     error = function(e){
-      column_names <- c()
+      column_names <<- c()
     })
 
     # Return the extracted column names
@@ -2007,6 +2040,64 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   # Renders the Data table of currently added datasets
   output$currently_added_datasets <- renderDataTable({
     get_datasets()
+  })
+
+  # Renders the selected dataset fields based on what dataset the user selected
+  output$selected_dataset_fields <- renderUI({
+    # Get the selected row
+    selected_row <- input$currently_added_datasets_rows_selected
+
+    # Make sure the row is not null
+    if(is.null(selected_row)) return()
+
+    # Query to get the dataset ID
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets
+                                                ORDER BY dataset_id ASC'))
+
+    selected_dataset_id <- df[selected_row, "dataset_id"]
+
+    # Query to get the field names
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from dataset_fields
+                                                WHERE dataset_id =', selected_dataset_id,
+                                                'ORDER BY field_id ASC'))
+
+    field_names <- df$field_name
+
+    # Create a tag list for the field names
+    if (length(field_names) == 0) {
+      return(HTML("<p>No columns found under this dataset.</p>"))
+    } else {
+      tagList(
+        HTML("<b>The Selected Dataset Fields Are:</b>"),
+        div(class = "dataset-field-box",  # Add the custom class here
+          tags$ul(
+            lapply(field_names, function(col) {
+              tags$li(col)  # Each column as a list item
+            })
+          )
+        )
+      )
+    }
+  })
+
+  # Renders the uploaded dataset fields based on the file the user provided
+  output$uploaded_dataset_fields <- renderUI({
+    field_names <- read_dataset_columns(file_path$path)
+
+    if (is.null(field_names) || length(field_names) == 0) {
+      return(HTML("<p>No columns found or unsupported file format.</p>"))
+    } else {
+      tagList(
+        HTML("<b>The Uploaded Dataset Fields Are:</b>"),
+        div(class = "dataset-field-box",  # Add the custom class here
+          tags$ul(
+            lapply(field_names, function(col) {
+              tags$li(col)  # Each column as a list item
+            })
+          )
+        )
+      )
+    }
   })
 
   # Enables or Disables the currently selected dataset
@@ -2142,11 +2233,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dataset_cols <- read_dataset_columns(dataset_file)
 
     # If column reading failed (dataset_cols remains empty), return
-    if(length(dataset_cols) == 0) {
+    if(is.null(dataset_cols) || length(dataset_cols) == 0) {
       showNotification("Failed to Add Dataset - Invalid Input File", type = "error", closeButton = FALSE)
       return()
     }
     #----#
+
+    successful <- TRUE
 
     tryCatch({
       dbBegin(linkage_metadata_conn)
@@ -2180,21 +2273,20 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     },
     error = function(e){
       # If we throw an error because of timeout, or bad insert, then rollback and return
-      errmsg <- geterrmessage()
-      successful <- FALSE
+      successful <<- FALSE
       dbRollback(linkage_metadata_conn)
       showNotification("Failed to Add Dataset - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
       return()
     })
 
     # If we didn't successfully add the dataset, then return
-    if(!successful) return()
+    if(successful == FALSE) return()
 
     # Update user input fields to make them blank!
     #----#
     updateTextAreaInput(session, "add_dataset_code",    value = "")
     updateTextAreaInput(session, "add_dataset_name",    value = "")
-    updateNumericInput(session,  "add_dataset_vers",    value = NA)
+    updateNumericInput(session,  "add_dataset_vers",    value = NULL)
     file_path$path <- NULL
     output$uploaded_file_name <- renderText({
       "No File Uploaded"
@@ -2321,14 +2413,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # With our data frame, we'll rename some of the columns to look better
     names(df)[names(df) == 'implementation_name'] <- 'Implementation Name'
-    names(df)[names(df) == 'technique_label'] <- 'Technique Label'
+    names(df)[names(df) == 'technique_label'] <- 'Linkage Method'
+    names(df)[names(df) == 'implementation_desc'] <- 'Implementation Description'
     names(df)[names(df) == 'version'] <- 'Version'
 
     # Drop the linkage_method_id value
     df <- subset(df, select = -c(linkage_method_id))
 
     # Reorder the columns so they're easier to read
-    df <- df[, c('Implementation Name', 'Technique Label', 'Version')]
+    df <- df[, c('Implementation Name', 'Linkage Method', 'Implementation Description', 'Version')]
 
     # Put it into a data table now
     dt <- datatable(df, selection = 'none', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
@@ -2344,6 +2437,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Get the values that we're inserting into a new record
     #----#
     implementation_name <- input$add_implementation_name
+    implementation_desc <- input$add_implementation_desc
     technique_label     <- input$add_technique_label
     implementation_vers <- input$add_implementation_vers
     #----#
@@ -2351,7 +2445,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Error check to verify that an exact match doesn't exist
     #----#
     # Verify inputs are good
-    if(implementation_name == "" || technique_label == "" || is.null(implementation_vers)){
+    if(implementation_name == "" || technique_label == "" || is.na(implementation_vers)){
       showNotification("Failed to Add Linkage Method - Some Inputs are Missing", type = "error", closeButton = FALSE)
       return()
     }
@@ -2371,18 +2465,19 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Create a new entry query for entering into the database
     #----#
-    new_entry_query <- paste("INSERT INTO linkage_methods (implementation_name, technique_label, version)",
+    new_entry_query <- paste("INSERT INTO linkage_methods (implementation_name, technique_label, implementation_desc, version)",
                              "VALUES(?, ?, ?);")
     new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-    dbBind(new_entry, list(implementation_name, technique_label, implementation_vers))
+    dbBind(new_entry, list(implementation_name, technique_label, implementation_desc, implementation_vers))
     dbClearResult(new_entry)
     #----#
 
     # Update user input fields to make them blank!
     #----#
-    updateTextAreaInput(session, "add_implementation_name",    value = "")
-    updateTextAreaInput(session, "add_technique_label",        value = "")
-    updateNumericInput(session,  "add_implementation_vers",    value = NA)
+    updateTextAreaInput(session, "add_implementation_name", value = "")
+    updateTextAreaInput(session, "add_implementation_desc", value = "")
+    updateTextAreaInput(session, "add_technique_label",     value = "")
+    updateNumericInput(session,  "add_implementation_vers", value = NA)
     #----#
 
     # Update Data Tables and UI Renders
@@ -2489,6 +2584,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     left_dataset_id <- as.numeric(left_dataset_id)
     right_dataset_id <- as.numeric(right_dataset_id)
 
+    # Make sure the dataset IDs aren't NA
+    if(is.na(left_dataset_id) || is.na(right_dataset_id)){
+      return()
+    }
+
     # Query to get all linkage method information from the 'linkage_methods' table
     query <- paste('SELECT * FROM linkage_algorithms
                 WHERE dataset_id_left =', left_dataset_id, ' AND dataset_id_right =', right_dataset_id,
@@ -2549,7 +2649,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     new_entry_query <- paste("INSERT INTO linkage_algorithms (dataset_id_left, dataset_id_right, algorithm_name, modified_date, modified_by, enabled)",
                              "VALUES(?, ?, ?, ?, ?, ?);")
     new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-    dbBind(new_entry, list(left_dataset_id, right_dataset_id, algorithm_name, modified_date, modified_by, 1))
+    dbBind(new_entry, list(left_dataset_id, right_dataset_id, algorithm_name, modified_date, modified_by, 0))
     dbClearResult(new_entry)
     #----#
 
@@ -2674,6 +2774,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       dbBind(update, list(algorithm_id))
       dbClearResult(update)
     }else{
+      # Disable all algorithms for the selected data sets,
+      update_query <- paste("UPDATE linkage_algorithms
+                          SET enabled = 0
+                          WHERE dataset_id_left = ? AND dataset_id_right = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(left_dataset_id, right_dataset_id))
+      dbClearResult(update)
+
       # Error handling - don't allow user to have two algorithms enabled with the same name
       #----#
       get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND enabled = 1;')
@@ -2688,6 +2796,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       }
       #----#
 
+      # Set the selected algorithm ID to be enabled
       update_query <- paste("UPDATE linkage_algorithms
                           SET enabled = 1
                           WHERE algorithm_id = ?")
@@ -4509,10 +4618,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     choices <- setNames(df$linkage_method_id, df$implementation_name)
 
     # Create select input with dynamic choices
-    span(selectizeInput("add_iteration_linkage_method", label = "Linkage Method & Technique:",
+    span(selectizeInput("add_iteration_linkage_method", label = "Linkage Implementation:",
                      choices = choices, multiple = FALSE, width = validateCssUnit(300),
                      options = list(
-                       placeholder = 'Select a Linkage Method',
+                       placeholder = 'Select Implementation & Method',
                        onInitialize = I('function() { this.setValue(""); }')
                      )))
   }
@@ -4790,29 +4899,106 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     updateNavbarPage(session, "main_navbar", selected = add_linkage_iterations_return_page)
   })
 
+  #-- DYNAMIC UI GENERATION CODE --#
+  modify_iteration_get_acceptance_rule_inputs <- function(acceptance_method_id, label_name){
+    # Get the parameter IDs, keys, and descriptions of the inputs we need
+    query <- paste('SELECT * from acceptance_method_parameters
+                   WHERE acceptance_method_id =', acceptance_method_id)
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the number of inputs we'll need
+    num_inputs <- nrow(df)
+
+    # Construct the list of inputs
+    acceptance_rule_input_list <- lapply(1:(num_inputs), function(index){
+      # Using the current index, grab all the parameter information and provide a
+      # numeric input for the user to enter their data.
+      parameter_key  <- df[index, "parameter_key"]
+      parameter_desc <- df[index, "description"]
+
+      fluidPage(
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput(paste0(label_name, index), label = h5(strong(parameter_key)),
+                         value = NULL, width = validateCssUnit(500)),
+
+            # Add the popover manually
+            h1(tooltip(bs_icon("question-circle"),
+                       parameter_desc,
+                       placement = "right",
+                       options = list(container = "body")))
+          )),
+        )
+      )
+    })
+  }
+
+  modify_iteration_get_comparison_rule_inputs <- function(comparison_method_id, label_name){
+    # Get the parameter IDs, keys, and descriptions of the inputs we need
+    query <- paste('SELECT * from comparison_method_parameters
+                   WHERE comparison_method_id =', comparison_method_id)
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Get the number of inputs we'll need
+    num_inputs <- nrow(df)
+
+    # Construct the list of inputs
+    comparison_rule_input_list <- lapply(1:(num_inputs), function(index){
+      # Using the current index, grab all the parameter information and provide a
+      # numeric input for the user to enter their data.
+      parameter_key  <- df[index, "parameter_key"]
+      parameter_desc <- df[index, "description"]
+
+      fluidPage(
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput(paste0(label_name, index), label = h5(strong(parameter_key)),
+                         value = NULL, width = validateCssUnit(500)),
+
+            # Add the popover manually
+            h1(tooltip(bs_icon("question-circle"),
+                       parameter_desc,
+                       placement = "right",
+                       options = list(container = "body")))
+          )),
+        )
+      )
+    })
+  }
+  #--------------------------------#
+
   #-- GENERAL INFORMATION RELATED EVENTS --#
   # Selecting an acceptance rule for the iteration
   observeEvent(input$prepare_iteration_acceptance_rule, {
+    # Generates the table of acceptance methods
+    output$add_acceptance_method_iteration <- renderDataTable({
+      get_acceptance_methods_and_parameters()
+    })
+
+    output$iteration_acceptance_rule_add_inputs <- renderUI({
+
+    })
+
     showModal(modalDialog(
       title = "Choose Acceptance Rule",
       easyClose = TRUE,
       footer = NULL,
       fluidPage(
-        # Linkage rule table
-        fluidRow(
-          h5(strong("Select An Acceptance Method And Corresponding Acceptance Rule Below for the Iteration:")),
-          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
-              dataTableOutput("add_acceptance_method_iteration"),
-            )
+        # Acceptance rule table
+        h5("Select an Acceptance Method & Enter Rule Parameters:"),
+        layout_column_wrap(
+          width = 1/2,
+          height = 500,
+
+          # Card for the acceptance methods table
+          card(card_header("Acceptance Methods Table", class = "bg-dark"),
+            dataTableOutput("add_acceptance_method_iteration")
           ),
-          # Once an acceptance method is selected, show the other table
-          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
-              conditionalPanel(
-                condition = "input.add_acceptance_method_iteration_rows_selected > 0",
-                dataTableOutput("add_acceptance_rule_iteration"),
-              ),
-            )
-          ),
+
+          # Card for the acceptance rules UI
+          card(card_header("Acceptance Rule Inputs", class = "bg-dark"),
+            uiOutput("iteration_acceptance_rule_add_inputs")
+          )
         ),
 
         # OPTION 1: User may enter a new acceptance method & parameters
@@ -4830,26 +5016,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
           )
         ),
 
-        # OPTION 2: User may enter a new acceptance rule via selected method
+        # OPTION 2: User can submit which acceptance rule they'd like to use
         conditionalPanel(
-          condition = "input.add_acceptance_method_iteration_rows_selected > 0 &&
-                       input.add_acceptance_rule_iteration_rows_selected <= 0",
-          HTML("<br>"),
-
-          # Button for moving the user to the acceptance rules page
-          fluidRow(
-            h5(strong("Or, create a new acceptance rule below:")),
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("add_linkage_iteration_to_add_acceptance_rules", "Create Acceptance Rule", class = "btn-info"),
-              )
-            ),
-          )
-        ),
-
-        # OPTION 3: User can submit which acceptance rule they'd like to use
-        conditionalPanel(
-          condition = "input.add_acceptance_method_iteration_rows_selected > 0 &&
-                       input.add_acceptance_rule_iteration_rows_selected > 0",
+          condition = "input.add_acceptance_method_iteration_rows_selected > 0",
           HTML("<br>"),
 
           # Button for moving the user to the acceptance rules page
@@ -4857,7 +5026,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                 actionButton("prepare_iteration_acceptance_rule_to_add", "Add Acceptance Rule", class = "btn-success"),
               )
-            ),
+            )
           )
         ),
       ),
@@ -4870,7 +5039,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     get_acceptance_methods_and_parameters()
   })
 
-  # Generates the table of acceptance rules & parameters
+  # Generates the dynamic acceptance rule inputs
   observeEvent(input$add_acceptance_method_iteration_rows_selected, {
     selected_row <- input$add_acceptance_method_iteration_rows_selected
 
@@ -4879,29 +5048,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       query <- paste('SELECT * from acceptance_methods')
       df <- dbGetQuery(linkage_metadata_conn, query)
       # Retrieve the acceptance method id of the selected row
-      selected_method <<- df[selected_row, "acceptance_method_id"]
+      selected_method <- df$acceptance_method_id[selected_row]
 
-      output$add_acceptance_rule_iteration <- renderDataTable({
-        acceptance_method_id <- selected_method
+      output$iteration_acceptance_rule_add_inputs <- renderUI({
+        modify_iteration_get_acceptance_rule_inputs(selected_method, "modify_iteration_acceptance_rule_input")
+      })
+    }
+    else{
+      output$iteration_acceptance_rule_add_inputs <- renderUI({
 
-        # Query to get all acceptance method information from the 'acceptance_method_parameters' table
-        query <- paste('SELECT arp.acceptance_rule_id, parameter_id, parameter FROM acceptance_rules ar
-                   JOIN acceptance_rules_parameters arp ON ar.acceptance_rule_id = arp.acceptance_rule_id
-                   WHERE acceptance_method_id =', acceptance_method_id)
-        df <- dbGetQuery(linkage_metadata_conn, query)
-
-        # Aggregate parameters by acceptance_rule_id
-        df <- df %>%
-          group_by(acceptance_rule_id) %>%
-          summarise(parameters = paste(parameter, collapse = ", ")) %>%
-          ungroup()
-
-        # With our data frame, we'll rename some of the columns to look better (we can always drop the ID if we want)
-        names(df)[names(df) == 'acceptance_rule_id'] <- 'Acceptance Rule No.'
-        names(df)[names(df) == 'parameters'] <- 'Parameter Values'
-
-        # Put it into a data table now
-        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
       })
     }
   })
@@ -4919,26 +5074,112 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Get the linkage rule
     acceptance_method_id <- df[selected_row, "acceptance_method_id"]
 
-    # Query to get all acceptance method information from the 'acceptance_method_parameters' table
-    query <- paste('SELECT arp.acceptance_rule_id, parameter_id, parameter FROM acceptance_rules ar
-                   JOIN acceptance_rules_parameters arp ON ar.acceptance_rule_id = arp.acceptance_rule_id
+    # Get the parameter IDs, keys, and descriptions of the inputs we need
+    query <- paste('SELECT * from acceptance_method_parameters
                    WHERE acceptance_method_id =', acceptance_method_id)
     df <- dbGetQuery(linkage_metadata_conn, query)
 
-    # Aggregate parameters by acceptance_rule_id
-    df <- df %>%
-      group_by(acceptance_rule_id) %>%
-      summarise(parameters = paste(parameter, collapse = ", ")) %>%
-      ungroup()
+    # Get the number of inputs we'll be adding
+    num_inputs <- nrow(df)
+    parameter_ids <- df$parameter_id
 
-    # Get the selected row for this table
-    selected_row <- input$add_acceptance_rule_iteration_rows_selected
+    # Error handling
+    #----#
+    # Error Handling to make sure all inputs are filled
+    for(index in 1:(num_inputs)){
+      # Get the input value for each input
+      input_val <- input[[paste0("modify_iteration_acceptance_rule_input", index)]]
+      # Ensure it isn't null
+      if(is.na(input_val)){
+        showNotification("Failed to Use Acceptance Rule - Some Input(s) Are Missing", type = "error", closeButton = FALSE)
+        return()
+      }
+    }
+    #----#
 
-    # Get the acceptance rule ID
-    acceptance_rule_id <- df$acceptance_rule_id[selected_row]
+    # If the rule already exists, then use that Acceptance Rule ID
+    df <- data.frame()
+    for (index in 1:(num_inputs)) {
+      # Get the parameter to input
+      parameter <- input[[paste0("modify_iteration_acceptance_rule_input", index)]]
 
-    # Set the global variable to the selected acceptance rule id
-    iteration_acceptance_rule_to_add <<- acceptance_rule_id
+      # Get the parameter ID
+      parameter_id <- parameter_ids[index]
+
+      # Check if the database has this eact match
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM acceptance_rules_parameters
+                                                  WHERE parameter_id = ? AND parameter = ?;')
+      dbBind(get_query, list(parameter_id, parameter))
+      output_df <- dbFetch(get_query)
+      dbClearResult(get_query)
+      df <- rbind(df, output_df)
+    }
+
+    # Group by the acceptance_rule_id
+    df_grouped <- df %>% group_by(acceptance_rule_id) %>% filter(n() == num_inputs)
+
+    # If it contains exactly those parameters, then there will be a row in the grouped df, so grab the acceptance rule
+    acceptance_rule_id <- 0
+    if(nrow(df_grouped) > 0){
+      acceptance_rule_id <- df_grouped$acceptance_rule_id[1]
+    }
+    #----#
+
+    # If the acceptance_rule_id is 0, then it does not exist, so create a new one
+    if(acceptance_rule_id == 0){
+      # Add all the necessary acceptance rule information
+      successful <- TRUE
+      #----#
+      added_acceptance_rule_id <- tryCatch({
+        # Start a transaction
+        dbBegin(linkage_metadata_conn)
+
+        # Start by creating a new acceptance rule
+        new_entry_query <- paste("INSERT INTO acceptance_rules (acceptance_method_id)",
+                                 "VALUES(?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(acceptance_method_id))
+        dbClearResult(new_entry)
+
+        # Add the dataset fields to the other table after we insert basic information
+        #----#
+        # Get the most recently inserted acceptance_rule_id value
+        new_acceptance_rule_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS acceptance_rule_id;")$acceptance_rule_id
+
+        # Insert each parameter value into the database
+        for (index in 1:(num_inputs)) {
+          # Get the parameter to input
+          parameter <- input[[paste0("modify_iteration_acceptance_rule_input", index)]]
+
+          # Get the parameter ID
+          parameter_id <- parameter_ids[index]
+
+          insert_field_query <- "INSERT INTO acceptance_rules_parameters (acceptance_rule_id, parameter_id, parameter) VALUES (?, ?, ?);"
+          insert_field_stmt <- dbSendStatement(linkage_metadata_conn, insert_field_query)
+          dbBind(insert_field_stmt, list(new_acceptance_rule_id, parameter_id, parameter))
+          dbClearResult(insert_field_stmt)
+        }
+
+        # End a transaction
+        dbCommit(linkage_metadata_conn)
+
+        # Return the new acceptance rule
+        new_acceptance_rule_id
+      },
+      error = function(e){
+        # If we throw an error because of timeout, or bad insert, then rollback and return
+        successful <- FALSE
+        dbRollback(linkage_metadata_conn)
+        showNotification("Failed to Add Acceptance Rule - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+        return(0)
+      })
+
+      # If we didn't successfully add the acceptance rule, then return
+      if(!successful) return()
+
+      acceptance_rule_id <- added_acceptance_rule_id
+      #----#
+    }
 
     # Render the output text to make the method readable
     if(!is.na(acceptance_rule_id)){
@@ -4962,6 +5203,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       })
     }
 
+    # Set the global variable
+    iteration_acceptance_rule_to_add <<- acceptance_rule_id
+
     # Dismiss the modal
     removeModal()
   })
@@ -4977,40 +5221,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Brings you to the linkage rules page
     updateNavbarPage(session, "main_navbar", selected = "acceptance_methods_page")
-  })
-
-  # Brings the user to the acceptance rules page
-  observeEvent(input$add_linkage_iteration_to_add_acceptance_rules, {
-    selected_row <- input$add_acceptance_method_iteration_rows_selected
-
-    if (!is.null(selected_row)) {
-      # Perform a query to get the acceptance methods
-      query <- paste('SELECT * from acceptance_methods
-                     ORDER BY acceptance_method_id ASC')
-      df <- dbGetQuery(linkage_metadata_conn, query)
-      # Retrieve the acceptance method id of the selected row
-      selected_method <<- df[selected_row, "acceptance_method_id"]
-    }
-
-    # Set the return page to the add linkage iterations page and the selected method to user input
-    acceptance_method_id_add_rule <<- selected_method
-    acceptance_rules_return_page  <<- "add_linkage_iterations_page"
-
-    # Update the table of acceptance rules on that page
-    output$currently_added_acceptance_rules <- renderDataTable({
-      get_acceptance_rules()
-    })
-
-    # Update the UI inputs for the acceptance rules on that page
-    output$acceptance_rules_inputs <- renderUI({
-      get_acceptance_rules_inputs()
-    })
-
-    # Show the linkage rule page
-    nav_show("main_navbar", "acceptance_rules_page")
-
-    # Brings you to the linkage rules page
-    updateNavbarPage(session, "main_navbar", selected = "acceptance_rules_page")
   })
   #----------------------------------------#
 
@@ -6077,28 +6287,37 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   ### ADDING COMPARISON RULE
 
-  # Selecting an comparison rule for the iteration (ADD)
+  # Selecting an comparison rule for the iteration
   observeEvent(input$prepare_matching_comparison_rule, {
+    # Generates the table of acceptance methods
+    output$add_comparison_method_iteration <- renderDataTable({
+      get_comparison_methods_and_parameters()
+    })
+
+    output$iteration_comparison_rule_add_inputs <- renderUI({
+
+    })
+
     showModal(modalDialog(
       title = "Choose Comparison Rule",
       easyClose = TRUE,
       footer = NULL,
       fluidPage(
         # Comparison rule table
-        fluidRow(
-          h5(strong("Select A Comparison Method And Corresponding Comparison Rule Below for the Iteration:")),
-          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
-              dataTableOutput("add_comparison_method_iteration"),
-            )
+        h5("Select a Comparison Method & Enter Rule Parameters:"),
+        layout_column_wrap(
+          width = 1/2,
+          height = 500,
+
+          # Card for the comparison methods table
+          card(card_header("Comparison Methods Table", class = "bg-dark"),
+            dataTableOutput("add_comparison_method_iteration")
           ),
-          # Once an comparison method is selected, show the other table
-          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
-              conditionalPanel(
-                condition = "input.add_comparison_method_iteration_rows_selected > 0",
-                dataTableOutput("add_comparison_rule_iteration"),
-              ),
-            )
-          ),
+
+          # Card for the comparison rules UI
+          card(card_header("Comparison Rule Inputs", class = "bg-dark"),
+            uiOutput("iteration_comparison_rule_add_inputs")
+          )
         ),
 
         # OPTION 1: User may enter a new comparison method & parameters
@@ -6116,26 +6335,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
           )
         ),
 
-        # OPTION 2: User may enter a new comparison rule via selected method
+        # OPTION 2: User can submit which comparison rule they'd like to use
         conditionalPanel(
-          condition = "input.add_comparison_method_iteration_rows_selected > 0 &&
-                       input.add_comparison_rule_iteration_rows_selected <= 0",
-          HTML("<br>"),
-
-          # Button for moving the user to the comparison rules page
-          fluidRow(
-            h5(strong("Or, create a new comparison rule below:")),
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("add_linkage_iteration_to_add_comparison_rules", "Create Comparison Rule", class = "btn-info"),
-              )
-            ),
-          )
-        ),
-
-        # OPTION 3: User can submit which comparison rule they'd like to use
-        conditionalPanel(
-          condition = "input.add_comparison_method_iteration_rows_selected > 0 &&
-                       input.add_comparison_rule_iteration_rows_selected > 0",
+          condition = "input.add_comparison_method_iteration_rows_selected > 0",
           HTML("<br>"),
 
           # Button for moving the user to the comparison rules page
@@ -6143,7 +6345,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                 actionButton("prepare_iteration_comparison_rule_to_add", "Add Comparison Rule", class = "btn-success"),
               )
-            ),
+            )
           )
         ),
       ),
@@ -6151,80 +6353,152 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     ))
   })
 
-  # Generates the table of comparison methods (ADD)
+  # Generates the table of comparison methods
   output$add_comparison_method_iteration <- renderDataTable({
     get_comparison_methods_and_parameters()
   })
 
-  # Generates the table of comparison rules & parameters (ADD)
+  # Generates the dynamic comparison rule inputs
   observeEvent(input$add_comparison_method_iteration_rows_selected, {
     selected_row <- input$add_comparison_method_iteration_rows_selected
 
     if (!is.null(selected_row)) {
-      # Perform a query to get the acceptance methods
+      # Perform a query to get the comparison methods
       query <- paste('SELECT * from comparison_methods')
       df <- dbGetQuery(linkage_metadata_conn, query)
-      # Retrieve the acceptance method id of the selected row
-      selected_method <<- df[selected_row, "comparison_method_id"]
+      # Retrieve the comparison method id of the selected row
+      selected_method <- df$comparison_method_id[selected_row]
 
-      output$add_comparison_rule_iteration <- renderDataTable({
-        comparison_method_id <- selected_method
+      output$iteration_comparison_rule_add_inputs <- renderUI({
+        modify_iteration_get_comparison_rule_inputs(selected_method, "modify_iteration_comparison_rule_input")
+      })
+    }
+    else{
+      output$iteration_comparison_rule_add_inputs <- renderUI({
 
-        # Query to get all acceptance method information from the 'acceptance_method_parameters' table
-        query <- paste('SELECT crp.comparison_rule_id, parameter_id, parameter FROM comparison_rules cr
-                   JOIN comparison_rules_parameters crp ON cr.comparison_rule_id = crp.comparison_rule_id
-                   WHERE comparison_method_id =', comparison_method_id)
-        df <- dbGetQuery(linkage_metadata_conn, query)
-
-        # Aggregate parameters by comparison_rule_id
-        df <- df %>%
-          group_by(comparison_rule_id) %>%
-          summarise(parameters = paste(parameter, collapse = ", ")) %>%
-          ungroup()
-
-        # With our data frame, we'll rename some of the columns to look better (we can always drop the ID if we want)
-        names(df)[names(df) == 'comparison_rule_id'] <- 'Comparison Rule No.'
-        names(df)[names(df) == 'parameters'] <- 'Parameter Values'
-
-        # Put it into a data table now
-        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
       })
     }
   })
 
-  # Selects the comparison rule the user wanted (ADD)
+  # Selects the comparison rule the user wanted
   observeEvent(input$prepare_iteration_comparison_rule_to_add, {
     # Get the selected row
     selected_row <- input$add_comparison_method_iteration_rows_selected
 
-    # Query to get all comparison rule information from the 'comparison_methods' table
+    # Query to get all linkage rule information from the 'comparison_methods' table
     query <- paste('SELECT * FROM comparison_methods
                ORDER BY comparison_method_id ASC;')
     df <- dbGetQuery(linkage_metadata_conn, query)
 
-    # Get the comparison rule
-    comparison_method_id <- df[selected_row, "comparison_method_id"]
+    # Get the linkage rule
+    comparison_method_id <- df$comparison_method_id[selected_row]
 
-    # Query to get all acceptance method information from the 'acceptance_method_parameters' table
-    query <- paste('SELECT crp.comparison_rule_id, parameter_id, parameter FROM comparison_rules cr
-                   JOIN comparison_rules_parameters crp ON cr.comparison_rule_id = crp.comparison_rule_id
+    # Get the parameter IDs, keys, and descriptions of the inputs we need
+    query <- paste('SELECT * from comparison_method_parameters
                    WHERE comparison_method_id =', comparison_method_id)
     df <- dbGetQuery(linkage_metadata_conn, query)
 
-    # Aggregate parameters by comparison_rule_id
-    df <- df %>%
-      group_by(comparison_rule_id) %>%
-      summarise(parameters = paste(parameter, collapse = ", ")) %>%
-      ungroup()
+    # Get the number of inputs we'll be adding
+    num_inputs <- nrow(df)
+    parameter_ids <- df$parameter_id
 
-    # Get the selected row for this table
-    selected_row <- input$add_comparison_rule_iteration_rows_selected
+    # Error handling
+    #----#
+    # Error Handling to make sure all inputs are filled
+    for(index in 1:(num_inputs)){
+      # Get the input value for each input
+      input_val <- input[[paste0("modify_iteration_comparison_rule_input", index)]]
+      # Ensure it isn't null
+      if(is.na(input_val)){
+        showNotification("Failed to Use Comparison Rule - Some Input(s) Are Missing", type = "error", closeButton = FALSE)
+        return()
+      }
+    }
+    #----#
 
-    # Get the acceptance rule ID
-    comparison_rule_id <- df$comparison_rule_id[selected_row]
+    # If the rule already exists, then use that Comparison Rule ID
+    df <- data.frame()
+    for (index in 1:(num_inputs)) {
+      # Get the parameter to input
+      parameter <- input[[paste0("modify_iteration_comparison_rule_input", index)]]
 
-    # Set the global variable to the selected acceptance rule id
-    matching_comparison_rule_to_add <<- comparison_rule_id
+      # Get the parameter ID
+      parameter_id <- parameter_ids[index]
+
+      # Check if the database has this eact match
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM comparison_rules_parameters
+                                                  WHERE parameter_id = ? AND parameter = ?;')
+      dbBind(get_query, list(parameter_id, parameter))
+      output_df <- dbFetch(get_query)
+      dbClearResult(get_query)
+      df <- rbind(df, output_df)
+    }
+
+    # Group by the comparison_rule_id
+    df_grouped <- df %>% group_by(comparison_rule_id) %>% filter(n() == num_inputs)
+
+    # If it contains exactly those parameters, then there will be a row in the grouped df, so grab the acceptance rule
+    comparison_rule_id <- 0
+    if(nrow(df_grouped) > 0){
+      comparison_rule_id <- df_grouped$comparison_rule_id[1]
+    }
+    #----#
+
+    # If the comparison_rule_id is 0, then it does not exist, so create a new one
+    if(comparison_rule_id == 0){
+      # Add all the necessary acceptance rule information
+      successful <- TRUE
+      #----#
+      added_comparison_rule_id <- tryCatch({
+        # Start a transaction
+        dbBegin(linkage_metadata_conn)
+
+        # Start by creating a new comparison rule
+        new_entry_query <- paste("INSERT INTO comparison_rules (comparison_method_id)",
+                                 "VALUES(?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(comparison_method_id))
+        dbClearResult(new_entry)
+
+        # Add the dataset fields to the other table after we insert basic information
+        #----#
+        # Get the most recently inserted comparison_rule_id value
+        new_comparison_rule_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS comparison_rule_id;")$comparison_rule_id
+
+        # Insert each parameter value into the database
+        for (index in 1:(num_inputs)) {
+          # Get the parameter to input
+          parameter <- input[[paste0("modify_iteration_comparison_rule_input", index)]]
+
+          # Get the parameter ID
+          parameter_id <- parameter_ids[index]
+
+          insert_field_query <- "INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter) VALUES (?, ?, ?);"
+          insert_field_stmt <- dbSendStatement(linkage_metadata_conn, insert_field_query)
+          dbBind(insert_field_stmt, list(new_comparison_rule_id, parameter_id, parameter))
+          dbClearResult(insert_field_stmt)
+        }
+
+        # End a transaction
+        dbCommit(linkage_metadata_conn)
+
+        # Return the new comparison rule
+        new_comparison_rule_id
+      },
+      error = function(e){
+        # If we throw an error because of timeout, or bad insert, then rollback and return
+        successful <- FALSE
+        dbRollback(linkage_metadata_conn)
+        showNotification("Failed to Add Comparison Rule - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+        return(0)
+      })
+
+      # If we didn't successfully add the acceptance rule, then return
+      if(!successful) return()
+
+      comparison_rule_id <- added_comparison_rule_id
+      #----#
+    }
 
     # Render the output text to make the method readable
     if(!is.na(comparison_rule_id)){
@@ -6243,18 +6517,19 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
       # Create the final string "method_name (key1=value1, key2=value2)"
       method_with_params <- paste0(method_name, " (", params_str, ")")
-
-      # Render the output text
       output$matching_comparison_rules_add <- renderText({
         method_with_params
       })
     }
 
+    # Set the global variable
+    matching_comparison_rule_to_add <<- comparison_rule_id
+
     # Dismiss the modal
     removeModal()
   })
 
-  # Brings the user to the comparison methods page (ADD)
+  # Brings the user to the comparison methods page
   observeEvent(input$add_linkage_iteration_to_add_comparison_methods, {
 
     # Set the return page to the add linkage iterations page
@@ -6267,63 +6542,39 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     updateNavbarPage(session, "main_navbar", selected = "comparison_methods_page")
   })
 
-  # Brings the user to the comparison rules page (ADD)
-  observeEvent(input$add_linkage_iteration_to_add_comparison_rules, {
-    selected_row <- input$add_comparison_method_iteration_rows_selected
-
-    if (!is.null(selected_row)) {
-      # Perform a query to get the comparison methods
-      query <- paste('SELECT * from comparison_methods')
-      df <- dbGetQuery(linkage_metadata_conn, query)
-      # Retrieve the comparison method id of the selected row
-      selected_method <<- df[selected_row, "comparison_method_id"]
-    }
-
-    # Set the return page to the add linkage iterations page and the selected method to user input
-    comparison_method_id_add_rule <<- selected_method
-    comparison_rules_return_page  <<- "add_linkage_iterations_page"
-
-    # Update the table of acceptance rules on that page
-    output$currently_added_comparison_rules <- renderDataTable({
-      get_comparison_rules()
-    })
-
-    # Update the UI inputs for the acceptance rules on that page
-    output$comparison_rules_inputs <- renderUI({
-      get_comparison_rules_inputs()
-    })
-
-    # Show the linkage rule page
-    nav_show("main_navbar", "comparison_rules_page")
-
-    # Brings you to the linkage rules page
-    updateNavbarPage(session, "main_navbar", selected = "comparison_rules_page")
-  })
-
   ### UPDATING COMPARISON RULE
 
-  # Selecting an comparison rule for the iteration (ADD)
+  # Selecting an comparison rule for the iteration
   observeEvent(input$prepare_matching_comparison_rule_update, {
+    # Generates the table of acceptance methods
+    output$update_comparison_method_iteration <- renderDataTable({
+      get_comparison_methods_and_parameters()
+    })
+
+    output$iteration_comparison_rule_add_inputs_update <- renderUI({
+
+    })
+
     showModal(modalDialog(
       title = "Choose Comparison Rule",
       easyClose = TRUE,
       footer = NULL,
       fluidPage(
         # Comparison rule table
-        fluidRow(
-          h5(strong("Select A Comparison Method And Corresponding Comparison Rule Below for the Iteration:")),
-          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
-              dataTableOutput("update_comparison_method_iteration"),
-            )
+        h5("Select a Comparison Method & Enter Rule Parameters:"),
+        layout_column_wrap(
+          width = 1/2,
+          height = 500,
+
+          # Card for the comparison methods table
+          card(card_header("Comparison Methods Table", class = "bg-dark"),
+               dataTableOutput("update_comparison_method_iteration")
           ),
-          # Once an comparison method is selected, show the other table
-          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center; width: 100%;",
-              conditionalPanel(
-                condition = "input.update_comparison_method_iteration_rows_selected > 0",
-                dataTableOutput("update_comparison_rule_iteration"),
-              ),
-            )
-          ),
+
+          # Card for the comparison rules UI
+          card(card_header("Comparison Rule Inputs", class = "bg-dark"),
+               uiOutput("iteration_comparison_rule_add_inputs_update")
+          )
         ),
 
         # OPTION 1: User may enter a new comparison method & parameters
@@ -6341,34 +6592,17 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
           )
         ),
 
-        # OPTION 2: User may enter a new comparison rule via selected method
+        # OPTION 2: User can submit which comparison rule they'd like to use
         conditionalPanel(
-          condition = "input.update_comparison_method_iteration_rows_selected > 0 &&
-                       input.update_comparison_rule_iteration_rows_selected <= 0",
-          HTML("<br>"),
-
-          # Button for moving the user to the comparison rules page
-          fluidRow(
-            h5(strong("Or, create a new comparison rule below:")),
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("add_linkage_iteration_to_add_comparison_rules_update", "Create Comparison Rule", class = "btn-info"),
-              )
-            ),
-          )
-        ),
-
-        # OPTION 3: User can submit which comparison rule they'd like to use
-        conditionalPanel(
-          condition = "input.update_comparison_method_iteration_rows_selected > 0 &&
-                       input.update_comparison_rule_iteration_rows_selected > 0",
+          condition = "input.update_comparison_method_iteration_rows_selected > 0",
           HTML("<br>"),
 
           # Button for moving the user to the comparison rules page
           fluidRow(
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("prepare_iteration_comparison_rule_to_update", "Add Comparison Rule", class = "btn-success"),
+                actionButton("prepare_iteration_comparison_rule_to_add_update", "Add Comparison Rule", class = "btn-success"),
               )
-            ),
+            )
           )
         ),
       ),
@@ -6376,79 +6610,152 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     ))
   })
 
-  # Generates the table of comparison methods (ADD)
+  # Generates the table of comparison methods
   output$update_comparison_method_iteration <- renderDataTable({
     get_comparison_methods_and_parameters()
   })
 
-  # Generates the table of comparison rules & parameters (ADD)
+  # Generates the dynamic comparison rule inputs
   observeEvent(input$update_comparison_method_iteration_rows_selected, {
-    selected_row <- input$update_comparison_method_iteration_rows_selected
+    selected_row <- input$add_comparison_method_iteration_rows_selected
 
     if (!is.null(selected_row)) {
-      # Perform a query to get the acceptance methods
+      # Perform a query to get the comparison methods
       query <- paste('SELECT * from comparison_methods')
       df <- dbGetQuery(linkage_metadata_conn, query)
-      # Retrieve the acceptance method id of the selected row
-      selected_method <<- df[selected_row, "comparison_method_id"]
+      # Retrieve the comparison method id of the selected row
+      selected_method <- df$comparison_method_id[selected_row]
 
-      output$update_comparison_rule_iteration <- renderDataTable({
-        comparison_method_id <- selected_method
+      output$iteration_comparison_rule_add_inputs_update <- renderUI({
+        modify_iteration_get_comparison_rule_inputs(selected_method, "modify_iteration_comparison_rule_update_input")
+      })
+    }
+    else{
+      output$iteration_comparison_rule_add_inputs_update <- renderUI({
 
-        # Query to get all acceptance method information from the 'acceptance_method_parameters' table
-        query <- paste('SELECT crp.comparison_rule_id, parameter_id, parameter FROM comparison_rules cr
-                   JOIN comparison_rules_parameters crp ON cr.comparison_rule_id = crp.comparison_rule_id
-                   WHERE comparison_method_id =', comparison_method_id)
-        df <- dbGetQuery(linkage_metadata_conn, query)
-
-        # Aggregate parameters by comparison_rule_id
-        df <- df %>%
-          group_by(comparison_rule_id) %>%
-          summarise(parameters = paste(parameter, collapse = ", ")) %>%
-          ungroup()
-
-        # With our data frame, we'll rename some of the columns to look better (we can always drop the ID if we want)
-        names(df)[names(df) == 'comparison_rule_id'] <- 'Comparison Rule No.'
-        names(df)[names(df) == 'parameters'] <- 'Parameter Values'
-
-        # Put it into a data table now
-        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
       })
     }
   })
 
-  # Selects the comparison rule the user wanted (ADD)
-  observeEvent(input$prepare_iteration_comparison_rule_to_update, {
+  # Selects the comparison rule the user wanted
+  observeEvent(input$prepare_iteration_comparison_rule_to_add_update, {
     # Get the selected row
     selected_row <- input$update_comparison_method_iteration_rows_selected
 
-    # Query to get all comparison rule information from the 'comparison_methods' table
+    # Query to get all linkage rule information from the 'comparison_methods' table
     query <- paste('SELECT * FROM comparison_methods
                ORDER BY comparison_method_id ASC;')
     df <- dbGetQuery(linkage_metadata_conn, query)
 
-    # Get the comparison rule
-    comparison_method_id <- df[selected_row, "comparison_method_id"]
+    # Get the linkage rule
+    comparison_method_id <- df$comparison_method_id[selected_row]
 
-    # Query to get all acceptance method information from the 'acceptance_method_parameters' table
-    query <- paste('SELECT crp.comparison_rule_id, parameter_id, parameter FROM comparison_rules cr
-                   JOIN comparison_rules_parameters crp ON cr.comparison_rule_id = crp.comparison_rule_id
+    # Get the parameter IDs, keys, and descriptions of the inputs we need
+    query <- paste('SELECT * from comparison_method_parameters
                    WHERE comparison_method_id =', comparison_method_id)
     df <- dbGetQuery(linkage_metadata_conn, query)
 
-    # Aggregate parameters by comparison_rule_id
-    df <- df %>%
-      group_by(comparison_rule_id) %>%
-      summarise(parameters = paste(parameter, collapse = ", ")) %>%
-      ungroup()
+    # Get the number of inputs we'll be adding
+    num_inputs <- nrow(df)
+    parameter_ids <- df$parameter_id
 
-    # Get the selected row for this table
-    selected_row <- input$update_comparison_rule_iteration_rows_selected
+    # Error handling
+    #----#
+    # Error Handling to make sure all inputs are filled
+    for(index in 1:(num_inputs)){
+      # Get the input value for each input
+      input_val <- input[[paste0("modify_iteration_comparison_rule_update_input", index)]]
+      # Ensure it isn't null
+      if(is.na(input_val)){
+        showNotification("Failed to Use Comparison Rule - Some Input(s) Are Missing", type = "error", closeButton = FALSE)
+        return()
+      }
+    }
+    #----#
 
-    # Get the acceptance rule ID
-    comparison_rule_id <- df$comparison_rule_id[selected_row]
-    # Set the global variable to the selected acceptance rule id
-    matching_comparison_rule_to_update <<- comparison_rule_id
+    # If the rule already exists, then use that Comparison Rule ID
+    df <- data.frame()
+    for (index in 1:(num_inputs)) {
+      # Get the parameter to input
+      parameter <- input[[paste0("modify_iteration_comparison_rule_update_input", index)]]
+
+      # Get the parameter ID
+      parameter_id <- parameter_ids[index]
+
+      # Check if the database has this eact match
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM comparison_rules_parameters
+                                                  WHERE parameter_id = ? AND parameter = ?;')
+      dbBind(get_query, list(parameter_id, parameter))
+      output_df <- dbFetch(get_query)
+      dbClearResult(get_query)
+      df <- rbind(df, output_df)
+    }
+
+    # Group by the comparison_rule_id
+    df_grouped <- df %>% group_by(comparison_rule_id) %>% filter(n() == num_inputs)
+
+    # If it contains exactly those parameters, then there will be a row in the grouped df, so grab the acceptance rule
+    comparison_rule_id <- 0
+    if(nrow(df_grouped) > 0){
+      comparison_rule_id <- df_grouped$comparison_rule_id[1]
+    }
+    #----#
+
+    # If the comparison_rule_id is 0, then it does not exist, so create a new one
+    if(comparison_rule_id == 0){
+      # Add all the necessary acceptance rule information
+      successful <- TRUE
+      #----#
+      added_comparison_rule_id <- tryCatch({
+        # Start a transaction
+        dbBegin(linkage_metadata_conn)
+
+        # Start by creating a new comparison rule
+        new_entry_query <- paste("INSERT INTO comparison_rules (comparison_method_id)",
+                                 "VALUES(?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(comparison_method_id))
+        dbClearResult(new_entry)
+
+        # Add the dataset fields to the other table after we insert basic information
+        #----#
+        # Get the most recently inserted comparison_rule_id value
+        new_comparison_rule_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS comparison_rule_id;")$comparison_rule_id
+
+        # Insert each parameter value into the database
+        for (index in 1:(num_inputs)) {
+          # Get the parameter to input
+          parameter <- input[[paste0("modify_iteration_comparison_rule_update_input", index)]]
+
+          # Get the parameter ID
+          parameter_id <- parameter_ids[index]
+
+          insert_field_query <- "INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter) VALUES (?, ?, ?);"
+          insert_field_stmt <- dbSendStatement(linkage_metadata_conn, insert_field_query)
+          dbBind(insert_field_stmt, list(new_comparison_rule_id, parameter_id, parameter))
+          dbClearResult(insert_field_stmt)
+        }
+
+        # End a transaction
+        dbCommit(linkage_metadata_conn)
+
+        # Return the new comparison rule
+        new_comparison_rule_id
+      },
+      error = function(e){
+        # If we throw an error because of timeout, or bad insert, then rollback and return
+        successful <- FALSE
+        dbRollback(linkage_metadata_conn)
+        showNotification("Failed to Add Comparison Rule - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+        return(0)
+      })
+
+      # If we didn't successfully add the acceptance rule, then return
+      if(!successful) return()
+
+      comparison_rule_id <- added_comparison_rule_id
+      #----#
+    }
 
     # Render the output text to make the method readable
     if(!is.na(comparison_rule_id)){
@@ -6467,19 +6774,21 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
       # Create the final string "method_name (key1=value1, key2=value2)"
       method_with_params <- paste0(method_name, " (", params_str, ")")
-
-      # Render the output text
       output$matching_comparison_rules_update <- renderText({
         method_with_params
       })
     }
 
+    # Set the global variable
+    matching_comparison_rule_to_update <<- comparison_rule_id
+
     # Dismiss the modal
     removeModal()
   })
 
-  # Brings the user to the comparison methods page (ADD)
+  # Brings the user to the comparison methods page
   observeEvent(input$add_linkage_iteration_to_add_comparison_methods_update, {
+
     # Set the return page to the add linkage iterations page
     comparison_methods_return_page <<- "add_linkage_iterations_page"
 
@@ -6488,39 +6797,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Brings you to the linkage rules page
     updateNavbarPage(session, "main_navbar", selected = "comparison_methods_page")
-  })
-
-  # Brings the user to the comparison rules page (ADD)
-  observeEvent(input$add_linkage_iteration_to_add_comparison_rules_update, {
-    selected_row <- input$update_comparison_method_iteration_rows_selected
-
-    if (!is.null(selected_row)) {
-      # Perform a query to get the comparison methods
-      query <- paste('SELECT * from comparison_methods')
-      df <- dbGetQuery(linkage_metadata_conn, query)
-      # Retrieve the comparison method id of the selected row
-      selected_method <<- df[selected_row, "comparison_method_id"]
-    }
-
-    # Set the return page to the add linkage iterations page and the selected method to user input
-    comparison_method_id_add_rule <<- selected_method
-    comparison_rules_return_page  <<- "add_linkage_iterations_page"
-
-    # Update the table of acceptance rules on that page
-    output$currently_added_comparison_rules <- renderDataTable({
-      get_comparison_rules()
-    })
-
-    # Update the UI inputs for the acceptance rules on that page
-    output$comparison_rules_inputs <- renderUI({
-      get_comparison_rules_inputs()
-    })
-
-    # Show the linkage rule page
-    nav_show("main_navbar", "comparison_rules_page")
-
-    # Brings you to the linkage rules page
-    updateNavbarPage(session, "main_navbar", selected = "comparison_rules_page")
   })
 
   #---------------------------------#

@@ -398,9 +398,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             dataset_field <- row$left_dataset_field
 
             # Based on the comparison rule, map it to the appropriate function
-            if("min_score" %in% names(comparison_rules)){
-              # "min_score" uses the Reclin2 cmp_jarowinkler function, so get the value
-              threshold <- comparison_rules[["min_score"]]
+            if("jw_score" %in% names(comparison_rules)){
+              # "jw_score" uses the Reclin2 cmp_jarowinkler function, so get the value
+              threshold <- comparison_rules[["jw_score"]]
 
               # Keep track of this comparison rule
               # (NOT SURE IF THIS WORKS YET, IF NOT, TRY SOMETHING SIMILAR TO as.formula()?)
@@ -855,9 +855,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             dataset_field <- row$left_dataset_field
 
             # Based on the comparison rule, map it to the appropriate function
-            if("min_score" %in% names(comparison_rules)){
-              # "min_score" uses the Reclin2 cmp_jarowinkler function, so get the value
-              threshold <- comparison_rules[["min_score"]]
+            if("jw_score" %in% names(comparison_rules)){
+              # "jw_score" uses the Reclin2 cmp_jarowinkler function, so get the value
+              threshold <- comparison_rules[["jw_score"]]
 
               # Keep track of this comparison rule
               # (NOT SURE IF THIS WORKS YET, IF NOT, TRY SOMETHING SIMILAR TO as.formula()?)
