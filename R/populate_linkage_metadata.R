@@ -150,7 +150,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   ")
   #--------#
 
-  ### LINKAGE METHODS, ALGORITHMS, AND ITERATIONS
+  ### LINKAGE METHODS, ALGORITHMS, ALGORITHM PASS THROUGH VARIABLES, AND ITERATIONS
   dbExecute(my_db, "
     CREATE TABLE linkage_methods (
       linkage_method_id INTEGER PRIMARY KEY,
@@ -170,6 +170,16 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       modified_date TEXT,
       modified_by VARCHAR(255),
       enabled INTEGER
+    );
+  ")
+
+  dbExecute(my_db, "
+    CREATE TABLE linkage_algorithms_pass_through_variables (
+      algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
+      parameter_id INTEGER PRIMARY KEY,
+      dataset_field_id REFERENCES dataset_fields(field_id),
+      dataset_label VARCHAR(255),
+      is_date INTEGER
     );
   ")
 
