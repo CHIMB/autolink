@@ -1,7 +1,7 @@
 # Define the abstract class (interface)
 LinkageMethod <- R6::R6Class("LinkageMethod",
                              public = list(
-                               run_iteration = function(left_dataset, right_dataset, linkage_metadata_db, iteration_id, extra_parameters) {
+                               run_iteration = function(left_dataset, right_dataset, linkage_metadata_db, iteration_id, algorithm_id, extra_parameters) {
                                  stop("This is an abstract method and should be implemented by a subclass.")
                                }
                              )
@@ -11,7 +11,7 @@ LinkageMethod <- R6::R6Class("LinkageMethod",
 Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                               inherit = LinkageMethod,
   public = list(
-    run_iteration = function(left_dataset, right_dataset, linkage_metadata_db, iteration_id, extra_parameters) {
+    run_iteration = function(left_dataset, right_dataset, linkage_metadata_db, iteration_id, algorithm_id, extra_parameters) {
       # Get the linkage technique to determine whether this is a deterministic or probabilistic pass
       linkage_technique <- get_linkage_technique(linkage_metadata_db, iteration_id)
       if (linkage_technique == "P") {
@@ -256,27 +256,29 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # started on the pairs, beginning with blocking keys
 
         #-- STEP 1: GENERATE PAIRS --#
+        # Block on our first pair of keys, and if we have any more, then bind the rest
+        linkage_pairs <- pair_blocking(left_dataset, right_dataset, on = blocking_keys_pairs[[1]])
 
-        # First create an empty data frame which will contains our pairs
-        linkage_pairs <- data.frame()
+        # If there are more than 1 pair of keys, bind the rest
+        if (length(blocking_keys_pairs) > 1) {
+          # Loop through the remaining pairs starting from the second one
+          for (i in 2:length(blocking_keys_pairs)) {
+            blocking_keys <- blocking_keys_pairs[[i]]
 
-        # Next, we'll go through out list of blocking key pairs, and bind them all together
-        for(blocking_keys in blocking_keys_pairs){
-          # Use the reclin2 pair_blocking function
-          curr_blocking_pair <- pair_blocking(left_dataset, right_dataset, on = blocking_keys)
+            # Use the reclin2 pair_blocking function
+            curr_blocking_pair <- pair_blocking(left_dataset, right_dataset, on = blocking_keys)
 
-          # With the pair generated, we'll use rbind to combine all the combinations
-          rbind(linkage_pairs, curr_blocking_pair)
+            # Bind the new pair to the existing pairs
+            linkage_pairs <- rbind(linkage_pairs, curr_blocking_pair)
 
-          # Clean up the blocking pair
-          rm(curr_blocking_pair)
-          gc()
+            # Clean up
+            rm(curr_blocking_pair)
+            gc()
+          }
         }
-
         #----------------------------#
 
         #-- STEP 2: COMPARE PAIRS --#
-
         # For the matching keys, we'll move everything into a vector, and keep track of all the comparison rules
         matching_keys <- c()
         comparison_rules_list <- list()
@@ -409,14 +411,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           }
         }
 
-        # Now, we'll move onto the matching keys, using the compare_pairs() function from reclin2
-        compare_pairs(linkage_pairs, on = c(matching_keys),
-                      comparators = comparison_rules_list, inplace=TRUE)
 
+        # Now, we'll move onto the matching keys, using the compare_pairs() function from reclin2
+        compare_pairs(linkage_pairs, on = matching_keys,
+                      comparators = comparison_rules_list, inplace=TRUE)
+        #print(linkage_pairs)
         #---------------------------#
 
         #-- STEP 3: SCORE PAIRS --#
-
         # Before running an EM algorithm, we'll start by creating a formula for it
         linkage_formula <- as.formula(paste("~", paste(matching_keys, collapse = " + ")))
 
@@ -425,11 +427,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Afterwards, we'll score the pair using type = "all" to get all score types
         linkage_pairs <- predict(em_pairs, pairs = linkage_pairs, type = "all", add = TRUE)
-
+        #print(linkage_pairs)
         #-------------------------#
 
         #-- STEP 4: SELECT PAIRS --#
-
         # Would we like to grab the ground truth variables and see if they match for the algorithm?
         # # Attach a variable showing if R PHIN matches SAMIN PHIN
         # pairs <- compare_vars(pairs, "truth", on_x = "id", on_y = "id")
@@ -439,36 +440,61 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         acceptance_threshold = get_acceptence_thresholds(linkage_metadata_db, iteration_id)
 
         # Select pairs using the user defined acceptance thresholds
-        if("posterior_threshold" %in% acceptance_threshold){
+        if("posterior_threshold" %in% names(acceptance_threshold)){
           posterior_threshold <- acceptance_threshold[["posterior_threshold"]]
           select_greedy(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE)
-        }else if ("weight" %in% acceptance_threshold){
-          linkage_weight <- acceptance_threshold[["weight"]]
+        }else if ("match_weight" %in% names(acceptance_threshold)){
+          linkage_weight <- acceptance_threshold[["match_weight"]]
           select_greedy(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE)
         }
-
+        else{
+          stop("Error: Acceptance Threshold Missing.")
+        }
+        #print(linkage_pairs)
         #--------------------------#
 
         #-- STEP 5: LINK THE PAIRS --#
-
         # Call the link() function to finally get our linked dataset
         linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "weight", "mpost"))
-
-        # How would we like to handle de-duplicating pairs here?
 
         # Attach the linkage name/pass name to the records for easier identification later
         stage_name <- get_iteration_name(linkage_metadata_db, iteration_id)
         linked_dataset <- cbind(linked_dataset, stage=stage_name)
-
-
-        # Calculate AUC and various agreement statistics here? (dont think so, might need ALL links merged)
-
-        # mroc <- roc(all_links, PHIN_match, weight, plot=T, algorithm=2, direction="<")
-        # coords(mroc, "best", "threshold",
-        #        ret=c("threshold","sensitivity","specificity","ppv","npv","precision","recall","tp","tn","fp","fn"),
-        #        best.method="youden")
-        # auc(mroc)
+        #print(linked_dataset)
         #----------------------------#
+
+        #-- STEP 6: RETURN VALUES --#
+        # Create a list of all the data we will be returning
+        return_list <- list()
+
+        ### Get the linked indicies
+        linked_indices <- linked_dataset$.x
+        return_list[["linked_indices"]]   <- linked_indices
+
+        ### Return the unmodified linked dataset
+        return_list[["linked_dataset"]]    <- linked_dataset
+
+        ### Create the data frame of the fields to be returned
+        output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+
+        # Create a vector of field names with '.x' suffix to retain
+        fields_to_keep <- paste0(output_fields$field_name, ".x")
+
+        # Append the stage to keep
+        fields_to_keep <- append(fields_to_keep, "stage")
+
+        # Select only those columns from linked_dataset that match the fields_to_keep
+        filtered_data <- linked_dataset %>% select(all_of(fields_to_keep))
+
+        # Rename the fields with suffix '.x' to have it removed.
+        filtered_data <- filtered_data %>% rename_with(~ gsub("\\.x$", "", .), ends_with(".x"))
+
+        # Store the filtered data for return
+        return_list[["output_linkage_df"]] <- filtered_data
+
+        ### Return our list of return values
+        return(return_list)
+        #--------------------------#
 
 
       } else if (linkage_technique == "D") {
@@ -714,20 +740,25 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         #-- STEP 1: GENERATE PAIRS --#
 
-        # First create an empty data frame which will contains our pairs
-        linkage_pairs <- data.frame()
+        # Block on our first pair of keys, and if we have any more, then bind the rest
+        linkage_pairs <- pair_blocking(left_dataset, right_dataset, on = blocking_keys_pairs[[1]])
 
-        # Next, we'll go through out list of blocking key pairs, and bind them all together
-        for(blocking_keys in blocking_keys_pairs){
-          # Use the reclin2 pair_blocking function
-          curr_blocking_pair <- pair_blocking(left_dataset, right_dataset, on = blocking_keys)
+        # If there are more than 1 pair of keys, bind the rest
+        if (length(blocking_keys_pairs) > 1) {
+          # Loop through the remaining pairs starting from the second one
+          for (i in 2:length(blocking_keys_pairs)) {
+            blocking_keys <- blocking_keys_pairs[[i]]
 
-          # With the pair generated, we'll use rbind to combine all the combinations
-          rbind(linkage_pairs, curr_blocking_pair)
+            # Use the reclin2 pair_blocking function
+            curr_blocking_pair <- pair_blocking(left_dataset, right_dataset, on = blocking_keys)
 
-          # Clean up the blocking pair
-          rm(curr_blocking_pair)
-          gc()
+            # Bind the new pair to the existing pairs
+            linkage_pairs <- rbind(linkage_pairs, curr_blocking_pair)
+
+            # Clean up
+            rm(curr_blocking_pair)
+            gc()
+          }
         }
 
         #----------------------------#
@@ -871,7 +902,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Now, we'll move onto the matching keys, using the compare_pairs() function from reclin2
         compare_pairs(linkage_pairs, on = matching_keys, inplace = TRUE)
-
         #---------------------------#
 
         #-- STEP 3: SCORE PAIRS --#
@@ -902,13 +932,75 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         linked_dataset <- cbind(linked_dataset, stage=stage_name)
 
         #----------------------------#
+
+        #-- STEP 6: RETURN VALUES --#
+        # Create a list of all the data we will be returning
+        return_list <- list()
+
+        ### Get the linked indicies
+        linked_indicies <- linked_dataset$.x
+        return_list[["linked_indicies"]]   <- linked_indicies
+
+        ### Return the unmodified linked dataset
+        return_list[["linked_dataset"]]    <- linked_dataset
+
+        ### Create the data frame of the fields to be returned
+        output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+
+        # Create a vector of field names with '.x' suffix to retain
+        fields_to_keep <- paste0(output_fields$field_name, ".x")
+
+        # Create a vector of fields names with '.x' that will be renamed
+        fields_to_rename <- fields_to_keep
+
+        # Append the stage to keep
+        fields_to_keep <- append(fields_to_keep, "stage")
+
+        # Select only those columns from linked_dataset that match the fields_to_keep
+        filtered_data <- linked_dataset %>% select(all_of(fields_to_keep))
+
+        # Rename the fields with suffix '.x' to have it removed.
+        filtered_data <- filtered_data %>% rename_with(~ gsub("\\.x$", "", .), ends_with(".x"))
+
+        # Store the filtered data for return
+        return_list[["output_linkage_df"]] <- filtered_data
+
+        ### Return our list of return values
+        return(return_list)
+        #--------------------------#
       }
     }
   )
 )
 
-run_main_linkage <- function(left_dataset, right_dataset, linkage_metadata_db, algorithm_id, extra_parameters){
-  # Step 1: Get the iteration IDs using the selected algorithm ID
+run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_metadata_file, algorithm_id, extra_parameters){
+  # Error handling to ensure inputs were provided
+  #----#
+  if(is.na(left_dataset_file) || is.na(right_dataset_file) || is.null(left_dataset_file) ||
+     is.null(right_dataset_file) || !file.exists(left_dataset_file) || !file.exists(right_dataset_file)){
+    stop("Error: Invalid Datasets were provided.")
+  }
+
+  if(is.na(algorithm_id) || is.null(algorithm_id) || !is.numeric(algorithm_id)){
+    stop("Error: Invalid Algorithm ID was provided.")
+  }
+
+  if(!is.list(extra_parameters)){
+    stop("Error: Extra parameters should be provided as a list.")
+  }
+
+  if(is.na(linkage_metadata_file) || is.null(linkage_metadata_file) || !file.exists(linkage_metadata_file) || file_ext(linkage_metadata_file) != "sqlite"){
+    stop("Error: Invalid linkage metadata file provided.")
+  }
+  #----#
+
+  ### Step 1: Connect to the linkage metadata file
+  #----
+  linkage_metadata_db <- dbConnect(RSQLite::SQLite(), linkage_metadata_file)
+  #----
+
+  ### Step 2: Get the iteration IDs using the selected algorithm ID
+  #----
   iterations_query <- dbSendQuery(linkage_metadata_db, 'SELECT * FROM linkage_iterations WHERE algorithm_id = $id ORDER BY iteration_num asc;')
   dbBind(iterations_query, list(id=algorithm_id))
   iterations_df <- dbFetch(iterations_query)
@@ -918,21 +1010,72 @@ run_main_linkage <- function(left_dataset, right_dataset, linkage_metadata_db, a
   if(nrow(iterations_df) <= 0){
     stop("Error: No iterations found under the provided algorithm, verify that iterations exist and try running again.")
   }
+  #----
 
-  # Error check, make sure both supplied datasets match columns with what's stored
-  # CODE GOES HERE
+  ### Step 3: Load in and verify both datasets
+  #----
+  # For the left data set, read the dataset code, grab its fields
+  left_file_name <- basename(left_dataset_file)
+  left_split_file_name <- unlist(strsplit(left_file_name, "[[:punct:]]"))
+  left_dataset_code <- left_split_file_name[1]
 
-  # Step 2: For each iteration ID loop through and perform data linkage
+  get_fields_query_left <- paste("SELECT field_name FROM datasets ds
+                                  JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
+                                  WHERE dataset_code = ? AND enabled_for_linkage = 1")
+  left_dataset_fields_statement <- dbSendQuery(linkage_metadata_db, get_fields_query_left)
+  dbBind(left_dataset_fields_statement, list(left_dataset_code))
+  left_dataset_fields <- dbFetch(left_dataset_fields_statement)
+  dbClearResult(left_dataset_fields_statement)
+
+  # For the right dataset, read the dataset code, grab its fields
+  right_file_name <- basename(right_dataset_file)
+  right_split_file_name <- unlist(strsplit(right_file_name, "[[:punct:]]"))
+  right_dataset_code <- right_split_file_name[1]
+
+  get_fields_query_right <- paste("SELECT field_name FROM datasets ds
+                                   JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
+                                   WHERE dataset_code = ? AND enabled_for_linkage = 1")
+  right_dataset_fields_statement <- dbSendQuery(linkage_metadata_db, get_fields_query_right)
+  dbBind(right_dataset_fields_statement, list(right_dataset_code))
+  right_dataset_fields <- dbFetch(right_dataset_fields_statement)
+  dbClearResult(right_dataset_fields_statement)
+
+  # Read in the left and right dataset
+  left_dataset <- tryCatch({
+    df <- load_linkage_file(left_dataset_file)
+    df
+  },
+  error = function(e){
+    stop("Error: Invalid Left Dataset File.")
+  })
+
+  right_dataset <- tryCatch({
+    df <- load_linkage_file(right_dataset_file)
+    df
+  },
+  error = function(e){
+    stop("Error: Invalid Right Dataset File.")
+  })
+
+  # Verify that the column names of the loaded dataset match whats stored in the datasets
+  left_dataset_column_diff     <- setdiff(left_dataset_fields$field_name, colnames(left_dataset))
+  left_dataset_column_diff_alt <- setdiff(colnames(left_dataset), left_dataset_fields$field_name)
+  if(length(left_dataset_column_diff) > 0 || length(left_dataset_column_diff_alt) > 0){
+    stop("Error: Columns Do Not Match In Left Dataset.")
+  }
+
+  right_dataset_column_diff     <- setdiff(right_dataset_fields$field_name, colnames(right_dataset))
+  right_dataset_column_diff_alt <- setdiff(colnames(right_dataset), right_dataset_fields$field_name)
+  if(length(right_dataset_column_diff) > 0 || length(right_dataset_column_diff_alt) > 0){
+    stop("Error: Columns Do Not Match In Right Dataset.")
+  }
+  #----
+
+  ### Step 4: For each iteration ID loop through and perform data linkage
+  #----
+  # Keep a data frame of all passes for final output
+  output_df <- NA
   for(row_num in 1:nrow(iterations_df)){
-    # IDEA FOR GETTING THE ROWS WE NEED FOR DATASETS
-    #   1. Keep a list of "indicies" so that for each iteration/pass, when we read
-    #      in the left dataset, we'll loop through that list of indicies and remove
-    #      them before we pass the left dataset to be linked.
-    #   2. Before passing the datasets to the linkage classes, add a new column
-    #      to each dataset called "primary_record_id", so that when the final
-    #      linked data is returned, we can track the IDs and remove them from the
-    #      next iteration (BETTER IDEA)
-
     # Get the current row
     row <- iterations_df[row_num,]
 
@@ -955,27 +1098,181 @@ run_main_linkage <- function(left_dataset, right_dataset, linkage_metadata_db, a
     linkage_implementation <- class_obj$new()
 
     # Track start time so that we may make note of how long each pass takes
-    start_time = Sys.time()
+    start_time = proc.time()
 
     # Call the run_iteration method implemented by the desired class
-    result <- linkage_implementation$run_iteration(left_dataset, right_dataset, linkage_metadata_db, curr_iteration_id, extra_parameters)
+    results <- linkage_implementation$run_iteration(left_dataset, right_dataset, linkage_metadata_db, curr_iteration_id, algorithm_id, extra_parameters)
 
     # Track the end time time and get the difference
-    end_time = Sys.time()
-    print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished with a ", end_time - start_time))
-    #print(paste("Iteration with priority", curr_iteration_priority, "using the", implementation_name, "class finished with a", end_time - start_time))
+    end_time = proc.time()
 
-    # Do whatever we may need with the result, before going onto the next iteration.
+    # Format the time difference to two decimal places
+    formatted_time <- format(round((end_time - start_time)[3], 2), nsmall = 2)
 
-    # The idea is to keep a list of all linked data frames, then after all iterations
-    # are complete, we can combine them and do something with the whole thing
+    # Print a success message for linking record pairs
+    print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished in ", formatted_time, " seconds"))
 
-    # Is there a way that we can keep that information/store it in the 'extra parameters'
-    # variable? That we can do do that work in the Reclin2 class instead of here?
+    ### RESULT 1: Linked Indicies (Removed the rows that were linked)
+    linked_indices <- results[["linked_indices"]]
+    left_dataset <- left_dataset[-linked_indices, ]
 
+    ### RESULT 2: Linked Dataset for Exportation
+    if(("output_linkage_iterations" %in% names(extra_parameters) && extra_parameters[["output_linkage_iterations"]] == "yes") &&
+        "linkage_output_folder" %in% names(extra_parameters)){
+      # Get the output directory
+      output_dir <- extra_parameters[["linkage_output_folder"]]
+
+      # Get the algorithm name
+      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+      algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+      # Define base file name
+      base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_linkage_results')
+
+      # Start with the base file name
+      full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+      counter <- 1
+
+      # While the file exists, append a number and keep checking
+      while (file.exists(full_filename)) {
+        full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+        counter <- counter + 1
+      }
+
+      # Save the .CSV file
+      full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+      fwrite(results[["linked_dataset"]], file = full_filename, append = TRUE)
+
+      # Specify that the file was successfully written
+      print(paste0("Linkage data saved as: ", full_filename))
+    }
+
+    ### RESULT 3: Linkage Report Output Data Frame
+    # If the output_df is NA, then no pass has been completed, otherwise, bind the rows
+    if(is.na(output_df)){
+      output_df <- results[["output_linkage_df"]]
+    }
+    else{
+      output_df <- rbind(output_df, results[["output_linkage_df"]])
+    }
+  }
+  #----
+
+  ### Step 5: Add unlinked data to the output data frame
+  # Add a new column that specifies that these rows didn't link
+  left_dataset <- cbind(left_dataset, stage="UNLINKED")
+
+  # Get the columns to keep
+  output_fields  <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+  fields_to_keep <- output_fields$field_name
+  fields_to_keep  <- append(fields_to_keep, "stage")
+
+  # Keep the output fields specified by the user
+  left_dataset <- subset(left_dataset, select = fields_to_keep)
+
+  # Bind what's left of the left dataset to the output data frame
+  output_df <- rbind(output_df, left_dataset)
+
+  # Change the stage values to be the linkage indicator
+  output_df <- output_df %>% mutate(link_indicator = ifelse(stage == "UNLINKED",0,1))
+
+  # Apply Labels to the output data frame
+  for(row_num in 1:nrow(output_fields)){
+      # Get the field to apply a label to
+      dataset_field <- output_fields$field_name[row_num]
+
+      # Get the label to apply
+      dataset_label <- output_fields$dataset_label[row_num]
+
+      # Apply the label to the field
+      label(output_df[[dataset_field]]) <- dataset_label
   }
 
-  # Step 3: Save performance measures, linkage rates, auditing information and whatever
-  #         we may need to the database and export data for linkage reports if asked
+  # Apply a label to the link Indicator
+  label(output_df[["stage"]]) <- "Passes"
+
+  # Try to create report using the output data frame if the user wanted to
+  if(("generate_linkage_report" %in% names(extra_parameters) && extra_parameters[["generate_linkage_report"]] == "yes") &&
+      "linkage_output_folder" %in% names(extra_parameters)){
+    # Get the output directory
+    output_dir <- extra_parameters[["linkage_output_folder"]]
+    tryCatch({
+      # Get the algorithm name
+      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+      algorithm_name <- df$algorithm_name
+
+      # Get the datasets used for this algorithm
+      query <- "SELECT
+                    dalg.algorithm_id,
+                    dleft.dataset_name AS left_dataset_name,
+                    dright.dataset_name AS right_dataset_name
+                FROM
+                    linkage_algorithms dalg
+                JOIN
+                    datasets dleft ON dalg.dataset_id_left = dleft.dataset_id
+                JOIN
+                    datasets dright ON dalg.dataset_id_right = dright.dataset_id
+                WHERE
+                    dalg.algorithm_id = ?"
+
+      # Get the datasets for this algorithm to get the left and right dataset names
+      datasets <- dbGetQuery(linkage_metadata_db, query, params = list(algorithm_id))
+
+      # Get the username
+      username <- extra_parameters[["data_linker"]]
+
+      # Get the output variabls that we'll be using
+      strata_vars <- colnames(output_df)
+
+      # Load the 'linkrep' library and generate a linkage quality report
+      library("linkrep")
+      linkage_quality_report(output_df, algorithm_name, "Subtitle Here", datasets$left_dataset_name,
+                             paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
+                             "link_indicator", strata_vars, strata_vars, save_linkage_rate = F)
+    },
+    error = function(e){
+      # If we failed to generate a linkage report, write to a csv file instead
+      print("Error: Unable to generate linkage report, saving output data frame to specified output folder.")
+
+      # Get the algorithm name
+      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+      algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+      # Define base file name
+      base_filename <- paste0(algorithm_name, '_complete_linkage_results')
+
+      # Start with the base file name
+      full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+      counter <- 1
+
+      # While the file exists, append a number and keep checking
+      while (file.exists(full_filename)) {
+        full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+        counter <- counter + 1
+      }
+
+      # Save the .CSV file
+      full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+      fwrite(output_df, file = full_filename, append = TRUE)
+
+      # Print a success message
+      print(paste0("Output linkage data has been output to: ", full_filename))
+    })
+  }
+
+  ### Step 6: Save performance measures, linkage rates, auditing information and whatever
+  ###         we may need to the database and export data for linkage reports if asked
+  #----
+  # Calculate AUC and various agreement statistics here? (dont think so, might need ALL links merged)
+
+  # mroc <- roc(all_links, PHIN_match, weight, plot=T, algorithm=2, direction="<")
+  # coords(mroc, "best", "threshold",
+  #        ret=c("threshold","sensitivity","specificity","ppv","npv","precision","recall","tp","tn","fp","fn"),
+  #        best.method="youden")
+  # auc(mroc)
+  #----
+
+  # Disconnect from the linkage metadata database after we finish
+  dbDisconnect(linkage_metadata_db)
 
 }

@@ -311,7 +311,7 @@ get_iteration_name <- function(linkage_db, iteration_id){
 #' Get Algorithm Ground Truth Keys
 #'
 #' The get_ground_truth_fields() function will take in a linkage database connection containing
-#' all the metadata, along with an iteration ID for the current iteration being run.
+#' all the metadata, along with an algorithm ID.
 #' A dataframe is returned which contains the left and right dataset fields + the linkage
 #' rules that should be applied to those fields.
 #' @param linkage_db A database connection to the linkage metadata.
@@ -381,6 +381,32 @@ get_ground_truth_fields <- function(linkage_db, algorithm_id){
   # Return the blocking keys w/ rules
   return(ground_truth_df)
 }
+
+#' Get Algorithm Ground Truth Keys
+#'
+#' The get_linkage_output_fields() function will take in a linkage database connection containing
+#' all the metadata, along with an algorithm ID.
+#' A dataframe is returned which contains the dataset fields to keep.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param algorithm_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' algorithm_id <- 1
+#' get_linkage_output_fields(linkage_db, algorithm_id)
+#' @export
+get_linkage_output_fields <- function(linkage_db, algorithm_id){
+  # Get the output fields
+  stored_fields_with_names <- dbGetQuery(linkage_db, "SELECT lao.algorithm_id, lao.dataset_label, lao.field_type, df.field_name
+                                                 FROM linkage_algorithms_output_fields lao
+                                                 JOIN dataset_fields df
+                                                 ON lao.dataset_field_id = df.field_id
+                                                 WHERE lao.algorithm_id = ?
+                                                 ORDER BY parameter_id", params = list(algorithm_id))
+
+  # Return the output fields
+  return(stored_fields_with_names)
+}
 #------------------------------------------------------------#
 
 #-- HELPER FUNCTIONS FOR LINKAGE RULES --#
@@ -416,3 +442,46 @@ get_standardized_names <- function(file_path, data_field, lookupvector = common_
   return(standardized_names)
 }
 #----------------------------------------#
+
+#-- HELPER FUNCTIONS FOR READING IN DATASET FILES --#
+#' Load Linkage File
+#'
+#' The load_linkage_file() function will take in a dataset file of a specific type, which may
+#' be csv, txt, sqlite, sas7bdat, xlsx, and will attempt to load and return it.
+#' @param dataset_file A path to the input file
+#' @examples
+#' file_path <- choose.file() # Select an input file
+#' load_linkage_file(file_path)
+#' @export
+load_linkage_file <- function(dataset_file){
+  # Extract the file extension
+  file_extension <- tolower(tools::file_ext(dataset_file))
+
+  # CSV Reading
+  if(file_extension == "csv"){
+    df <- fread(input = dataset_file)
+    return(df)
+  }
+  # TXT Reading
+  if(file_extension == "txt"){
+    df <- fread(input = dataset_file)
+    return(df)
+  }
+  # SAS7BDAT Reading
+  if(file_extension == "sas7bdat"){
+    df <- read_sas(data_file = dataset_file)
+    return(df)
+  }
+  # EXCEL Reading
+  if(file_extension == "xlsx"){
+    df <- read.xlsx(xlsxFile = dataset_file, sheet = 1)
+    return(df)
+  }
+  # DATASTAN Reading
+  if(file_extension == "sqlite"){
+    db_conn <- dbConnect(RSQLite::SQLite(), dataset_file)
+    df <- dbGetQuery(conn = db_conn, statement = "SELECT * FROM clean_data_table")
+    return(df)
+  }
+}
+#---------------------------------------------------#

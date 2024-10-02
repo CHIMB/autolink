@@ -174,14 +174,16 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   ")
 
   dbExecute(my_db, "
-    CREATE TABLE linkage_algorithms_pass_through_variables (
+    CREATE TABLE linkage_algorithms_output_fields (
       algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
       parameter_id INTEGER PRIMARY KEY,
       dataset_field_id REFERENCES dataset_fields(field_id),
       dataset_label VARCHAR(255),
-      is_date INTEGER
+      field_type INTEGER
     );
   ")
+  # field_type -> [1 = General, 2 = Date, 3 = Age, 4 = Postal Code, 5 = Name Length]
+
 
   dbExecute(my_db, "
     CREATE TABLE linkage_iterations (

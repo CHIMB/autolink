@@ -1,7 +1,7 @@
 Package: datalink
 Type: Package
 Title: Providing a simple and accessible medium between analysts and data linkage.
-Version: 0.1.17
+Version: 0.1.18
 Authors@R: c(
             person(given=c("Cole", "D."), family="Chuchmach", email="Cole.Chuchmach@umanitoba.ca", role=c("aut", "cre")),
             person(given=c("Barret", "A."), family="Monchka", email="Barret.Monchka@umanitoba.ca", role="aut")
@@ -16,6 +16,6 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends: DBI, dplyr, stringi, stringr, data.table, readr, haven, openxlsx, writexl, tidyverse, splitstackshape, shiny, tools, 
-  shinyBS, bslib, DT, shinyjs, RSQLite, jsonlite, scales, reclin2, Metrics, bsicons
+  shinyBS, bslib, DT, shinyjs, RSQLite, jsonlite, scales, reclin2, Metrics, bsicons, Hmisc
 RoxygenNote: 7.3.2
 URL: https://github.com/CHIMB/datalink
