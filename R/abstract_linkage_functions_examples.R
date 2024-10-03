@@ -978,18 +978,22 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   #----#
   if(is.na(left_dataset_file) || is.na(right_dataset_file) || is.null(left_dataset_file) ||
      is.null(right_dataset_file) || !file.exists(left_dataset_file) || !file.exists(right_dataset_file)){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid Datasets were provided.")
   }
 
   if(is.na(algorithm_id) || is.null(algorithm_id) || !is.numeric(algorithm_id)){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid Algorithm ID was provided.")
   }
 
   if(!is.list(extra_parameters)){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: Extra parameters should be provided as a list.")
   }
 
   if(is.na(linkage_metadata_file) || is.null(linkage_metadata_file) || !file.exists(linkage_metadata_file) || file_ext(linkage_metadata_file) != "sqlite"){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid linkage metadata file provided.")
   }
   #----#
@@ -1008,6 +1012,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
   # Error check, make sure an algorithm with this ID exists
   if(nrow(iterations_df) <= 0){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: No iterations found under the provided algorithm, verify that iterations exist and try running again.")
   }
   #----
@@ -1046,6 +1051,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     df
   },
   error = function(e){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid Left Dataset File.")
   })
 
@@ -1054,6 +1060,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     df
   },
   error = function(e){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid Right Dataset File.")
   })
 
@@ -1061,12 +1068,14 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   left_dataset_column_diff     <- setdiff(left_dataset_fields$field_name, colnames(left_dataset))
   left_dataset_column_diff_alt <- setdiff(colnames(left_dataset), left_dataset_fields$field_name)
   if(length(left_dataset_column_diff) > 0 || length(left_dataset_column_diff_alt) > 0){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: Columns Do Not Match In Left Dataset.")
   }
 
   right_dataset_column_diff     <- setdiff(right_dataset_fields$field_name, colnames(right_dataset))
   right_dataset_column_diff_alt <- setdiff(colnames(right_dataset), right_dataset_fields$field_name)
   if(length(right_dataset_column_diff) > 0 || length(right_dataset_column_diff_alt) > 0){
+    dbDisconnect(linkage_metadata_db)
     stop("Error: Columns Do Not Match In Right Dataset.")
   }
   #----
@@ -1122,7 +1131,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     end_time = proc.time()
 
     # Format the time difference to two decimal places
-    formatted_time <- format(round((end_time - start_time)[3], 2), nsmall = 2)
+    formatted_time <- format(round((end_time - start_time)[3], 3), nsmall = 3)
 
     # Print a success message for linking record pairs
     print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished in ", formatted_time, " seconds"))
@@ -1226,7 +1235,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # Bind this to our full algorithm summary
     algo_summary <- rbind(algo_summary, curr_algo_summary)
 
-    ### RESULT 1: Linked Indicies (Removed the rows that were linked)
+    ### RESULT 1: Linked Indices (Removed the rows that were linked)
     linked_indices <- results[["linked_indices"]]
     left_dataset <- left_dataset[-linked_indices, ]
 
