@@ -8,7 +8,8 @@ create_extra_parameters_list(
   linkage_output_folder = NULL,
   output_linkage_iterations = FALSE,
   generate_linkage_report = FALSE,
-  data_linker = NULL
+  data_linker = NULL,
+  standardize_names_file_path = NULL
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ create_extra_parameters_list(
 \item{generate_linkage_report}{A TRUE or FALSE value for whether you'd like a Linkage Quality Report to be generated and written to the output directory (from the linkrep package).}
 
 \item{data_linker}{A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).}
+
+\item{standardize_names_file_path}{A path to a CSV containing common alternative spellings of names that will standardize to a singular spelling. Must have the columns 'START' and 'LABEL'.}
 }
 \description{
 The create_extra_parameters_list() function will allow users to modify any of the default

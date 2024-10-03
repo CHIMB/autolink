@@ -495,13 +495,17 @@ load_linkage_file <- function(dataset_file){
 #' @param output_linkage_iterations A TRUE or FALSE value for whether you'd like each iteration to write the linked pairs (UNEDITED) to the output directory.
 #' @param generate_linkage_report A TRUE or FALSE value for whether you'd like a Linkage Quality Report to be generated and written to the output directory (from the linkrep package).
 #' @param data_linker A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).
+#' @param standardize_names_file_path A path to a CSV containing common alternative spellings of names that will standardize to a singular spelling. Must have the columns 'START' and 'LABEL'.
+#' @param generate_algorithm_summary A TRUE or FALSE value for whether you'd like to export a CSV summary of the algorithm that was run.
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, generate_linkage_report = TRUE)
 #' @export
 create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          output_linkage_iterations = FALSE,
                                          generate_linkage_report = FALSE,
-                                         data_linker = NULL){
+                                         data_linker = NULL,
+                                         standardize_names_file_path = NULL,
+                                         generate_algorithm_summary = FALSE){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -533,6 +537,23 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
     # Make sure the input is valid
     if(is.character(data_linker) && is.character(data_linker) && length(data_linker) == 1 && nchar(data_linker) > 0){
       extra_params_list[["data_linker"]] <- data_linker
+    }
+  }
+
+  ### Output Algorithm Summary
+  if(!isFALSE(generate_algorithm_summary) && !is.na(generate_algorithm_summary) && !is.null(generate_algorithm_summary) &&
+     (isTRUE(generate_algorithm_summary) || generate_algorithm_summary == "TRUE")){
+    extra_params_list[["generate_algorithm_summary"]] <- TRUE
+  }
+  #----------------------------------------------------------------------------#
+
+  # Linkage Rules
+  #----------------------------------------------------------------------------#
+  ### Linkage Output Folder
+  if(!is.null(standardize_names_file_path)){
+    # Make sure the input is valid
+    if(!is.na(standardize_names_file_path) && file.exists(standardize_names_file_path)){
+      extra_params_list[["standardize_names_file_path"]] <- standardize_names_file_path
     }
   }
   #----------------------------------------------------------------------------#
