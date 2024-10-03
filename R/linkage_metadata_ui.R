@@ -151,7 +151,11 @@ linkage_ui <- page_navbar(
         accordion_panel(title = "Linkage Variables - Information"),
         accordion_panel(title = "Acceptance Methods & Rules - Information"),
         accordion_panel(title = "Comparison Methods & Rules - Information"),
-        accordion_panel(title = "Linkage Rules - Information"),
+        accordion_panel(title = "Linkage Rules - Information",
+          fluidPage(
+            actionButton(inputId = "file_test_input", "Quick Test")
+          )
+        ),
      )
     )
   ),
@@ -8958,9 +8962,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   #----
   #-------------------------------#
 
-  observeEvent(input$to_methods, {
-    nav_show('main_navbar', 'linkage_rule_page')
-    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
+  observeEvent(input$file_test_input, {
+    #shinyFiles::shinyDirChoose(input = input, id = file_test_input, session = session) # This needs to use a shinyDirButton() call and use its ID
   })
 }
 
