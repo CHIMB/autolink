@@ -485,3 +485,59 @@ load_linkage_file <- function(dataset_file){
   }
 }
 #---------------------------------------------------#
+
+#-- HELPER FUNCTIONS FOR ESTABLISHING EXTRA PARAMETERS --#
+#' Create Extra Parameters List
+#'
+#' The create_extra_parameters_list() function will allow users to modify any of the default
+#' parameter values to allow for more specific linkage options.
+#' @param linkage_output_folder A directory for which linkage output files will be written to.
+#' @param output_linkage_iterations A TRUE or FALSE value for whether you'd like each iteration to write the linked pairs (UNEDITED) to the output directory.
+#' @param generate_linkage_report A TRUE or FALSE value for whether you'd like a Linkage Quality Report to be generated and written to the output directory (from the linkrep package).
+#' @param data_linker A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).
+#' @examples
+#' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, generate_linkage_report = TRUE)
+#' @export
+create_extra_parameters_list <- function(linkage_output_folder = NULL,
+                                         output_linkage_iterations = FALSE,
+                                         generate_linkage_report = FALSE,
+                                         data_linker = NULL){
+
+  ### Create a List to Store the Extra Parameters
+  extra_params_list <- list()
+
+  # Linkage Output
+  #----------------------------------------------------------------------------#
+  ### Linkage Output Folder
+  if(!is.null(linkage_output_folder)){
+    # Make sure the input is valid
+    if(!is.na(linkage_output_folder) && dir.exists(linkage_output_folder)){
+      extra_params_list[["linkage_output_folder"]] <- linkage_output_folder
+    }
+  }
+
+  ### Output/Extract Linkage Iterations
+  if(!isFALSE(output_linkage_iterations) && !is.na(output_linkage_iterations) && !is.null(output_linkage_iterations) &&
+     (isTRUE(output_linkage_iterations) || output_linkage_iterations == "TRUE")){
+    extra_params_list[["output_linkage_iterations"]] <- TRUE
+  }
+
+  ### Generate Linkage Quality Report
+  if(!isFALSE(generate_linkage_report) && !is.na(generate_linkage_report) && !is.null(generate_linkage_report) &&
+     (isTRUE(generate_linkage_report) || generate_linkage_report == "TRUE")){
+    extra_params_list[["generate_linkage_report"]] <- TRUE
+  }
+
+  ### Data Linker Name
+  if(!is.null(data_linker)){
+    # Make sure the input is valid
+    if(is.character(data_linker) && is.character(data_linker) && length(data_linker) == 1 && nchar(data_linker) > 0){
+      extra_params_list[["data_linker"]] <- data_linker
+    }
+  }
+  #----------------------------------------------------------------------------#
+
+  ### Finally, return the list
+  return(extra_params_list)
+}
+#--------------------------------------------------------#

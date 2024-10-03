@@ -8,7 +8,7 @@ start_linkage_metadata_ui(metadata_file_path, username)
 }
 \description{
 Upon call, and passing a valid linkage metadata file, the application will run using the supplied metadata file
-as the file that can be modified. This involves viewing entries, adding new entires, modifying existing entires
+as the file that can be modified. This involves viewing entries, adding new entries, modifying existing entries
 or deleting them.
 }
 \examples{

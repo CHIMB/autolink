@@ -1117,7 +1117,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     left_dataset <- left_dataset[-linked_indices, ]
 
     ### RESULT 2: Linked Dataset for Exportation
-    if(("output_linkage_iterations" %in% names(extra_parameters) && extra_parameters[["output_linkage_iterations"]] == "yes") &&
+    if(("output_linkage_iterations" %in% names(extra_parameters) && extra_parameters[["output_linkage_iterations"]] == TRUE) &&
         "linkage_output_folder" %in% names(extra_parameters)){
       # Get the output directory
       output_dir <- extra_parameters[["linkage_output_folder"]]
@@ -1159,6 +1159,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   #----
 
   ### Step 5: Add unlinked data to the output data frame
+  #----
   # Add a new column that specifies that these rows didn't link
   left_dataset <- cbind(left_dataset, stage="UNLINKED")
 
@@ -1192,8 +1193,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   label(output_df[["stage"]]) <- "Passes"
 
   # Try to create report using the output data frame if the user wanted to
-  if(("generate_linkage_report" %in% names(extra_parameters) && extra_parameters[["generate_linkage_report"]] == "yes") &&
-      "linkage_output_folder" %in% names(extra_parameters)){
+  if(("generate_linkage_report" %in% names(extra_parameters) && extra_parameters[["generate_linkage_report"]] == TRUE) &&
+      "linkage_output_folder" %in% names(extra_parameters) && "data_linker" %in% names(extra_parameters)){
     # Get the output directory
     output_dir <- extra_parameters[["linkage_output_folder"]]
     tryCatch({
@@ -1259,6 +1260,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       print(paste0("Output linkage data has been output to: ", full_filename))
     })
   }
+  #----
 
   ### Step 6: Save performance measures, linkage rates, auditing information and whatever
   ###         we may need to the database and export data for linkage reports if asked
