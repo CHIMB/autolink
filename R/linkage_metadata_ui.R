@@ -194,7 +194,7 @@ linkage_ui <- page_navbar(
         # Create a column layout to separate the user inputs and dataset fields
         layout_column_wrap(
           width = 1/2,
-          height = 500,
+          height = 550,
           # Card for the user inputs
           card(card_header("Update Dataset Information", class = "bg-dark"),
             fluidRow(
@@ -238,7 +238,7 @@ linkage_ui <- page_navbar(
 
           # Card for viewing the selected fields
           card(card_header("View Selected Dataset Fields", class = "bg-dark"),
-            uiOutput("selected_dataset_fields")
+               dataTableOutput("selected_dataset_fields")
           )
         ),
 
@@ -259,7 +259,7 @@ linkage_ui <- page_navbar(
         # Create a column layout for the user inputs and viewable fields
         layout_column_wrap(
           width = 1/2,
-          height = 500,
+          height = 550,
 
           # Card for the user inputs
           card(card_header("Add Dataset Information", class = "bg-dark"),
@@ -300,6 +300,20 @@ linkage_ui <- page_navbar(
                           options = list(container = "body")))
              )),
              column(width = 12, div(style = "display: flex; align-items: center;",
+               selectInput("add_dataset_is_fwf", label = "Is The Dataset of Fixed-Width Format?",
+                           choices = list("No" = 1,
+                                          "Yes" = 2),
+                           selected = 1,
+                           width = validateCssUnit(500)),
+
+               # Add the popover manually
+               h1(tooltip(bs_icon("question-circle"),
+                          paste("If the dataset being used for linkage is fwf, select yes before uploading the",
+                                "dataset so that the column widths can be extracted for confirmation."),
+                          placement = "right",
+                          options = list(container = "body")))
+             )),
+             column(width = 12, div(style = "display: flex; align-items: center;",
                fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                                         # Label for the uploaded file name
@@ -327,7 +341,20 @@ linkage_ui <- page_navbar(
           ),
           # Card for viewing the uploaded fields
           card(card_header("View Uploaded Dataset Fields", class = "bg-dark"),
-            uiOutput("uploaded_dataset_fields")
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              dataTableOutput("uploaded_dataset_fields"),
+            )),
+
+            # If the user has submitted a dataset file, they can change the widths
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                numericInput("update_field_width_input", label = "Field Width:",
+                             value = NULL, width = validateCssUnit(300)),
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("update_field_width_btn", "Update Field Width", class = "btn-warning"),
+              ))
+            ),
           )
         ),
 
@@ -456,7 +483,7 @@ linkage_ui <- page_navbar(
               width = 1,
               height = 150,
               full_screen = FALSE,
-              card_header("Algorithm Specific Information"),
+              card_header("View/Edit Algorithm Information"),
               card_body(
                 fluidRow(
                   column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -780,7 +807,7 @@ linkage_ui <- page_navbar(
         card_header("Create New Linkage Iteration", class = "bg-dark"),
         card_body(
           fluidRow(
-            column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+            column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
                 textAreaInput("add_iteration_name", label = "Iteration/Pass Name:", value = "",
                               width = validateCssUnit(500), resize = "none"),
 
@@ -792,7 +819,7 @@ linkage_ui <- page_navbar(
                            options = list(container = "body")))
               )
             ),
-            column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+            column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
                 numericInput("add_iteration_order", label = "Iteration Order/Priority:", value = NULL,
                               width = validateCssUnit(500)),
 
@@ -804,7 +831,7 @@ linkage_ui <- page_navbar(
                            options = list(container = "body")))
               )
             ),
-            column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+            column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
                 uiOutput("add_iteration_linkage_method_input"),
 
                 # Add the popover manually
@@ -812,25 +839,6 @@ linkage_ui <- page_navbar(
                            paste("The linkage method determines which class will perform the data linkage process."),
                            placement = "right",
                            options = list(container = "body")))
-              )
-            ),
-            column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                    # Label for the uploaded file name
-                    div(style = "margin-right: 10px;", "Acceptance Rule:"),
-                  )),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    # Boxed text output for showing the uploaded file name
-                    div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                        textOutput("selected_iteration_acceptance_rule")
-                    ),
-                    # Add acceptance rule button
-                    actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                    # Remove acceptance rule button
-                    actionButton("remove_iteration_acceptance_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
-                  ))
-                )
               )
             )
           )
@@ -1068,6 +1076,35 @@ linkage_ui <- page_navbar(
               column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
                   actionButton("drop_matching_variables", "Drop Matching Variables", class = "btn-danger"),
                 )
+              )
+            )
+          )
+        )
+      ),
+
+      # LINE BREAK BETWEEN CARDS
+      HTML("<br>"),
+
+      # CARD FOR MATCHING VARIABLES
+      h5(strong("Step 4: Select the Acceptance Rule")),
+      card(full_screen = TRUE, card_header("Acceptance Rule", class = "bg-dark"), height = 150,
+        card_body(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                   # Label for the uploaded file name
+                   div(style = "margin-right: 10px;", "Acceptance Rule:"),
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                   # Boxed text output for showing the uploaded file name
+                   div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                     textOutput("selected_iteration_acceptance_rule")
+                   ),
+                   # Add acceptance rule button
+                   actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                   # Remove acceptance rule button
+                   actionButton("remove_iteration_acceptance_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                ))
               )
             )
           )
@@ -1961,6 +1998,17 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   #-- DATASETS PAGE EVENTS --#
   #----
+  # Global variable for the uploaded dataset fields
+  uploaded_fields_df <- data.frame(
+    field_name = character(),
+    field_type = character(),
+    field_width = numeric()
+  )
+
+  names(uploaded_fields_df)[names(uploaded_fields_df) == 'field_name'] <- 'Field Name'
+  names(uploaded_fields_df)[names(uploaded_fields_df) == 'field_type'] <- 'Field Type'
+  names(uploaded_fields_df)[names(uploaded_fields_df) == 'field_width'] <- 'Field Width'
+
   # Reactive value for the file path
   file_path <- reactiveValues(
     path=NULL
@@ -1976,11 +2024,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     names(df)[names(df) == 'dataset_code'] <- 'Dataset Code'
     names(df)[names(df) == 'dataset_name'] <- 'Dataset Name'
     names(df)[names(df) == 'version'] <- 'Version'
+    names(df)[names(df) == 'is_fwf'] <- 'Is Fixed-Width'
     names(df)[names(df) == 'enabled_for_linkage'] <- 'Enabled'
 
     # With datasets, we'll replace the enabled [0, 1] with [No, Yes]
     df$Enabled <- str_replace(df$Enabled, "0", "No")
     df$Enabled <- str_replace(df$Enabled, "1", "Yes")
+
+    # With datasets, we'll replace the yes of fwf [1, 2] with [No, Yes]
+    df[["Is Fixed-Width"]] <- str_replace(df[["Is Fixed-Width"]] , "1", "No")
+    df[["Is Fixed-Width"]] <- str_replace(df[["Is Fixed-Width"]] , "2", "Yes")
 
     # Drop the dataset_id value
     df <- subset(df, select = -c(dataset_id))
@@ -2034,11 +2087,54 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       )
     },
     error = function(e){
-      column_names <<- c()
+      column_names <<- NULL
     })
 
     # Return the extracted column names
     return(column_names)
+  }
+
+  # Function to read in a file, extract the column types, and return them
+  read_dataset_col_types <- function(file_path) {
+    # Extract the file extension
+    file_extension <- tools::file_ext(file_path)
+
+    # Create a vector for the column names
+    column_types <- c()
+
+    # Try to extract them
+    tryCatch({
+      # Based on file extension, attempt to read only the first row (column names)
+      column_types <- switch(tolower(file_extension),
+                             "csv" = {
+                               # Read only the header from a CSV file
+                               sapply(data.table::fread(file_path, nrows = 100), class)
+                             },
+                             "txt" = {
+                               # Read only the header from a TXT file
+                               sapply(data.table::fread(file_path, nrows = 100), class)
+                             },
+                             "sas7bdat" = {
+                               # Read only the header from a SAS7BDAT file
+                               sapply(haven::read_sas(file_path, n_max = 100), class)
+                             },
+                             "xlsx" = {
+                               # Read only the first row from an Excel file
+                               sapply(readxl::read_excel(file_path, n_max = 100), class)
+                             },
+                             "xls" = {
+                               # Read only the first row from an older Excel file
+                               sapply(readxl::read_excel(file_path, n_max = 100), class)
+                             },
+                             stop("Unsupported file format")  # Error if unsupported file type
+      )
+    },
+    error = function(e){
+      column_types <<- NULL
+    })
+
+    # Return the extracted column names
+    return(column_types)
   }
 
   # Renders the Data table of currently added datasets
@@ -2047,7 +2143,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   })
 
   # Renders the selected dataset fields based on what dataset the user selected
-  output$selected_dataset_fields <- renderUI({
+  output$selected_dataset_fields <- renderDataTable({
     # Get the selected row
     selected_row <- input$currently_added_datasets_rows_selected
 
@@ -2065,43 +2161,184 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
                                                 WHERE dataset_id =', selected_dataset_id,
                                                 'ORDER BY field_id ASC'))
 
-    field_names <- df$field_name
+    # Construct a data frame
+    df_temp <- data.frame(
+      field_name = df$field_name,
+      field_type = df$field_type,
+      field_width = df$field_width
+    )
 
-    # Create a tag list for the field names
-    if (length(field_names) == 0) {
-      return(HTML("<p>No columns found under this dataset.</p>"))
-    } else {
-      tagList(
-        HTML("<b>The Selected Dataset Fields Are:</b>"),
-        div(class = "dataset-field-box",  # Add the custom class here
-          tags$ul(
-            lapply(field_names, function(col) {
-              tags$li(col)  # Each column as a list item
-            })
-          )
-        )
-      )
-    }
+    # Re-label the data frame
+    names(df_temp)[names(df_temp) == 'field_name'] <- 'Field Name'
+    names(df_temp)[names(df_temp) == 'field_type'] <- 'Field Type'
+    names(df_temp)[names(df_temp) == 'field_width'] <- 'Field Width'
+
+    # Put it into a data table now
+    dt <- datatable(df_temp, selection = 'none', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
   })
 
   # Renders the uploaded dataset fields based on the file the user provided
-  output$uploaded_dataset_fields <- renderUI({
-    field_names <- read_dataset_columns(file_path$path)
+  output$uploaded_dataset_fields <- renderDataTable({
+    # Put it into a data table now
+    dt <- datatable(uploaded_fields_df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+  })
 
-    if (is.null(field_names) || length(field_names) == 0) {
-      return(HTML("<p>No columns found or unsupported file format.</p>"))
-    } else {
-      tagList(
-        HTML("<b>The Uploaded Dataset Fields Are:</b>"),
-        div(class = "dataset-field-box",  # Add the custom class here
-          tags$ul(
-            lapply(field_names, function(col) {
-              tags$li(col)  # Each column as a list item
-            })
-          )
-        )
+  # Observes if the user uploads a file or changes the type to fwf
+  observe({
+    data_is_fwf <- input$add_dataset_is_fwf
+    input_file  <- file_path$path
+
+    # Make sure the input file is not null
+    if(is.null(input_file)){
+      uploaded_fields_df <<- data.frame(
+        field_name = character(),
+        field_type = character(),
+        field_width = numeric()
       )
+
+      # Renders the uploaded dataset fields based on the file the user provided
+      output$uploaded_dataset_fields <- renderDataTable({
+        # get the uploaded fields df
+        df <- uploaded_fields_df
+        names(df)[names(df) == 'field_name'] <- 'Field Name'
+        names(df)[names(df) == 'field_type'] <- 'Field Type'
+        names(df)[names(df) == 'field_width'] <- 'Field Width'
+
+        # Put it into a data table now
+        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+      })
+
+      # Retrn
+      return()
     }
+
+    # If the data is fwf, handle it differently
+    if(data_is_fwf == 2){
+      # Use fwf_empty to guess column positions
+      col_positions <- fwf_empty(input_file)
+
+      # Extract the start and end positions of each column
+      start_positions <- col_positions$begin
+      end_positions <- col_positions$end
+      col_names <- col_positions$col_names
+
+      # Read the first line to get the total length of a line
+      first_line <- read_lines(input_file, n_max = 1)
+      line_length <- nchar(first_line)
+
+      # Handle the case where the last 'end' position is NA (column goes to the end of the line)
+      end_positions[is.na(end_positions)] <- line_length
+
+      # Calculate the column widths
+      col_widths <- end_positions - start_positions + 1
+
+      # Now try to get the column types
+      col_types <- sapply(read_fwf(input_file, fwf_empty(input_file), n_max = 1, show_col_types = FALSE), class)
+
+      # Construct a data frame
+      df <- data.frame(
+        field_name = col_names,
+        field_type = col_types,
+        field_width = col_widths
+      )
+
+      # Replace the global df with the one we read in
+      uploaded_fields_df <<- df
+
+      # Renders the uploaded dataset fields based on the file the user provided
+      output$uploaded_dataset_fields <- renderDataTable({
+        # get the uploaded fields df
+        df <- uploaded_fields_df
+        names(df)[names(df) == 'field_name'] <- 'Field Name'
+        names(df)[names(df) == 'field_type'] <- 'Field Type'
+        names(df)[names(df) == 'field_width'] <- 'Field Width'
+
+        # Put it into a data table now
+        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+      })
+    }
+    else{
+      # Get the field_names and column types
+      col_names <- read_dataset_columns(input_file)
+      col_types <- read_dataset_col_types(input_file)
+
+      # Make sure the col_names and types are valid
+      if(is.null(col_names) || is.null(col_types)) return()
+
+      # Construct a data frame
+      df <- data.frame(
+        field_name = col_names,
+        field_type = col_types,
+        field_width = NA
+      )
+
+      # Replace the global df with the one we read in
+      uploaded_fields_df <<- df
+
+      # Renders the uploaded dataset fields based on the file the user provided
+      output$uploaded_dataset_fields <- renderDataTable({
+        # get the uploaded fields df
+        df <- uploaded_fields_df
+        names(df)[names(df) == 'field_name'] <- 'Field Name'
+        names(df)[names(df) == 'field_type'] <- 'Field Type'
+        names(df)[names(df) == 'field_width'] <- 'Field Width'
+
+        # Put it into a data table now
+        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+      })
+    }
+  })
+
+  # Observes when the user selects a row, which will pre-populate the width input field
+  observeEvent(input$uploaded_dataset_fields_rows_selected, {
+    # Get the row selected
+    row_selected <- input$uploaded_dataset_fields_rows_selected
+
+    # Verify that it's not null
+    if(is.null(row_selected)) return()
+
+    # Pre-populate the input with that selected width
+    width <- uploaded_fields_df$field_width[row_selected]
+    updateNumericInput(session, "update_field_width_input", value = width)
+  })
+
+  # Observes when the user updates a selected width input row
+  observeEvent(input$update_field_width_btn, {
+    # Get the row selected
+    row_selected <- input$uploaded_dataset_fields_rows_selected
+
+    # Verify that it's not null
+    if(is.null(row_selected)){
+      showNotification("Failed to Update Width - Row Must Be Selected", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Get the input width
+    width <- input$update_field_width_input
+
+    # Make sure that its not missing
+    if(is.na(width) || width <= 0){
+      showNotification("Failed to Update Width - Width Must Be >= 1", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Update the width
+    uploaded_fields_df$field_width[row_selected] <<- width
+
+    # Renders the uploaded dataset fields based on the file the user provided
+    output$uploaded_dataset_fields <- renderDataTable({
+      # get the uploaded fields df
+      df <- uploaded_fields_df
+      names(df)[names(df) == 'field_name'] <- 'Field Name'
+      names(df)[names(df) == 'field_type'] <- 'Field Type'
+      names(df)[names(df) == 'field_width'] <- 'Field Width'
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+    })
+
+    # Show a success message
+    showNotification("Successfully Updated Field Width", type = "message", closeButton = FALSE)
   })
 
   # Enables or Disables the currently selected dataset
@@ -2208,10 +2445,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   observeEvent(input$add_dataset, {
     # Get the values that we're inserting into a new record
     #----#
-    dataset_code <- input$add_dataset_code
-    dataset_name <- input$add_dataset_name
-    dataset_vers <- input$add_dataset_version
-    dataset_file <- file_path$path
+    dataset_code   <- input$add_dataset_code
+    dataset_name   <- input$add_dataset_name
+    dataset_vers   <- input$add_dataset_version
+    dataset_is_fwf <- input$add_dataset_is_fwf
+    dataset_file   <- file_path$path
     #----#
 
     # Error Handling
@@ -2233,11 +2471,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       return()
     }
 
-    # Try grabbing the column names
-    dataset_cols <- read_dataset_columns(dataset_file)
-
-    # If column reading failed (dataset_cols remains empty), return
-    if(is.null(dataset_cols) || length(dataset_cols) == 0) {
+    # Make sure we have columnst to upload
+    if(nrow(uploaded_fields_df) <= 0) {
       showNotification("Failed to Add Dataset - Invalid Input File", type = "error", closeButton = FALSE)
       return()
     }
@@ -2251,10 +2486,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       # Create a new entry query for entering into the database
       #----#
       dataset_vers <- paste0("v", dataset_vers)
-      new_entry_query <- paste("INSERT INTO datasets (dataset_code, dataset_name, version, enabled_for_linkage)",
-                               "VALUES(?, ?, ?, 1);")
+      new_entry_query <- paste("INSERT INTO datasets (dataset_code, dataset_name, version, is_fwf, enabled_for_linkage)",
+                               "VALUES(?, ?, ?, ? ,1);")
       new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-      dbBind(new_entry, list(dataset_code, dataset_name, dataset_vers))
+      dbBind(new_entry, list(dataset_code, dataset_name, dataset_vers, dataset_is_fwf))
       dbClearResult(new_entry)
       #----#
 
@@ -2264,10 +2499,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       dataset_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS dataset_id;")$dataset_id
 
       # Insert each column name into the dataset_fields table
-      for (col_name in dataset_cols) {
-        insert_field_query <- "INSERT INTO dataset_fields (dataset_id, field_name) VALUES (?, ?);"
+      for (index in 1:nrow(uploaded_fields_df)) {
+        # Grab the dataset columns, column types, and widths
+        col_name  <- uploaded_fields_df$field_name[index]
+        col_type  <- uploaded_fields_df$field_type[index]
+        col_width <- uploaded_fields_df$field_width[index]
+
+        insert_field_query <- "INSERT INTO dataset_fields (dataset_id, field_name, field_type, field_width) VALUES (?, ?, ?, ?);"
         insert_field_stmt <- dbSendStatement(linkage_metadata_conn, insert_field_query)
-        dbBind(insert_field_stmt, list(dataset_id, col_name))
+        dbBind(insert_field_stmt, list(dataset_id, col_name, col_type, col_width))
         dbClearResult(insert_field_stmt)
       }
 
@@ -2307,6 +2547,22 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     })
     output$currently_added_datasets <- renderDataTable({
       get_datasets()
+    })
+    uploaded_fields_df <<- data.frame(
+      field_name = character(),
+      field_type = character(),
+      field_width = numeric()
+    )
+    # Renders the uploaded dataset fields based on the file the user provided
+    output$uploaded_dataset_fields <- renderDataTable({
+      # get the uploaded fields df
+      df <- uploaded_fields_df
+      names(df)[names(df) == 'field_name'] <- 'Field Name'
+      names(df)[names(df) == 'field_type'] <- 'Field Type'
+      names(df)[names(df) == 'field_width'] <- 'Field Width'
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
     })
     #----#
 
@@ -4977,10 +5233,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Generates the table of acceptance methods
     output$add_acceptance_method_iteration <- renderDataTable({
       get_acceptance_methods_and_parameters()
-    })
-
-    output$iteration_acceptance_rule_add_inputs <- renderUI({
-
     })
 
     showModal(modalDialog(

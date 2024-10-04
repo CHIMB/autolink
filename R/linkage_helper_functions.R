@@ -251,6 +251,35 @@ get_linkage_technique <- function(linkage_db, iteration_id){
   return(linkage_technique_df$technique_label)
 }
 
+#' Get Iteration Linkage Technique Description
+#'
+#' The get_linkage_technique_description() function will take in a linkage database connection
+#' containing all the metadata, along with an iteration ID for the current iteration being run.
+#' A singular string is returned which is what the description of the linkage technique
+#' being used during this pass.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param iteration_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' iteration_id <- 1
+#' get_linkage_technique_description(linkage_db, iteration_id)
+#' @export
+get_linkage_technique_description <- function(linkage_db, iteration_id){
+  # Perform a query that joins linkage_iterations with linkage methods
+  linkage_technique_desc_df <- dbGetQuery(linkage_db, paste0('SELECT implementation_desc FROM linkage_iterations li
+                                          JOIN linkage_methods lm on lm.linkage_method_id = li.linkage_method_id
+                                          WHERE iteration_id = ', iteration_id))
+
+  # If somehow, there is no linkage method, return NA
+  if(nrow(linkage_technique_desc_df) <= 0){
+    return(NA)
+  }
+
+  # Return the label
+  return(linkage_technique_desc_df$implementation_desc)
+}
+
 #' Get Iteration Implementation Name
 #'
 #' The get_implementation_name() function will take in a linkage database connection
@@ -493,6 +522,7 @@ load_linkage_file <- function(dataset_file){
 #' parameter values to allow for more specific linkage options.
 #' @param linkage_output_folder A directory for which linkage output files will be written to.
 #' @param output_linkage_iterations A TRUE or FALSE value for whether you'd like each iteration to write the linked pairs (UNEDITED) to the output directory.
+#' @param output_unlinked_iteration_pairs A TRUE or FALSE value for whether you'd like each iteration to write the unlinked pairs (UNEDITED) to the output directory
 #' @param generate_linkage_report A TRUE or FALSE value for whether you'd like a Linkage Quality Report to be generated and written to the output directory (from the linkrep package).
 #' @param data_linker A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).
 #' @param standardize_names_file_path A path to a CSV containing common alternative spellings of names that will standardize to a singular spelling. Must have the columns 'START' and 'LABEL'.
@@ -502,6 +532,7 @@ load_linkage_file <- function(dataset_file){
 #' @export
 create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          output_linkage_iterations = FALSE,
+                                         output_unlinked_iteration_pairs = FALSE,
                                          generate_linkage_report = FALSE,
                                          data_linker = NULL,
                                          standardize_names_file_path = NULL,
@@ -520,10 +551,16 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
     }
   }
 
-  ### Output/Extract Linkage Iterations
+  ### Output/Extract Linked Iterations
   if(!isFALSE(output_linkage_iterations) && !is.na(output_linkage_iterations) && !is.null(output_linkage_iterations) &&
      (isTRUE(output_linkage_iterations) || output_linkage_iterations == "TRUE")){
     extra_params_list[["output_linkage_iterations"]] <- TRUE
+  }
+
+  ### Output/Extract Unlinked Iterations
+  if(!isFALSE(output_unlinked_iteration_pairs) && !is.na(output_unlinked_iteration_pairs) && !is.null(output_unlinked_iteration_pairs) &&
+     (isTRUE(output_unlinked_iteration_pairs) || output_unlinked_iteration_pairs == "TRUE")){
+    extra_params_list[["output_unlinked_iteration_pairs"]] <- TRUE
   }
 
   ### Generate Linkage Quality Report

@@ -34,6 +34,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       dataset_code VARCHAR(255),
       dataset_name VARCHAR(255),
       version VARCHAR(255),
+      is_fwf INTEGER,
       enabled_for_linkage INTEGER
     );
   ")
@@ -42,7 +43,9 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     CREATE TABLE dataset_fields (
       dataset_id INTEGER REFERENCES datasets(dataset_id),
       field_id INTEGER PRIMARY KEY,
-      field_name VARCHAR(255)
+      field_name VARCHAR(255),
+      field_type VARCHAR(255),
+      field_width INTEGER
     );
   ")
 

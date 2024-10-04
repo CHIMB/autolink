@@ -437,7 +437,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # table(pairs$truth, pairs$threshold)
 
         # Get the acceptance threshold for this iteration
-        acceptance_threshold = get_acceptence_thresholds(linkage_metadata_db, iteration_id)
+        acceptance_threshold <- get_acceptence_thresholds(linkage_metadata_db, iteration_id)
 
         # Select pairs using the user defined acceptance thresholds
         if("posterior_threshold" %in% names(acceptance_threshold)){
@@ -450,6 +450,37 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         else{
           stop("Error: Acceptance Threshold Missing.")
         }
+
+        # Now, if a ground truth is provided get the ground truth variables to calculate specificity later on
+        ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+        has_ground_truth <- FALSE
+        if(nrow(ground_truth_df) > 0){
+          has_ground_truth <- TRUE
+          # Rename the fields of our ground truth keys so that they match in both datasets
+          for(row_num in 1:nrow(ground_truth_df)){
+            # Get the current row
+            row <- ground_truth_df[row_num,]
+
+            # Get the left dataset field name (what we'll be renaming to)
+            left_dataset_field_name <- row$left_dataset_field
+
+            # Get the right dataset field name (what's being renamed)
+            right_dataset_field_name <- row$right_dataset_field
+
+            # Rename the right dataset field to match the field it's going to be matching with
+            names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+          }
+
+          # Get the left fields
+          left_ground_truth_fields <- ground_truth_df$left_dataset_field
+
+          # Get the right fields
+          right_ground_truth_fields <- ground_truth_df$right_dataset_field
+
+          # Compare variables to get the truth
+          linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+        }
+
         #print(linkage_pairs)
         #--------------------------#
 
@@ -467,12 +498,33 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # Create a list of all the data we will be returning
         return_list <- list()
 
-        ### Get the linked indicies
+        ### Get the linked indices
         linked_indices <- linked_dataset$.x
         return_list[["linked_indices"]] <- linked_indices
 
+        ### Returned the greedy select dataset
+        return_list[["unlinked_dataset_pairs"]] <- linkage_pairs
+
         ### Return the unmodified linked dataset
         return_list[["linked_dataset"]] <- linked_dataset
+
+        ### Return specificity variables if ground truth was provided
+        if(has_ground_truth){
+          # Create the specificity table
+          specificity_table <- table(linkage_pairs$truth, linkage_pairs$selected)
+
+          # Extract TP, TN, FP, FN
+          TP <- specificity_table["TRUE", "TRUE"]  # True Positives
+          TN <- specificity_table["FALSE", "FALSE"]  # True Negatives
+          FP <- specificity_table["FALSE", "TRUE"]  # False Positives
+          FN <- specificity_table["TRUE", "FALSE"]  # False Negatives
+
+          # Create a named vector
+          results_vector <- c(TP = TP, TN = TN, FP = FP, FN = FN)
+
+          # Store the results vector
+          return_list[["specificity_variables"]] <- results_vector
+        }
 
         ### Create the data frame of the fields to be returned
         output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
@@ -1096,6 +1148,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     linkage_rate_pass = character(),
     linkage_rate_total = character()
   )
+  algo_summary_footnotes <- c()
 
   # Keep a data frame of all passes for final output
   output_df <- NA
@@ -1137,13 +1190,11 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished in ", formatted_time, " seconds"))
 
     ### STORE INFORMATION FOR ALGORITHM SUMMARY
-    # Get the pass name
-    pass_name <- curr_iteration_name
-
     # Get the implementation name
-    implementation_name <- get_implementation_name(linkage_metadata_db, curr_iteration_id)
-    linkage_method      <- get_linkage_technique(linkage_metadata_db, curr_iteration_id)
-    full_implementation_name <- paste0(implementation_name, " (", linkage_method, ")")
+    linkage_method <- get_linkage_technique(linkage_metadata_db, curr_iteration_id)
+    linkage_method_desc <- get_linkage_technique_description(linkage_metadata_db, curr_iteration_id)
+    linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
+    algo_summary_footnotes <- append(algo_summary_footnotes, linkage_footnote)
 
     # Get the blocking variables
     blocking_fields_df <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
@@ -1223,8 +1274,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
     # Create a data frame for the current passes summary
     curr_algo_summary <- data.frame(
-      pass = pass_name,
-      linkage_implementation = full_implementation_name,
+      pass = row_num,
+      linkage_implementation = linkage_method,
       blocking_variables = blocking_fields,
       matching_variables = matching_fields,
       acceptance_threshold = acceptance_threshold,
@@ -1239,7 +1290,38 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     linked_indices <- results[["linked_indices"]]
     left_dataset <- left_dataset[-linked_indices, ]
 
-    ### RESULT 2: Linked Dataset for Exportation
+    ### RESULT 2: Unlinked dataset pairs for exportation
+    if(("output_unlinked_iteration_pairs" %in% names(extra_parameters) && extra_parameters[["output_unlinked_iteration_pairs"]] == TRUE) &&
+       "linkage_output_folder" %in% names(extra_parameters)){
+      # Get the output directory
+      output_dir <- extra_parameters[["linkage_output_folder"]]
+
+      # Get the algorithm name
+      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+      algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+      # Define base file name
+      base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_unlinked_pairs')
+
+      # Start with the base file name
+      full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+      counter <- 1
+
+      # While the file exists, append a number and keep checking
+      while (file.exists(full_filename)) {
+        full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+        counter <- counter + 1
+      }
+
+      # Save the .CSV file
+      full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+      fwrite(results[["unlinked_dataset_pairs"]], file = full_filename, append = TRUE)
+
+      # Specify that the file was successfully written
+      print(paste0("Linkage data saved as: ", full_filename))
+    }
+
+    ### RESULT 3: Linked Dataset for Exportation
     if(("output_linkage_iterations" %in% names(extra_parameters) && extra_parameters[["output_linkage_iterations"]] == TRUE) &&
         "linkage_output_folder" %in% names(extra_parameters)){
       # Get the output directory
@@ -1270,7 +1352,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       print(paste0("Linkage data saved as: ", full_filename))
     }
 
-    ### RESULT 3: Linkage Report Output Data Frame
+    ### RESULT 4: Linkage Report Output Data Frame
     # If the output_df is NA, then no pass has been completed, otherwise, bind the rows
     if(is.na(output_df)){
       output_df <- results[["output_linkage_df"]]
@@ -1351,6 +1433,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # Get the output variabls that we'll be using
       strata_vars <- colnames(output_df)
+      strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
+
 
       # Relabel the algo summary
       label(algo_summary$pass) <- "Pass"
@@ -1366,6 +1450,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       linkage_quality_report(output_df, algorithm_name, "Subtitle Here", datasets$left_dataset_name,
                              paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
                              "link_indicator", strata_vars, strata_vars, save_linkage_rate = F, algorithm_summary_data = algo_summary,
+                             algorithm_summary_tbl_footnotes = algo_summary_footnotes,
                              R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
     },
     error = function(e){
