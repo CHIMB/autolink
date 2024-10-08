@@ -33,6 +33,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       dataset_id INTEGER PRIMARY KEY,
       dataset_code VARCHAR(255),
       dataset_name VARCHAR(255),
+      dataset_location TEXT,
       version VARCHAR(255),
       is_fwf INTEGER,
       enabled_for_linkage INTEGER
@@ -172,7 +173,8 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       algorithm_name VARCHAR(255),
       modified_date TEXT,
       modified_by VARCHAR(255),
-      enabled INTEGER
+      enabled INTEGER,
+      enabled_for_testing INTEGER
     );
   ")
 
@@ -185,8 +187,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       field_type INTEGER
     );
   ")
-  # field_type -> [1 = General, 2 = Date, 3 = Age, 4 = Postal Code, 5 = Name Length]
-
 
   dbExecute(my_db, "
     CREATE TABLE linkage_iterations (

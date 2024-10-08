@@ -201,10 +201,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                 dataset_field <- row$left_dataset_field
 
                 # Get the standardized name for both datasets by calling the helper function
-                standardized_names_left <- ifelse(!is.na(get_standardized_names(left_dataset[[dataset_field]])),
-                                                  get_token_name(left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
-                standardized_names_right <- ifelse(!is.na(get_standardized_names(right_dataset[[dataset_field]])),
-                                                   get_token_name(right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
+                standardized_names_left <- ifelse(!is.na(get_standardized_names(file_path, left_dataset[[dataset_field]])),
+                                                  get_standardized_names(file_path, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
+                standardized_names_right <- ifelse(!is.na(get_standardized_names(file_path, right_dataset[[dataset_field]])),
+                                                   get_standardized_names(file_path, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
 
                 # Place the standardized names back into the dataset
                 left_dataset[[dataset_field]] <- standardized_names_left
@@ -370,10 +370,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                 dataset_field <- row$left_dataset_field
 
                 # Get the standardized name for both datasets by calling the helper function
-                standardized_names_left <- ifelse(!is.na(get_standardized_names(left_dataset[[dataset_field]])),
-                                                  get_token_name(left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
-                standardized_names_right <- ifelse(!is.na(get_standardized_names(right_dataset[[dataset_field]])),
-                                                   get_token_name(right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
+                standardized_names_left <- ifelse(!is.na(get_standardized_names(file_path, left_dataset[[dataset_field]])),
+                                                  get_standardized_names(file_path, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
+                standardized_names_right <- ifelse(!is.na(get_standardized_names(file_path, right_dataset[[dataset_field]])),
+                                                   get_standardized_names(file_path, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
 
                 # Place the standardized names back into the dataset
                 left_dataset[[dataset_field]] <- standardized_names_left
@@ -743,10 +743,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                 dataset_field <- row$left_dataset_field
 
                 # Get the standardized name for both datasets by calling the helper function
-                standardized_names_left <- ifelse(!is.na(get_standardized_names(left_dataset[[dataset_field]])),
-                                                  get_token_name(left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
-                standardized_names_right <- ifelse(!is.na(get_standardized_names(right_dataset[[dataset_field]])),
-                                                   get_token_name(right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
+                standardized_names_left <- ifelse(!is.na(get_standardized_names(file_path, left_dataset[[dataset_field]])),
+                                                  get_standardized_names(file_path, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
+                standardized_names_right <- ifelse(!is.na(get_standardized_names(file_path, right_dataset[[dataset_field]])),
+                                                   get_standardized_names(file_path, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
 
                 # Place the standardized names back into the dataset
                 left_dataset[[dataset_field]] <- standardized_names_left
@@ -915,10 +915,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                 dataset_field <- row$left_dataset_field
 
                 # Get the standardized name for both datasets by calling the helper function
-                standardized_names_left <- ifelse(!is.na(get_standardized_names(left_dataset[[dataset_field]])),
-                                                  get_token_name(left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
-                standardized_names_right <- ifelse(!is.na(get_standardized_names(right_dataset[[dataset_field]])),
-                                                   get_token_name(right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
+                standardized_names_left <- ifelse(!is.na(get_standardized_names(file_path, left_dataset[[dataset_field]])),
+                                                  get_standardized_names(file_path, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
+                standardized_names_right <- ifelse(!is.na(get_standardized_names(file_path, right_dataset[[dataset_field]])),
+                                                   get_standardized_names(file_path, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
 
                 # Place the standardized names back into the dataset
                 left_dataset[[dataset_field]] <- standardized_names_left
@@ -1064,7 +1064,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
   ### Step 2: Get the iteration IDs using the selected algorithm ID
   #----
-  iterations_query <- dbSendQuery(linkage_metadata_db, 'SELECT * FROM linkage_iterations 
+  iterations_query <- dbSendQuery(linkage_metadata_db, 'SELECT * FROM linkage_iterations
                                                         WHERE algorithm_id = $id AND enabled = 1
                                                         ORDER BY iteration_num asc;')
   dbBind(iterations_query, list(id=algorithm_id))
@@ -1158,7 +1158,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     linkage_rate_total = character()
   )
   algo_summary_footnotes <- c()
-  
+
   # Keep a vector of performance measure values
   performance_measures <- c(TP = 0, TN = 0, FP = 0, FN = 0)
 
@@ -1373,12 +1373,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     else{
       output_df <- rbind(output_df, results[["output_linkage_df"]])
     }
-    
+
     ### RESULT 5: Ground Truth Performance Measure Variables
     if("performance_measure_variables" %in% names(results)){
       # Get the performance measure values
       iteration_performance_measures <- results[["performance_measure_variables"]]
-      
+
       # Append the performance measure variables to the overall values
       performance_measures[1] <- performance_measures[1] + iteration_performance_measures[1]
       performance_measures[2] <- performance_measures[2] + iteration_performance_measures[2]
@@ -1430,31 +1430,31 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   # Try to calculate and export the performance measures
   if(("calculate_performance_measures" %in% names(extra_parameters) && extra_parameters[["calculate_performance_measures"]] == TRUE) &&
      "linkage_output_folder" %in% names(extra_parameters)){
-    
+
     # Grab the performance measure variables
     TP <- performance_measures[[1]]
     TN <- performance_measures[[2]]
     FP <- performance_measures[[3]]
     FN <- performance_measures[[4]]
-    
+
     # Calculate the PPV
     PPV <- (TP/(TP + FP)) * 100
-    
+
     # Calculate the NPV
     NPV <- (TN/(TN + FN)) * 100
-    
+
     # Sensitivity
     SENS <- (TP/(TP + FN)) * 100
-    
+
     # Specificity
     SPEC <- (TN/(TN + FP)) * 100
-    
+
     # F1-Score
     F1_SCORE <- (TP/(TP + (0.5 * (FP + FN)))) * 100
-    
+
     # Calculate the linkage rate
     linkage_rate <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
-    
+
     # Create a performance measures data frame to store all the information
     performance_measures_df <- data.frame(
       positive_predictive_value = PPV,
@@ -1464,7 +1464,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       f1_score = F1_SCORE,
       linkage_rate = linkage_rate
     )
-    
+
     # Apply labels to the performance measures data frame
     label(performance_measures_df$positive_predictive_value) <- "PPV"
     label(performance_measures_df$negative_predictive_value) <- "NPV"
@@ -1472,35 +1472,35 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     label(performance_measures_df$specificity) <- "Specificity"
     label(performance_measures_df$f1_score) <- "F1-Score"
     label(performance_measures_df$linkage_rate) <- "Linkage Rate"
-    
+
     # Get the output directory
     output_dir <- extra_parameters[["linkage_output_folder"]]
-    
+
     # Get the algorithm name
     df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
     algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
-    
+
     # Define base file name
     base_filename <- paste0(algorithm_name, '_linkage_performance_measures')
-    
+
     # Start with the base file name
     full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
     counter <- 1
-    
+
     # While the file exists, append a number and keep checking
     while (file.exists(full_filename)) {
       full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
       counter <- counter + 1
     }
-    
+
     # Save the .CSV file
     full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
     fwrite(performance_measures_df, file = full_filename, append = TRUE)
-    
+
     # Print a success message
     print(paste0("Performance measures have been exported to: ", full_filename))
   }
-  
+
   # Try to create report using the output data frame if the user wanted to
   if(("generate_linkage_report" %in% names(extra_parameters) && extra_parameters[["generate_linkage_report"]] == TRUE) &&
      "linkage_output_folder" %in% names(extra_parameters) && "data_linker" %in% names(extra_parameters)){
@@ -1560,10 +1560,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
         linkage_quality_report(output_df, algorithm_name, "Subtitle Here", datasets$left_dataset_name,
                                paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
-                               "link_indicator", strata_vars, strata_vars, save_linkage_rate = F, 
+                               "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                algorithm_summary_data = algo_summary, algorithm_summary_tbl_footnotes = algo_summary_footnotes,
                                performance_measures_data = performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
-                               ground_truth = ground_truth_fields, 
+                               ground_truth = ground_truth_fields,
                                R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
       }
     },

@@ -233,18 +233,38 @@ linkage_ui <- page_navbar(
                            placement = "right",
                            options = list(container = "body")))
               )),
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                # Label for the uploaded file name
+                div(style = "margin-right: 10px;", "Uploaded File (Path):"),
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Boxed text output for showing the uploaded file name
+                div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                  textOutput("uploaded_file_name_update")
+                ),
+                # Upload button
+                actionButton("update_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                                 "The column names will be grabbed from the first row in the source dataset for",
+                                 "future use when creating linkage algorithms and passes."),
+                           placement = "right",
+                           options = list(container = "body")))
+              ))
             ),
           ),
 
           # Card for viewing the selected fields
           card(card_header("View Selected Dataset Fields", class = "bg-dark"),
-               dataTableOutput("selected_dataset_fields")
+            dataTableOutput("selected_dataset_fields")
           )
         ),
 
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                                 actionButton("update_dataset", "Update Dataset", class = "btn-success"),
+            actionButton("update_dataset", "Update Dataset", class = "btn-success"),
           ))
         ),
         HTML("<br>")
@@ -315,26 +335,26 @@ linkage_ui <- page_navbar(
              )),
              column(width = 12, div(style = "display: flex; align-items: center;",
                fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                                        # Label for the uploaded file name
-                                        div(style = "margin-right: 10px;", "Linkage File (Field Names):"),
-                 )),
-                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  # Boxed text output for showing the uploaded file name
-                  div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                  column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                    # Label for the uploaded file name
+                    div(style = "margin-right: 10px;", "Uploaded File (Path):"),
+                  )),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    # Boxed text output for showing the uploaded file name
+                    div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
                       textOutput("uploaded_file_name")
-                  ),
-                  # Upload button
-                  actionButton("add_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
+                    ),
+                    # Upload button
+                    actionButton("add_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
 
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The dataset you plan on using to perform data linkage should be uploaded here.",
-                                   "The column names will be grabbed from the first row in the source dataset for",
-                                   "future use when creating linkage algorithms and passes."),
-                             placement = "right",
-                               options = list(container = "body")))
-                 ))
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                                     "The column names will be grabbed from the first row in the source dataset for",
+                                     "future use when creating linkage algorithms and passes."),
+                               placement = "right",
+                                 options = list(container = "body")))
+                  ))
                 )
               ))
             ),
@@ -345,7 +365,7 @@ linkage_ui <- page_navbar(
               dataTableOutput("uploaded_dataset_fields"),
             )),
 
-            # If the user has submitted a dataset file, they can change the widths
+            # If the user has submitted a dataset file, they can also change the widths (IF A ROW IS SELECTED)
             fluidRow(
               column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                 numericInput("update_field_width_input", label = "Field Width:",
@@ -360,7 +380,7 @@ linkage_ui <- page_navbar(
 
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-           actionButton("add_dataset", "Add Dataset", class = "btn-success"),
+            actionButton("add_dataset", "Add Dataset", class = "btn-success"),
           ))
         ),
         HTML("<br><br>"),
@@ -481,57 +501,98 @@ linkage_ui <- page_navbar(
           div(style = "display: flex; justify-content: center; align-items: center;",
             card(
               width = 1,
-              height = 150,
+              height = 125,
               full_screen = FALSE,
-              card_header("View/Edit Algorithm Information"),
+              card_header("View/Edit Algorithm Iteration Specific Information", class = 'bg-dark'),
               card_body(
                 fluidRow(
-                  column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("toggle_algorithm", "Toggle Selected Algorithm", class = "btn-success"),
+                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                      actionButton("toggle_algorithm", "Set as Default Algorithm", class = "btn-success", width = validateCssUnit(300)),
 
-                      # Add the popover manually
-                      h1(tooltip(bs_icon("question-circle"),
-                                 paste("Toggle whether an algorithm is available to be used in data linkage.",
-                                       "If an algorithm is Enabled, you may select/view/add/modify linkage passes",
-                                       "and ground truth variables for that algorithm, and may also use the algorithm",
-                                       "to perform data linkage. If Disabled, the algorithm, and passes will be ignored,",
-                                       "and it may not be used for data linkage."),
-                                 placement = "right",
-                                 options = list(container = "body")
-                      ))
+                      # # Add the popover manually
+                      # h1(tooltip(bs_icon("question-circle"),
+                      #            paste("Toggle whether an algorithm is available to be used in data linkage.",
+                      #                  "If an algorithm is Enabled, you may select/view/add/modify linkage passes",
+                      #                  "and ground truth variables for that algorithm, and may also use the algorithm",
+                      #                  "to perform data linkage. If Disabled, the algorithm, and passes will be ignored,",
+                      #                  "and it may not be used for data linkage."),
+                      #            placement = "right",
+                      #            options = list(container = "body")
+                      # ))
                     )
                   ),
-                  column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes", class = "btn-warning"),
 
-                      # Add the popover manually
-                      h1(tooltip(bs_icon("question-circle"),
-                                 paste("View, add, and modify the individual passes for this algorithm."),
-                                 placement = "right",
-                                 options = list(container = "body")
-                      ))
+                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("toggle_algorithm_for_testing", "Toggle for Testing", class = "btn-success", width = validateCssUnit(300)),
+
+                      # # Add the popover manually
+                      # h1(tooltip(bs_icon("question-circle"),
+                      #            paste("Toggle whether an algorithm is available to be used in data linkage.",
+                      #                  "If an algorithm is Enabled, you may select/view/add/modify linkage passes",
+                      #                  "and ground truth variables for that algorithm, and may also use the algorithm",
+                      #                  "to perform data linkage. If Disabled, the algorithm, and passes will be ignored,",
+                      #                  "and it may not be used for data linkage."),
+                      #            placement = "right",
+                      #            options = list(container = "body")
+                      # ))
                     )
                   ),
-                  column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables", class = "btn-info"),
+                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                      actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes", class = "btn-success", width = validateCssUnit(300)),
 
-                      # Add the popover manually
-                      h1(tooltip(bs_icon("question-circle"),
-                                 paste("View, add, and modify the ground truth variables for this algorithm."),
-                                 placement = "right",
-                                 options = list(container = "body")
-                      ))
+                      # # Add the popover manually
+                      # h1(tooltip(bs_icon("question-circle"),
+                      #            paste("View, add, and modify the individual passes for this algorithm."),
+                      #            placement = "right",
+                      #            options = list(container = "body")
+                      # ))
                     )
                   ),
-                  column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("linkage_algorithms_to_audits", "Saved Performance Measures", class = "btn-info"),
+                ),
+              )
+            )
+          ),
+          HTML("<br>"),
+          # Create a card for editing/viewing algorithm output information
+          div(style = "display: flex; justify-content: center; align-items: center;",
+            card(
+              width = 1,
+              height = 125,
+              full_screen = FALSE,
+              card_header("View/Edit Algorithm Output Information", class = 'bg-dark'),
+              card_body(
+                fluidRow(
+                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                      actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables", class = "btn-info", width = validateCssUnit(300)),
 
-                      # Add the popover manually
-                      h1(tooltip(bs_icon("question-circle"),
-                                 paste("View and export saved performance measure audits for this algorithm."),
-                                 placement = "right",
-                                 options = list(container = "body")
-                      ))
+                      # # Add the popover manually
+                      # h1(tooltip(bs_icon("question-circle"),
+                      #            paste("View, add, and modify the ground truth variables for this algorithm."),
+                      #            placement = "right",
+                      #            options = list(container = "body")
+                      # ))
+                    )
+                  ),
+                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output", class = "btn-info", width = validateCssUnit(300)),
+
+                      # # Add the popover manually
+                      # h1(tooltip(bs_icon("question-circle"),
+                      #            paste("View, add, and modify the algorithms output fields."),
+                      #            placement = "right",
+                      #            options = list(container = "body")
+                      # ))
+                    )
+                  ),
+                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                      actionButton("linkage_algorithms_to_audits", "Saved Performance Measures", class = "btn-info", width = validateCssUnit(300)),
+
+                      # # Add the popover manually
+                      # h1(tooltip(bs_icon("question-circle"),
+                      #            paste("View and export saved performance measure audits for this algorithm."),
+                      #            placement = "right",
+                      #            options = list(container = "body")
+                      # ))
                     )
                   )
                 )
@@ -546,6 +607,35 @@ linkage_ui <- page_navbar(
         # Conditional panel for if a row wasn't selected
         conditionalPanel(
           condition = "input.currently_added_linkage_algorithms_rows_selected <= 0",
+
+          # Section for running algorithms that are enabled for testing
+          h5(strong("Or, run linkage algorithms here:")),
+          h6(p(strong("Note: "), paste("Algorithms that are enabled for testing will be run together."))),
+          div(style = "display: flex; justify-content: center; align-items: center;",
+            card(
+              width = 1,
+              height = 125,
+              full_screen = FALSE,
+              card_header("Run Algorithms", class = 'bg-dark'),
+              card_body(
+                fluidRow(
+                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                      actionButton("run_default_algorithm", "Run Default Algorithm", class = "btn-warning", width = validateCssUnit(400)),
+                    )
+                  ),
+                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                      actionButton("run_enabled_for_testing_algorithms", "Run Algorithm(s) Enabled for Testing", class = "btn-warning", width = validateCssUnit(400)),
+                    )
+                  ),
+                )
+              )
+            )
+          ),
+
+          # Line break between sections
+          HTML("<br><br>"),
+
+          # Section for adding a new algorithm
           h5(strong("Or, create an empty linkage algorithm here:")),
           h6(p(strong("Note 1: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
           h6(p(strong("Note 2: "), paste("One algorithm may be enabled at a time, creating a new algorithm will require you to enable it manually"))),
@@ -745,7 +835,7 @@ linkage_ui <- page_navbar(
             width = 1,
             height = 125,
             full_screen = FALSE,
-            card_header("Iteration Specific Information"),
+            card_header("Iteration Specific Information", class = "bg-dark"),
             card_body(
               fluidRow(
                 column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
@@ -1210,6 +1300,87 @@ linkage_ui <- page_navbar(
   ),
   #----
   #---------------------------------#
+
+  #-- LINKAGE ALGORITHM OUTPUT FIELDS PAGE --#
+  #----
+  nav_panel(title = "Linkage Algorithm Output Fields", value = "linkage_algorithm_output_page",
+    fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+          actionButton("linkage_algorithm_output_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some space
+      HTML("<br>"),
+
+      # Render the data table of this algorithms ground truth variables
+      h5(strong("Select The Linkage Algorithm Output Field(s) to Drop:")),
+      h6(p(strong("NOTE: "), "No duplicate fields allowed.")),
+      dataTableOutput("currently_added_algorithm_output_fields"),
+
+      # If no row is selected, the user can enter a new output field + type
+      conditionalPanel(
+        condition = "input.currently_added_algorithm_output_fields_rows_selected <= 0",
+
+        # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
+        div(style = "display: flex; justify-content: center; align-items: center;",
+          card(width = 1, height = 350, full_screen = FALSE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+            fluidPage(
+              fluidRow(
+                column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                    uiOutput("linkage_algorithm_output_field_input"),
+                  )
+                ),
+                column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                    textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
+                                  width = validateCssUnit(500), resize = "none"),
+                  )
+                ),
+                column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                    selectInput("linkage_algorithm_output_field_type", label = "Field Type:",
+                    choices = list("Generic" = 1,
+                                   "Date" = 2,
+                                   "Age" = 3,
+                                   "Postal Code" = 4,
+                                   "Name Length" = 5,
+                                   "Age (Birth Year)" = 6,
+                                   "Age (Birth Month)" = 7,
+                                   "Age (Birth Day)" = 8),
+                    selected = 1,
+                    width = validateCssUnit(300)),
+                  )
+                ),
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    actionButton("add_linkage_algorithm_output_field", "Add Output Field", class = "btn-success"),
+                  )
+                )
+              )
+            )
+          )
+        )
+      ),
+      # If a row is selected, the user can drop the selected pair of ground truth variables
+      conditionalPanel(
+        condition = "input.currently_added_algorithm_output_fields_rows_selected > 0",
+
+        # Show a card for users to drop the selected row
+        div(style = "display: flex; justify-content: center; align-items: center;",
+          card(width = 0.25, max_height = 125, full_screen = FALSE, card_header("Drop Linkage Output Fields", class = 'bg-dark'),
+            fluidPage(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("drop_linkage_algorithm_output_field", "Drop Output Field", class = "btn-danger"),
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ),
+  #----
+  #---------------------------------------------#
 
   #-- ACCEPTANCE METHODS PAGE --#
   #----
@@ -1953,6 +2124,68 @@ linkage_ui <- page_navbar(
   #----
   #------------------------#
 
+  #-- RUN LINKAGE ALGORITHM PAGE --#
+  #----
+  nav_panel(title = "Run Algorithm", value = "run_algorithm_page",
+    fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+          actionButton("run_algorithm_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some breathing room
+      HTML("<br><br>"),
+
+      ### STEP 1
+      h5(strong("Step 1: Provide the Output Folder")),
+      # Create a card for editing/viewing algorithm output information
+      div(style = "display: flex; justify-content: center; align-items: center;",
+        card(
+          width = 1,
+          height = 150,
+          full_screen = FALSE,
+          card_header("Supply Output Location", class = 'bg-dark'),
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                shinyDirButton("linkage_output_dir", "Choose Linkage Output Directory", 'Please Select a Directory')
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                helpText("Select a folder where all output will be saved.")
+              ))
+            ),
+          )
+        )
+      ),
+
+      HTML("<br>"), # Spacing
+
+      # Step 2: Output options
+      fluidRow(
+        column(width = 12, h5(strong("Step 2: Select Output Options"))),
+        column(width = 6, checkboxInput("output_linked_iterations", "Output Linked Iterations", FALSE)),
+        column(width = 6, checkboxInput("output_unlinked_iteration_pairs", "Output Unlinked Iterations", FALSE)),
+        column(width = 6, checkboxInput("generate_linkage_report", "Generate Linkage Quality Report", FALSE)),
+        column(width = 6, checkboxInput("generate_algorithm_summary", "Generate Algorithm Summary", FALSE))
+      ),
+      HTML("<br>"), # Spacing
+
+      # Step 3: Advanced options (Collapsible)
+      fluidRow(
+        column(width = 12, h5(strong("Step 3: Advanced Options (Optional)"))),
+        column(width = 12, shiny::wellPanel(
+          checkboxInput("calculate_performance_measures", "Calculate Performance Measures", FALSE),
+          textInput("data_linker", label = "Data Linker (Optional)", value = ""),
+          fileInput("standardize_names_file", label = "Standardize Names CSV", accept = ".csv")
+        ))
+      )
+    )
+  ),
+  #----
+  #-------------------------------#
+
   nav_spacer(),
   nav_menu(
     title = "Links",
@@ -1975,13 +2208,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   nav_hide('main_navbar', 'comparison_methods_page')
   nav_hide('main_navbar', 'ground_truth_variables_page')
   nav_hide('main_navbar', 'audits_page')
+  nav_hide('main_navbar', 'linkage_algorithm_output_page')
+  nav_hide('main_navbar', 'run_algorithm_page')
 
   # If the user goes off of an inner tab, hide it
   observeEvent(input$main_navbar, {
     # Get the tabs that are not necessary for the user
     tabs_to_hide <- c("linkage_rule_page", "acceptance_rules_page", "comparison_rules_page",
                       "view_linkage_iterations_page", "add_linkage_iterations_page", "update_linkage_iterations_page",
-                      "acceptance_methods_page", "comparison_methods_page", "ground_truth_variables_page", "audits_page")
+                      "acceptance_methods_page", "comparison_methods_page", "ground_truth_variables_page", "audits_page",
+                      "linkage_algorithm_output_page", "run_algorithm_page")
     selected_panel <- input$main_navbar
 
     # Hide the page if its not the one you're currently on
@@ -2009,8 +2245,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   names(uploaded_fields_df)[names(uploaded_fields_df) == 'field_type'] <- 'Field Type'
   names(uploaded_fields_df)[names(uploaded_fields_df) == 'field_width'] <- 'Field Width'
 
-  # Reactive value for the file path
+  # Reactive value for the file path (ADD)
   file_path <- reactiveValues(
+    path=NULL
+  )
+
+  # Reactive value for the file path (UPDATE)
+  file_path_update <- reactiveValues(
     path=NULL
   )
 
@@ -2026,6 +2267,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     names(df)[names(df) == 'version'] <- 'Version'
     names(df)[names(df) == 'is_fwf'] <- 'Is Fixed-Width'
     names(df)[names(df) == 'enabled_for_linkage'] <- 'Enabled'
+    names(df)[names(df) == 'dataset_location'] <- 'Local Dataset File Location'
 
     # With datasets, we'll replace the enabled [0, 1] with [No, Yes]
     df$Enabled <- str_replace(df$Enabled, "0", "No")
@@ -2414,7 +2656,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     #----#
   })
 
-  # Allows user to upload a file for grabbing column names
+  # Allows user to upload a file for grabbing column names and storing path
   observeEvent(input$add_dataset_file,{
     tryCatch({
       file_path$path <- file.choose()
@@ -2424,19 +2666,42 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     })
   })
 
+  # Allows user to upload a file for updating path
+  observeEvent(input$update_dataset_file,{
+    tryCatch({
+      file_path_update$path <- file.choose()
+    },
+    error = function(e){
+      file_path_update$path <- NULL
+    })
+  })
+
   # Render the uploaded file
   observe({
-    uploaded_file <- file_path$path
+    uploaded_file_add    <- file_path$path
+    uploaded_file_update <- file_path_update$path
 
-    # Uploaded dataset file
-    if(is.null(uploaded_file)){
+    # Uploaded dataset file (ADD)
+    if(is.null(uploaded_file_add)){
       output$uploaded_file_name <- renderText({
         "No File Uploaded"
       })
     }
     else{
       output$uploaded_file_name <- renderText({
-        basename(uploaded_file)
+        uploaded_file_add
+      })
+    }
+
+    # Uploaded dataset file (UPDATE)
+    if(is.null(uploaded_file_update)){
+      output$uploaded_file_name_update <- renderText({
+        "No File Uploaded"
+      })
+    }
+    else{
+      output$uploaded_file_name_update <- renderText({
+        uploaded_file_update
       })
     }
   })
@@ -2457,6 +2722,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Make sure the inputs are good
     if(dataset_code == "" || dataset_name == "" || is.na(dataset_vers) || is.null(dataset_file)){
       showNotification("Failed to Add Dataset - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure the uploaded file is actually a file
+    if(!file.exists(dataset_file)){
+      showNotification("Failed to Add Dataset - File Does Not Exist", type = "error", closeButton = FALSE)
       return()
     }
 
@@ -2486,10 +2757,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       # Create a new entry query for entering into the database
       #----#
       dataset_vers <- paste0("v", dataset_vers)
-      new_entry_query <- paste("INSERT INTO datasets (dataset_code, dataset_name, version, is_fwf, enabled_for_linkage)",
-                               "VALUES(?, ?, ?, ? ,1);")
+      new_entry_query <- paste("INSERT INTO datasets (dataset_code, dataset_name, version, is_fwf, enabled_for_linkage, dataset_location)",
+                               "VALUES(?, ?, ?, ?, 1, ?);")
       new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-      dbBind(new_entry, list(dataset_code, dataset_name, dataset_vers, dataset_is_fwf))
+      dbBind(new_entry, list(dataset_code, dataset_name, dataset_vers, dataset_is_fwf, dataset_file))
       dbClearResult(new_entry)
       #----#
 
@@ -2582,6 +2853,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dataset_code <- df[row_selected, "dataset_code"]
     dataset_name <- df[row_selected, "dataset_name"]
     version <- df[row_selected, "version"]
+    dataset_path <- df[row_selected, "dataset_location"]
 
     # Convert the version string to a number
     version <- sub('.', '', version)
@@ -2591,6 +2863,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     updateTextAreaInput(session, "update_dataset_code",    value = dataset_code)
     updateTextAreaInput(session, "update_dataset_name",    value = dataset_name)
     updateNumericInput(session,  "update_dataset_vers",    value = version_num)
+    output$uploaded_file_name_update <- renderText({
+      dataset_path
+    })
+    file_path_update$path <- dataset_path
   })
 
   # Updates an existing record in the 'datasets' table
@@ -2601,6 +2877,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     dataset_name <- input$update_dataset_name
     dataset_vers <- input$update_dataset_vers
     selected_row <- input$currently_added_datasets_rows_selected
+    dataset_file <- file_path_update$path
 
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets
                                                 ORDER BY dataset_id ASC'))
@@ -2617,13 +2894,19 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     num_of_databases <- nrow(output_df)
     dbClearResult(get_query)
     if(num_of_databases != 0){
-      showNotification("Failed to Add Dataset - Dataset Code Already in Use", type = "error", closeButton = FALSE)
+      showNotification("Failed to Update Dataset - Dataset Code Already in Use", type = "error", closeButton = FALSE)
       return()
     }
 
     # Make sure the inputs are good
-    if(dataset_code == "" || dataset_name == "" || is.na(dataset_vers)){
-      showNotification("Failed to Add Dataset - Some Inputs are Missing", type = "error", closeButton = FALSE)
+    if(dataset_code == "" || dataset_name == "" || is.na(dataset_vers) || is.null(dataset_file)){
+      showNotification("Failed to Update Dataset - Some Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Make sure the dataset file exists
+    if(!file.exists(dataset_file)){
+      showNotification("Failed to Update Dataset - File Does Not Exist", type = "error", closeButton = FALSE)
       return()
     }
     #----#
@@ -2859,11 +3142,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     names(df)[names(df) == 'algorithm_name'] <- 'Algorithm Name'
     names(df)[names(df) == 'modified_date'] <- 'Modified Date'
     names(df)[names(df) == 'modified_by'] <- 'Modified By'
-    names(df)[names(df) == 'enabled'] <- 'Enabled'
 
     # With algorithms, we'll replace the enabled [0, 1] with [No, Yes]
-    df$Enabled <- str_replace(df$Enabled, "0", "No")
-    df$Enabled <- str_replace(df$Enabled, "1", "Yes")
+    df$enabled <- str_replace(df$enabled, "0", "No")
+    df$enabled <- str_replace(df$enabled, "1", "Yes")
+    df$enabled_for_testing <- str_replace(df$enabled_for_testing, "0", "No")
+    df$enabled_for_testing <- str_replace(df$enabled_for_testing, "1", "Yes")
+
+    # Rename the remaining columns
+    names(df)[names(df) == 'enabled'] <- 'Enabled as Default Algorithm'
+    names(df)[names(df) == 'enabled_for_testing'] <- 'Enabled for Testing'
 
     # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
     df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right))
@@ -3051,7 +3339,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       dbClearResult(get_query)
 
       if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
-        showNotification("Failed to Enable Algorithm - Algorithm with the same name is already enabled", type = "error", closeButton = FALSE)
+        showNotification("Failed to Set Algorithm as Default - Algorithm with the same name is already enabled", type = "error", closeButton = FALSE)
         return()
       }
       #----#
@@ -3076,9 +3364,83 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Send a success notification
     #----#
     if(enabled_value == 1){
-      showNotification("Algorithm Successfully Disabled", type = "message", closeButton = FALSE)
+      showNotification("Algorithm Successfully Removed from being the Default Linkage Algorithm", type = "message", closeButton = FALSE)
     }else{
-      showNotification("Algorithm Successfully Enabled", type = "message", closeButton = FALSE)
+      showNotification("Algorithm Successfully Set as the Default Linkage Algorithm", type = "message", closeButton = FALSE)
+    }
+  })
+
+  # Toggle the selected linkage algorithm to be used for testing
+  observeEvent(input$toggle_algorithm_for_testing, {
+    # Get the row that we're supposed to be toggling
+    #----#
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    algorithm_id <- df[selected_row, "algorithm_id"]
+    algorithm_name <- df[selected_row, "algorithm_name"]
+    enabled_value <- df[selected_row, "enabled_for_testing"]
+    #----#
+
+    # Create a query for updating the enabled value of the record
+    #----#
+    if(enabled_value == 1){
+      update_query <- paste("UPDATE linkage_algorithms
+                          SET enabled_for_testing = 0
+                          WHERE algorithm_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(algorithm_id))
+      dbClearResult(update)
+    }else{
+      # Disable all algorithms for the selected data sets,
+      update_query <- paste("UPDATE linkage_algorithms
+                          SET enabled_for_testing = 0
+                          WHERE dataset_id_left = ? AND dataset_id_right = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(left_dataset_id, right_dataset_id))
+      dbClearResult(update)
+
+      # Error handling - don't allow user to have two algorithms enabled with the same name
+      #----#
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND enabled_for_testing = 1;')
+      dbBind(get_query, list(algorithm_name))
+      output_df <- dbFetch(get_query)
+      enabled_databases <- nrow(output_df)
+      dbClearResult(get_query)
+
+      if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
+        showNotification("Failed to Enabled Algorithm for Testing - Algorithm with the same name is already enabled", type = "error", closeButton = FALSE)
+        return()
+      }
+      #----#
+
+      # Set the selected algorithm ID to be enabled
+      update_query <- paste("UPDATE linkage_algorithms
+                          SET enabled_for_testing = 1
+                          WHERE algorithm_id = ?")
+      update <- dbSendStatement(linkage_metadata_conn, update_query)
+      dbBind(update, list(algorithm_id))
+      dbClearResult(update)
+    }
+    #----#
+
+    # Re-render data tables and reset UI
+    #----#
+    output$currently_added_linkage_algorithms <- renderDataTable({
+      get_linkage_algorithms()
+    })
+    #----#
+
+    # Send a success notification
+    #----#
+    if(enabled_value == 1){
+      showNotification("Algorithm Successfully Disabled from Testing", type = "message", closeButton = FALSE)
+    }else{
+      showNotification("Algorithm Successfully Enabled for Testing", type = "message", closeButton = FALSE)
     }
   })
 
@@ -3143,6 +3505,60 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
     # Show the iterations page
     nav_show('main_navbar', 'audits_page')
     updateNavbarPage(session, "main_navbar", selected = "audits_page")
+  })
+
+  # View and edit the algorithm output fields
+  observeEvent(input$linkage_algorithms_to_algorithm_output, {
+    # Get the selected row
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    # Grab the algorithm id
+    algorithm_id <- df[selected_row, "algorithm_id"]
+
+    # Update the global variable for the acceptance method id and the return page
+    algorithm_output_fields_algorithm_id <<- algorithm_id
+    algorithm_output_fields_dataset_id   <<- left_dataset_id
+    algorithm_output_fields_return_page  <<- "linkage_algorithms_page"
+
+    # Update the table of iterations on that page
+    output$currently_added_algorithm_output_fields <- renderDataTable({
+      get_algorithm_output_fields()
+    })
+    output$linkage_algorithm_output_field_input <- renderUI({
+      get_algorithm_output_fields_input()
+    })
+
+    # Show the iterations page
+    nav_show('main_navbar', 'linkage_algorithm_output_page')
+    updateNavbarPage(session, "main_navbar", selected = "linkage_algorithm_output_page")
+  })
+
+  # Run the default algorithm button
+  observeEvent(input$run_default_algorithm, {
+    # Get the selected row
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id, 'AND enabled = 1',
+                                               'ORDER BY algorithm_id ASC'))
+
+    # Grab the algorithm id
+    algorithm_id <- df$algorithm_id
+
+    # Update the global variable for the acceptance method id and the return page
+    algorithms_to_run              <<- algorithm_id
+    run_algorithm_left_dataset_id  <<- left_dataset_id
+    run_algorithm_right_dataset_id <<- right_dataset_id
+    run_algorithm_return_page      <<- "linkage_algorithms_page"
+
+    # Show the iterations page
+    nav_show('main_navbar', 'run_algorithm_page')
+    updateNavbarPage(session, "main_navbar", selected = "run_algorithm_page")
   })
   #----
   #------------------------------------#
@@ -3822,6 +4238,168 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
   #----
   #-----------------------------------------------#
+
+  #-- LINKAGE ALGORITHM OUTPUT FIELDS PAGE EVENTS --#
+  #----
+  algorithm_output_fields_algorithm_id <- 1
+  algorithm_output_fields_dataset_id   <- 1
+  algorithm_output_fields_return_page  <- "linkage_algorithms_page"
+
+  # Back button will bring you back to whichever page you came from
+  observeEvent(input$linkage_algorithm_output_back, {
+    # Show return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = algorithm_output_fields_return_page)
+  })
+
+  # Function for creating the table of the currently selected algorithms iterations
+  get_algorithm_output_fields <- function(){
+    algorithm_id <- modify_ground_truth_algorithm_id
+
+    # Query to get blocking variables with left and right dataset field names
+    query <- paste('SELECT field_name, dataset_label, la.field_type FROM linkage_algorithms_output_fields la
+                   JOIN dataset_fields df on la.dataset_field_id = df.field_id
+                   WHERE algorithm_id =', algorithm_output_fields_algorithm_id,
+                   'ORDER BY parameter_id ASC')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Change the field type by replacing it with values
+    df$field_type[df$field_type == 1] <- 'General'
+    df$field_type[df$field_type == 2] <- 'Date'
+    df$field_type[df$field_type == 3] <- 'Age'
+    df$field_type[df$field_type == 4] <- 'Postal Code'
+    df$field_type[df$field_type == 5] <- 'Name Length'
+    df$field_type[df$field_type == 6] <- 'Age (Birth Year)'
+    df$field_type[df$field_type == 7] <- 'Age (Birth Month)'
+    df$field_type[df$field_type == 8] <- 'Age (Birth Day)'
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'field_name'] <- 'Field Source Name'
+    names(df)[names(df) == 'dataset_label'] <- 'Field Output Label'
+    names(df)[names(df) == 'field_type'] <- 'Field Type'
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+  }
+
+  # Renders the data table of iterations that can be modified
+  output$currently_added_algorithm_output_fields <- renderDataTable({
+    get_algorithm_output_fields()
+  })
+
+  # Creates the select input UI for available left fields
+  get_algorithm_output_fields_input <- function(){
+
+    # Perform query using linkage_metadata_conn
+    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", algorithm_output_fields_dataset_id))
+
+    # Extract columns from query result
+    choices <- setNames(query_result$field_id, query_result$field_name)
+
+    # Create select input with dynamic choices
+    span(selectizeInput("algorithm_output_field", label = "Output Dataset Field:",
+                        choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                        options = list(
+                          placeholder = 'Select an Output Field',
+                          onInitialize = I('function() { this.setValue(""); }')
+                        )))
+  }
+
+  # Renders the UI for the left ground truth field add select input
+  output$linkage_algorithm_output_field_input <- renderUI({
+    get_algorithm_output_fields_input()
+  })
+
+  # Adds the provided output field, label, and type into the database
+  observeEvent(input$add_linkage_algorithm_output_field, {
+    # Get the input values
+    algorithm_id      <- algorithm_output_fields_algorithm_id
+    dataset_field_id  <- input$algorithm_output_field
+    dataset_label     <- trimws(input$linkage_algorithm_output_field_label)
+    field_type        <- input$linkage_algorithm_output_field_type
+
+    # Error handling
+    #----#
+    # Make sure valid inputs were passed
+    if(dataset_field_id == '' || dataset_label == ''){
+      showNotification("Failed to Add Linkage Algorithm Output Field - Missing Input(s)", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Convert dataset id and field type to integers
+    dataset_field_id <- as.numeric(dataset_field_id)
+    field_type <- as.numeric(field_type)
+
+    # Make sure this ground truth variable isn't already being used
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms_output_fields
+                                                  WHERE algorithm_id = ? AND dataset_field_id = ? AND field_type = ?;')
+    dbBind(get_query, list(algorithm_id, dataset_field_id, field_type))
+    output_df <- dbFetch(get_query)
+    num_of_rows <- nrow(output_df)
+    dbClearResult(get_query)
+    if(num_of_rows != 0){
+      showNotification("Failed to Add Linkage Algorithm Output Field - Field and Field Type Already in Use", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Create a new entry query for entering into the database
+    #----#
+    new_entry_query <- paste("INSERT INTO linkage_algorithms_output_fields (algorithm_id, dataset_field_id, dataset_label, field_type)",
+                             "VALUES(?, ?, ?, ?);")
+    new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+    dbBind(new_entry, list(algorithm_id, dataset_field_id, dataset_label, field_type))
+    dbClearResult(new_entry)
+    #----#
+
+    ## Reset Data Tables, UI Renders, and global variables
+    #----#
+    output$currently_added_algorithm_output_fields <- renderDataTable({
+      get_algorithm_output_fields()
+    })
+    output$linkage_algorithm_output_field_input <- renderUI({
+      get_algorithm_output_fields_input()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Linkage Algorithm Output Field Successfully Added", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Drops the selected pair of ground truth fields
+  observeEvent(input$drop_linkage_algorithm_output_field, {
+    algorithm_id <- algorithm_output_fields_algorithm_id
+    selected_row <- input$currently_added_algorithm_output_fields_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms_output_fields
+                                                WHERE algorithm_id =', algorithm_id,
+                                                  'ORDER BY parameter_id ASC'))
+    # Get the fields to delete
+    parameter_id  <- df$parameter_id[selected_row]
+
+    # Create a new entry query for deleting the blocking variable
+    #----#
+    delete_query <- paste("DELETE FROM linkage_algorithms_output_fields
+                          WHERE parameter_id = ?")
+    delete <- dbSendStatement(linkage_metadata_conn, delete_query)
+    dbBind(delete, list(parameter_id))
+    dbClearResult(delete)
+    #----#
+
+    # Update Data Tables and UI Renders
+    #----#
+    output$currently_added_algorithm_output_fields <- renderDataTable({
+      get_algorithm_output_fields()
+    })
+    #----#
+
+    # Show success notification
+    #----#
+    showNotification("Linkage Algorithm Output Field Successfully Deleted", type = "message", closeButton = FALSE)
+    #----#
+  })
+  #----
+  #-------------------------------------------------#
 
   #-- VIEW LINKAGE ITERATIONS PAGE EVENTS --#
   #----
@@ -9213,6 +9791,20 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   })
   #----
   #-------------------------------#
+
+  #-- RUN LINKAGE ALGORITHMS PAGE EVENTS --#
+  #----
+  # Variables for this page
+  algorithms_to_run <- c()
+  run_algorithm_left_dataset_id <- 1
+  run_algorithm_right_dataset_id <- 1
+  run_algorithm_return_page  <- "linkage_algorithms_page"
+
+  # Linkage Output Directory Chooser
+  volumes <- getVolumes()()
+  shinyDirChoose(input, 'linkage_output_dir', roots=volumes, filetypes=c('', 'txt'), allowDirCreate = F)
+  #----
+  #----------------------------------------#
 
   observeEvent(input$file_test_input, {
     #shinyFiles::shinyDirChoose(input = input, id = file_test_input, session = session) # This needs to use a shinyDirButton() call and use its ID

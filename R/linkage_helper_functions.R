@@ -442,8 +442,8 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
 #' Get Standardized Names
 #'
 #' The get_standardized_names() function will take in a standardizing names file in
-#' the form of the csv which must contain the columns 'START' which indicates all possible
-#' forms of a common name, and a column 'LABEL' which is the most common spelling of that
+#' the form of the csv which must contain the columns 'unique' which indicates all possible
+#' forms of a common name, and a column 'common' which is the most common spelling of that
 #' name which it will be standardized to. If no spelling is found, the name is replaced with
 #' NA
 #' @param file_path A path to the .csv file that will be read
@@ -456,13 +456,21 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
 #' @export
 get_standardized_names <- function(file_path, data_field, lookupvector = common_standardized_names){
   # Read in the standardization data frame
-  standardization_df <- fread(file_path, select = c("START","LABEL"))
+  standardization_df <- data.frame()
+  if(!is.null(file_path)){
+    standardization_df <- fread(file_path, select = c("unique","common"))
+  }
+  else{
+    # Load the internal dataset without affecting the global environment
+    data("datalink_standardized_names", package = "datalink", envir = environment())
+    standardization_df <- datalink_standardized_names
+  }
 
   # Get the common standardized names
-  common_standardized_names <- standardization_df$LABEL
+  common_standardized_names <- standardization_df$common
 
   # Determine if any of our passed names from our data_field have a common spelling
-  names(common_standardized_names) <- tolower(standardization_df$START)
+  names(common_standardized_names) <- tolower(standardization_df$unique)
   standardized_names <- unname(lookupvector[tolower(data_field)])
 
   # Clean up and return the names
@@ -524,6 +532,7 @@ load_linkage_file <- function(dataset_file){
 #' @param output_linkage_iterations A TRUE or FALSE value for whether you'd like each iteration to write the linked pairs (UNEDITED) to the output directory.
 #' @param output_unlinked_iteration_pairs A TRUE or FALSE value for whether you'd like each iteration to write the unlinked pairs (UNEDITED) to the output directory
 #' @param generate_linkage_report A TRUE or FALSE value for whether you'd like a Linkage Quality Report to be generated and written to the output directory (from the linkrep package).
+#' @param calculate_performance_measures A TRUE or FALSE value for whether you'd like to calculate and export performance measures from the algorithms being run.
 #' @param data_linker A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).
 #' @param standardize_names_file_path A path to a CSV containing common alternative spellings of names that will standardize to a singular spelling. Must have the columns 'START' and 'LABEL'.
 #' @param generate_algorithm_summary A TRUE or FALSE value for whether you'd like to export a CSV summary of the algorithm that was run.
@@ -534,6 +543,7 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          output_linkage_iterations = FALSE,
                                          output_unlinked_iteration_pairs = FALSE,
                                          generate_linkage_report = FALSE,
+                                         calculate_performance_measures = FALSE,
                                          data_linker = NULL,
                                          standardize_names_file_path = NULL,
                                          generate_algorithm_summary = FALSE){
@@ -567,6 +577,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!isFALSE(generate_linkage_report) && !is.na(generate_linkage_report) && !is.null(generate_linkage_report) &&
      (isTRUE(generate_linkage_report) || generate_linkage_report == "TRUE")){
     extra_params_list[["generate_linkage_report"]] <- TRUE
+  }
+
+  ### Calculate performance measures
+  if(!isFALSE(calculate_performance_measures) && !is.na(calculate_performance_measures) && !is.null(calculate_performance_measures) &&
+     (isTRUE(calculate_performance_measures) || calculate_performance_measures == "TRUE")){
+    extra_params_list[["calculate_performance_measures"]] <- TRUE
   }
 
   ### Data Linker Name
