@@ -512,9 +512,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         ### Returned the greedy select dataset
         return_list[["unlinked_dataset_pairs"]] <- linkage_pairs
 
-        ### Return the unmodified linked dataset
-        return_list[["linked_dataset"]] <- linked_dataset
-
         ### Return specificity variables if ground truth was provided
         if(has_ground_truth){
           # Create the specificity table
@@ -532,6 +529,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Store the results vector
           return_list[["performance_measure_variables"]] <- results_vector
         }
+
+        ### Return the unmodified linked dataset
+        return_list[["linked_dataset"]] <- linked_dataset
 
         ### Create the data frame of the fields to be returned
         output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
@@ -1032,7 +1032,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
   )
 )
 
-run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_metadata_file, algorithm_id, extra_parameters){
+run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_metadata_file, algorithm_ids, extra_parameters){
   # Error handling to ensure inputs were provided
   #----#
   if(is.na(left_dataset_file) || is.na(right_dataset_file) || is.null(left_dataset_file) ||
@@ -1041,7 +1041,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     stop("Error: Invalid Datasets were provided.")
   }
 
-  if(is.na(algorithm_id) || is.null(algorithm_id) || !is.numeric(algorithm_id)){
+  if(anyNA(algorithm_ids) || is.null(algorithm_ids) || !is.numeric(algorithm_ids)){
     dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid Algorithm ID was provided.")
   }
@@ -1062,353 +1062,360 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   linkage_metadata_db <- dbConnect(RSQLite::SQLite(), linkage_metadata_file)
   #----
 
-  ### Step 2: Get the iteration IDs using the selected algorithm ID
-  #----
-  iterations_query <- dbSendQuery(linkage_metadata_db, 'SELECT * FROM linkage_iterations
+  # Create data frames for storing ALL algorithm summaries and ALL performance measures
+
+  # For Steps 2-5, we'll run each of our algorithms
+  for(algorithm_id in algorithm_ids){
+    ### Step 2: Get the iteration IDs using the selected algorithm ID
+    #----
+    iterations_query <- dbSendQuery(linkage_metadata_db, 'SELECT * FROM linkage_iterations
                                                         WHERE algorithm_id = $id AND enabled = 1
                                                         ORDER BY iteration_num asc;')
-  dbBind(iterations_query, list(id=algorithm_id))
-  iterations_df <- dbFetch(iterations_query)
-  dbClearResult(iterations_query)
+    dbBind(iterations_query, list(id=algorithm_id))
+    iterations_df <- dbFetch(iterations_query)
+    dbClearResult(iterations_query)
 
-  # Error check, make sure an algorithm with this ID exists
-  if(nrow(iterations_df) <= 0){
-    dbDisconnect(linkage_metadata_db)
-    stop("Error: No iterations found under the provided algorithm, verify that iterations exist and try running again.")
-  }
-  #----
+    # Error check, make sure an algorithm with this ID exists
+    if(nrow(iterations_df) <= 0){
+      dbDisconnect(linkage_metadata_db)
+      stop("Error: No iterations found under the provided algorithm, verify that iterations exist and try running again.")
+    }
+    #----
 
-  ### Step 3: Load in and verify both datasets
-  #----
-  # For the left data set, read the dataset code, grab its fields
-  left_file_name <- basename(left_dataset_file)
-  left_split_file_name <- unlist(strsplit(left_file_name, "[[:punct:]]"))
-  left_dataset_code <- left_split_file_name[1]
+    ### Step 3: Load in and verify both datasets
+    #----
+    # For the left data set, read the dataset code, grab its fields
+    left_file_name <- basename(left_dataset_file)
+    left_split_file_name <- unlist(strsplit(left_file_name, "[[:punct:]]"))
+    left_dataset_code <- left_split_file_name[1]
 
-  get_fields_query_left <- paste("SELECT field_name FROM datasets ds
+    get_fields_query_left <- paste("SELECT field_name FROM datasets ds
                                   JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
                                   WHERE dataset_code = ? AND enabled_for_linkage = 1")
-  left_dataset_fields_statement <- dbSendQuery(linkage_metadata_db, get_fields_query_left)
-  dbBind(left_dataset_fields_statement, list(left_dataset_code))
-  left_dataset_fields <- dbFetch(left_dataset_fields_statement)
-  dbClearResult(left_dataset_fields_statement)
+    left_dataset_fields_statement <- dbSendQuery(linkage_metadata_db, get_fields_query_left)
+    dbBind(left_dataset_fields_statement, list(left_dataset_code))
+    left_dataset_fields <- dbFetch(left_dataset_fields_statement)
+    dbClearResult(left_dataset_fields_statement)
 
-  # For the right dataset, read the dataset code, grab its fields
-  right_file_name <- basename(right_dataset_file)
-  right_split_file_name <- unlist(strsplit(right_file_name, "[[:punct:]]"))
-  right_dataset_code <- right_split_file_name[1]
+    # For the right dataset, read the dataset code, grab its fields
+    right_file_name <- basename(right_dataset_file)
+    right_split_file_name <- unlist(strsplit(right_file_name, "[[:punct:]]"))
+    right_dataset_code <- right_split_file_name[1]
 
-  get_fields_query_right <- paste("SELECT field_name FROM datasets ds
+    get_fields_query_right <- paste("SELECT field_name FROM datasets ds
                                    JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
                                    WHERE dataset_code = ? AND enabled_for_linkage = 1")
-  right_dataset_fields_statement <- dbSendQuery(linkage_metadata_db, get_fields_query_right)
-  dbBind(right_dataset_fields_statement, list(right_dataset_code))
-  right_dataset_fields <- dbFetch(right_dataset_fields_statement)
-  dbClearResult(right_dataset_fields_statement)
+    right_dataset_fields_statement <- dbSendQuery(linkage_metadata_db, get_fields_query_right)
+    dbBind(right_dataset_fields_statement, list(right_dataset_code))
+    right_dataset_fields <- dbFetch(right_dataset_fields_statement)
+    dbClearResult(right_dataset_fields_statement)
 
-  # Read in the left and right dataset
-  left_dataset <- tryCatch({
-    df <- load_linkage_file(left_dataset_file)
-    df
-  },
-  error = function(e){
-    dbDisconnect(linkage_metadata_db)
-    stop("Error: Invalid Left Dataset File.")
-  })
+    # Read in the left and right dataset
+    left_dataset <- tryCatch({
+      df <- load_linkage_file(left_dataset_file)
+      df
+    },
+    error = function(e){
+      dbDisconnect(linkage_metadata_db)
+      stop("Error: Invalid Left Dataset File.")
+    })
 
-  right_dataset <- tryCatch({
-    df <- load_linkage_file(right_dataset_file)
-    df
-  },
-  error = function(e){
-    dbDisconnect(linkage_metadata_db)
-    stop("Error: Invalid Right Dataset File.")
-  })
+    right_dataset <- tryCatch({
+      df <- load_linkage_file(right_dataset_file)
+      df
+    },
+    error = function(e){
+      dbDisconnect(linkage_metadata_db)
+      stop("Error: Invalid Right Dataset File.")
+    })
 
-  # Verify that the column names of the loaded dataset match whats stored in the datasets
-  left_dataset_column_diff     <- setdiff(left_dataset_fields$field_name, colnames(left_dataset))
-  left_dataset_column_diff_alt <- setdiff(colnames(left_dataset), left_dataset_fields$field_name)
-  if(length(left_dataset_column_diff) > 0 || length(left_dataset_column_diff_alt) > 0){
-    dbDisconnect(linkage_metadata_db)
-    stop("Error: Columns Do Not Match In Left Dataset.")
-  }
+    # Verify that the column names of the loaded dataset match whats stored in the datasets
+    left_dataset_column_diff     <- setdiff(left_dataset_fields$field_name, colnames(left_dataset))
+    left_dataset_column_diff_alt <- setdiff(colnames(left_dataset), left_dataset_fields$field_name)
+    if(length(left_dataset_column_diff) > 0 || length(left_dataset_column_diff_alt) > 0){
+      dbDisconnect(linkage_metadata_db)
+      stop("Error: Columns Do Not Match In Left Dataset.")
+    }
 
-  right_dataset_column_diff     <- setdiff(right_dataset_fields$field_name, colnames(right_dataset))
-  right_dataset_column_diff_alt <- setdiff(colnames(right_dataset), right_dataset_fields$field_name)
-  if(length(right_dataset_column_diff) > 0 || length(right_dataset_column_diff_alt) > 0){
-    dbDisconnect(linkage_metadata_db)
-    stop("Error: Columns Do Not Match In Right Dataset.")
-  }
-  #----
+    right_dataset_column_diff     <- setdiff(right_dataset_fields$field_name, colnames(right_dataset))
+    right_dataset_column_diff_alt <- setdiff(colnames(right_dataset), right_dataset_fields$field_name)
+    if(length(right_dataset_column_diff) > 0 || length(right_dataset_column_diff_alt) > 0){
+      dbDisconnect(linkage_metadata_db)
+      stop("Error: Columns Do Not Match In Right Dataset.")
+    }
+    #----
 
-  ### Step 4: For each iteration ID loop through and perform data linkage
-  #----
-  # Keep a value for the number of values that are linked
-  linkage_rate_cumulative_numer <- 0
-  linkage_rate_cumulative_denom <- nrow(left_dataset)
+    ### Step 4: For each iteration ID loop through and perform data linkage
+    #----
+    # Keep a value for the number of values that are linked
+    linkage_rate_cumulative_numer <- 0
+    linkage_rate_cumulative_denom <- nrow(left_dataset)
 
-  # Keep a data frame of all passes for algorithm summary
-  algo_summary <- data.frame(
-    pass = character(),
-    linkage_implementation = character(),
-    blocking_variables = character(),
-    matching_variables = character(),
-    acceptance_threshold = character(),
-    linkage_rate_pass = character(),
-    linkage_rate_total = character()
-  )
-  algo_summary_footnotes <- c()
+    # Keep a data frame of all passes for algorithm summary
+    algo_summary <- data.frame(
+      pass = character(),
+      linkage_implementation = character(),
+      blocking_variables = character(),
+      matching_variables = character(),
+      acceptance_threshold = character(),
+      linkage_rate_pass = character(),
+      linkage_rate_total = character()
+    )
+    algo_summary_footnotes <- c()
 
-  # Keep a vector of performance measure values
-  performance_measures <- c(TP = 0, TN = 0, FP = 0, FN = 0)
+    # Keep a vector of performance measure values
+    performance_measures <- c(TP = 0, TN = 0, FP = 0, FN = 0)
 
-  # Keep a data frame of all passes for final output
-  output_df <- data.frame()
-  for(row_num in 1:nrow(iterations_df)){
-    # Get the current row
-    row <- iterations_df[row_num,]
+    # Keep a data frame of all passes for final output
+    output_df <- data.frame()
+    for(row_num in 1:nrow(iterations_df)){
+      # Get the current row
+      row <- iterations_df[row_num,]
 
-    # Get the current iteration priority
-    curr_iteration_priority <- row$iteration_num
+      # Get the current iteration priority
+      curr_iteration_priority <- row$iteration_num
 
-    # Get the current iteration_id
-    curr_iteration_id <- row$iteration_id
+      # Get the current iteration_id
+      curr_iteration_id <- row$iteration_id
 
-    # Get the current iteration_name
-    curr_iteration_name <- row$iteration_name
+      # Get the current iteration_name
+      curr_iteration_name <- row$iteration_name
 
-    # Get the implementation class name to decide which linkage implementation to call
-    implementation_name <- get_implementation_name(linkage_db = linkage_metadata_db, iteration_id = curr_iteration_id)
+      # Get the implementation class name to decide which linkage implementation to call
+      implementation_name <- get_implementation_name(linkage_db = linkage_metadata_db, iteration_id = curr_iteration_id)
 
-    # Retrieve the class definition from the implementation name string
-    class_obj <- get(implementation_name)
+      # Retrieve the class definition from the implementation name string
+      class_obj <- get(implementation_name)
 
-    # Instantiate the class object
-    linkage_implementation <- class_obj$new()
+      # Instantiate the class object
+      linkage_implementation <- class_obj$new()
 
-    # Track start time so that we may make note of how long each pass takes
-    start_time = proc.time()
+      # Track start time so that we may make note of how long each pass takes
+      start_time = proc.time()
 
-    # Call the run_iteration method implemented by the desired class
-    results <- linkage_implementation$run_iteration(left_dataset, right_dataset, linkage_metadata_db, curr_iteration_id, algorithm_id, extra_parameters)
+      # Call the run_iteration method implemented by the desired class
+      results <- linkage_implementation$run_iteration(left_dataset, right_dataset, linkage_metadata_db, curr_iteration_id, algorithm_id, extra_parameters)
 
-    # Track the end time time and get the difference
-    end_time = proc.time()
+      # Track the end time time and get the difference
+      end_time = proc.time()
 
-    # Format the time difference to two decimal places
-    formatted_time <- format(round((end_time - start_time)[3], 3), nsmall = 3)
+      # Format the time difference to two decimal places
+      formatted_time <- format(round((end_time - start_time)[3], 3), nsmall = 3)
 
-    # Print a success message for linking record pairs
-    print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished in ", formatted_time, " seconds"))
+      # Print a success message for linking record pairs
+      print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished in ", formatted_time, " seconds"))
 
-    ### STORE INFORMATION FOR ALGORITHM SUMMARY
-    # Get the implementation name
-    linkage_method <- get_linkage_technique(linkage_metadata_db, curr_iteration_id)
-    linkage_method_desc <- get_linkage_technique_description(linkage_metadata_db, curr_iteration_id)
-    linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
-    algo_summary_footnotes <- append(algo_summary_footnotes, linkage_footnote)
+      ### STORE INFORMATION FOR ALGORITHM SUMMARY
+      # Get the implementation name
+      linkage_method <- get_linkage_technique(linkage_metadata_db, curr_iteration_id)
+      linkage_method_desc <- get_linkage_technique_description(linkage_metadata_db, curr_iteration_id)
+      linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
+      algo_summary_footnotes <- append(algo_summary_footnotes, linkage_footnote)
 
-    # Get the blocking variables
-    blocking_fields_df <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
-    blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
+      # Get the blocking variables
+      blocking_fields_df <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
+      blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
 
-    # Get the matching variables
-    matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
+      # Get the matching variables
+      matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
                               JOIN dataset_fields on field_id = left_dataset_field_id
                               WHERE iteration_id =', curr_iteration_id)
-    matching_df <- dbGetQuery(linkage_metadata_db, matching_query)
+      matching_df <- dbGetQuery(linkage_metadata_db, matching_query)
 
-    # Loop through each matching variable to get its comparison methods
-    for(j in 1:nrow(matching_df)){
-      # Get the comparison_rule_id for this row
-      comparison_rule_id <- matching_df$comparison_rule_id[j]
-      if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
-        # Query to get the acceptance method name from the comparison_rules table
-        method_query <- paste('SELECT method_name FROM comparison_rules cr
+      # Loop through each matching variable to get its comparison methods
+      for(j in 1:nrow(matching_df)){
+        # Get the comparison_rule_id for this row
+        comparison_rule_id <- matching_df$comparison_rule_id[j]
+        if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
+          # Query to get the acceptance method name from the comparison_rules table
+          method_query <- paste('SELECT method_name FROM comparison_rules cr
                              JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
                              WHERE comparison_rule_id =', comparison_rule_id)
+          method_name <- dbGetQuery(linkage_metadata_db, method_query)$method_name
+
+          # Query to get the associated parameters for the comparison_rule_id
+          params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+          params_df <- dbGetQuery(linkage_metadata_db, params_query)
+
+          # Combine the parameters into a string
+          params_str <- paste(params_df$parameter, collapse = ", ")
+
+          # Create the final string "method_name (key1=value1, key2=value2)"
+          method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+
+          # Replace the comparison_rule_id with the method and parameters string
+          matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+        }
+      }
+
+      matching_fields <- paste(matching_df$field_name, collapse = ", ")
+
+      # Get the acceptance threshold
+      acceptance_query <- paste('SELECT * FROM linkage_iterations
+                               WHERE iteration_id =', curr_iteration_id,
+                                'ORDER BY iteration_num ASC;')
+      acceptance_df <- dbGetQuery(linkage_metadata_db, acceptance_query)
+      acceptance_rule_id <- acceptance_df$acceptance_rule_id
+      acceptance_threshold <- ""
+
+      if (nrow(acceptance_df) > 0 && !is.na(acceptance_rule_id)) {
+        # Query to get the acceptance method name from the acceptance_rules table
+        method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                             WHERE acceptance_rule_id =', acceptance_rule_id)
         method_name <- dbGetQuery(linkage_metadata_db, method_query)$method_name
 
-        # Query to get the associated parameters for the comparison_rule_id
-        params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+        # Query to get the associated parameters for the acceptance_rule_id
+        params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
         params_df <- dbGetQuery(linkage_metadata_db, params_query)
 
         # Combine the parameters into a string
         params_str <- paste(params_df$parameter, collapse = ", ")
 
         # Create the final string "method_name (key1=value1, key2=value2)"
-        method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+        method_with_params <- paste0(method_name, " (", params_str, ")")
 
-        # Replace the comparison_rule_id with the method and parameters string
-        matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
-      }
-    }
-
-    matching_fields <- paste(matching_df$field_name, collapse = ", ")
-
-    # Get the acceptance threshold
-    acceptance_query <- paste('SELECT * FROM linkage_iterations
-                               WHERE iteration_id =', curr_iteration_id,
-                              'ORDER BY iteration_num ASC;')
-    acceptance_df <- dbGetQuery(linkage_metadata_db, acceptance_query)
-    acceptance_rule_id <- acceptance_df$acceptance_rule_id
-    acceptance_threshold <- ""
-
-    if (nrow(acceptance_df) > 0 && !is.na(acceptance_rule_id)) {
-      # Query to get the acceptance method name from the acceptance_rules table
-      method_query <- paste('SELECT method_name FROM acceptance_rules ar
-                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
-                             WHERE acceptance_rule_id =', acceptance_rule_id)
-      method_name <- dbGetQuery(linkage_metadata_db, method_query)$method_name
-
-      # Query to get the associated parameters for the acceptance_rule_id
-      params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
-      params_df <- dbGetQuery(linkage_metadata_db, params_query)
-
-      # Combine the parameters into a string
-      params_str <- paste(params_df$parameter, collapse = ", ")
-
-      # Create the final string "method_name (key1=value1, key2=value2)"
-      method_with_params <- paste0(method_name, " (", params_str, ")")
-
-      # Replace the acceptance_rule_id with the method and parameters string
-      acceptance_threshold <- method_with_params
-    }
-
-    # Get the linkage rate for the pass
-    linkage_rate_pass_numer <- nrow(results[["linked_dataset"]])
-    linkage_rate_pass_denom <- nrow(left_dataset)
-    linkage_rate_pass       <- (linkage_rate_pass_numer/linkage_rate_pass_denom) * 100
-
-    # Get the cumulative linkage rate
-    linkage_rate_cumulative_numer <- linkage_rate_cumulative_numer + linkage_rate_pass_numer
-    linkage_rate_cumulative <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
-
-    # Create a data frame for the current passes summary
-    curr_algo_summary <- data.frame(
-      pass = row_num,
-      linkage_implementation = linkage_method,
-      blocking_variables = blocking_fields,
-      matching_variables = matching_fields,
-      acceptance_threshold = acceptance_threshold,
-      linkage_rate_pass = linkage_rate_pass,
-      linkage_rate_cumulative = linkage_rate_cumulative
-    )
-
-    # Bind this to our full algorithm summary
-    algo_summary <- rbind(algo_summary, curr_algo_summary)
-
-    ### RESULT 1: Linked Indices (Removed the rows that were linked)
-    linked_indices <- results[["linked_indices"]]
-    linked_indices <- unique(linked_indices)
-    left_dataset <- suppressWarnings(left_dataset[-linked_indices, ])
-
-    ### RESULT 2: Unlinked dataset pairs for exportation
-    if(("output_unlinked_iteration_pairs" %in% names(extra_parameters) && extra_parameters[["output_unlinked_iteration_pairs"]] == TRUE) &&
-       "linkage_output_folder" %in% names(extra_parameters)){
-      # Get the output directory
-      output_dir <- extra_parameters[["linkage_output_folder"]]
-
-      # Get the algorithm name
-      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
-      algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
-
-      # Define base file name
-      base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_unlinked_pairs')
-
-      # Start with the base file name
-      full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
-      counter <- 1
-
-      # While the file exists, append a number and keep checking
-      while (file.exists(full_filename)) {
-        full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
-        counter <- counter + 1
+        # Replace the acceptance_rule_id with the method and parameters string
+        acceptance_threshold <- method_with_params
       }
 
-      # Save the .CSV file
-      full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
-      fwrite(results[["unlinked_dataset_pairs"]], file = full_filename, append = TRUE)
+      # Get the linked indices
+      linked_indices <- results[["linked_indices"]]
+      linked_indices <- unique(linked_indices)
 
-      # Specify that the file was successfully written
-      print(paste0("Linkage data saved as: ", full_filename))
-    }
+      # Get the linkage rate for the pass
+      linkage_rate_pass_numer <- ifelse(anyNA(linked_indices), 0, length(linked_indices))
+      linkage_rate_pass_denom <- nrow(left_dataset)
+      linkage_rate_pass       <- (linkage_rate_pass_numer/linkage_rate_pass_denom) * 100
 
-    ### RESULT 3: Linked Dataset for Exportation
-    if(("output_linkage_iterations" %in% names(extra_parameters) && extra_parameters[["output_linkage_iterations"]] == TRUE) &&
-        "linkage_output_folder" %in% names(extra_parameters)){
-      # Get the output directory
-      output_dir <- extra_parameters[["linkage_output_folder"]]
+      # Get the cumulative linkage rate
+      linkage_rate_cumulative_numer <- linkage_rate_cumulative_numer + linkage_rate_pass_numer
+      linkage_rate_cumulative <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
 
-      # Get the algorithm name
-      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
-      algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+      # Create a data frame for the current passes summary
+      curr_algo_summary <- data.frame(
+        pass = row_num,
+        linkage_implementation = linkage_method,
+        blocking_variables = blocking_fields,
+        matching_variables = matching_fields,
+        acceptance_threshold = acceptance_threshold,
+        linkage_rate_pass = linkage_rate_pass,
+        linkage_rate_cumulative = linkage_rate_cumulative
+      )
 
-      # Define base file name
-      base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_linkage_results')
+      # Bind this to our full algorithm summary
+      algo_summary <- rbind(algo_summary, curr_algo_summary)
 
-      # Start with the base file name
-      full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
-      counter <- 1
-
-      # While the file exists, append a number and keep checking
-      while (file.exists(full_filename)) {
-        full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
-        counter <- counter + 1
+      ### RESULT 1: Linked Indices (Removed the rows that were linked)
+      if(!anyNA(linked_indices)){
+        left_dataset <- suppressWarnings(left_dataset[-linked_indices, ])
       }
 
-      # Save the .CSV file
-      full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
-      fwrite(results[["linked_dataset"]], file = full_filename, append = TRUE)
+      ### RESULT 2: Unlinked dataset pairs for exportation
+      if(("output_unlinked_iteration_pairs" %in% names(extra_parameters) && extra_parameters[["output_unlinked_iteration_pairs"]] == TRUE) &&
+         "linkage_output_folder" %in% names(extra_parameters)){
+        # Get the output directory
+        output_dir <- extra_parameters[["linkage_output_folder"]]
 
-      # Specify that the file was successfully written
-      print(paste0("Linkage data saved as: ", full_filename))
+        # Get the algorithm name
+        df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+        algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+        # Define base file name
+        base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_unlinked_pairs')
+
+        # Start with the base file name
+        full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+        counter <- 1
+
+        # While the file exists, append a number and keep checking
+        while (file.exists(full_filename)) {
+          full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+          counter <- counter + 1
+        }
+
+        # Save the .CSV file
+        full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+        fwrite(results[["unlinked_dataset_pairs"]], file = full_filename, append = TRUE)
+
+        # Specify that the file was successfully written
+        print(paste0("Linkage data saved as: ", full_filename))
+      }
+
+      ### RESULT 3: Linked Dataset for Exportation
+      if(("output_linkage_iterations" %in% names(extra_parameters) && extra_parameters[["output_linkage_iterations"]] == TRUE) &&
+         "linkage_output_folder" %in% names(extra_parameters)){
+        # Get the output directory
+        output_dir <- extra_parameters[["linkage_output_folder"]]
+
+        # Get the algorithm name
+        df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+        algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+        # Define base file name
+        base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_linkage_results')
+
+        # Start with the base file name
+        full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+        counter <- 1
+
+        # While the file exists, append a number and keep checking
+        while (file.exists(full_filename)) {
+          full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+          counter <- counter + 1
+        }
+
+        # Save the .CSV file
+        full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+        fwrite(results[["linked_dataset"]], file = full_filename, append = TRUE)
+
+        # Specify that the file was successfully written
+        print(paste0("Linkage data saved as: ", full_filename))
+      }
+
+      ### RESULT 4: Linkage Report Output Data Frame
+      # If the output_df is NA, then no pass has been completed, otherwise, bind the rows
+      if(nrow(output_df) <= 0 && !anyNA(linked_indices)){
+        output_df <- results[["output_linkage_df"]]
+      }else if(!anyNA(linked_indices)){
+        output_df <- rbind(output_df, results[["output_linkage_df"]])
+      }
+
+      ### RESULT 5: Ground Truth Performance Measure Variables
+      if("performance_measure_variables" %in% names(results)){
+        # Get the performance measure values
+        iteration_performance_measures <- results[["performance_measure_variables"]]
+
+        # Append the performance measure variables to the overall values
+        performance_measures[1] <- performance_measures[1] + iteration_performance_measures[1]
+        performance_measures[2] <- performance_measures[2] + iteration_performance_measures[2]
+        performance_measures[3] <- performance_measures[3] + iteration_performance_measures[3]
+        performance_measures[4] <- performance_measures[4] + iteration_performance_measures[4]
+      }
     }
+    #----
 
-    ### RESULT 4: Linkage Report Output Data Frame
-    # If the output_df is NA, then no pass has been completed, otherwise, bind the rows
-    if(nrow(output_df) <= 0){
-      output_df <- results[["output_linkage_df"]]
-    }
-    else{
-      output_df <- rbind(output_df, results[["output_linkage_df"]])
-    }
+    ### Step 5: Add unlinked data to the output data frame
+    #----
+    # Add a new column that specifies that these rows didn't link
+    left_dataset <- cbind(left_dataset, stage="UNLINKED")
 
-    ### RESULT 5: Ground Truth Performance Measure Variables
-    if("performance_measure_variables" %in% names(results)){
-      # Get the performance measure values
-      iteration_performance_measures <- results[["performance_measure_variables"]]
+    # Get the columns to keep
+    output_fields  <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+    fields_to_keep <- output_fields$field_name
+    fields_to_keep  <- append(fields_to_keep, "stage")
 
-      # Append the performance measure variables to the overall values
-      performance_measures[1] <- performance_measures[1] + iteration_performance_measures[1]
-      performance_measures[2] <- performance_measures[2] + iteration_performance_measures[2]
-      performance_measures[3] <- performance_measures[3] + iteration_performance_measures[3]
-      performance_measures[4] <- performance_measures[4] + iteration_performance_measures[4]
-    }
-  }
-  #----
+    # Keep the output fields specified by the user
+    left_dataset <- subset(left_dataset, select = fields_to_keep)
 
-  ### Step 5: Add unlinked data to the output data frame
-  #----
-  # Add a new column that specifies that these rows didn't link
-  left_dataset <- cbind(left_dataset, stage="UNLINKED")
+    # Bind what's left of the left dataset to the output data frame
+    output_df <- rbind(output_df, left_dataset)
 
-  # Get the columns to keep
-  output_fields  <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
-  fields_to_keep <- output_fields$field_name
-  fields_to_keep  <- append(fields_to_keep, "stage")
+    # Change the stage values to be the linkage indicator
+    output_df <- output_df %>% mutate(link_indicator = ifelse(stage == "UNLINKED",0,1))
 
-  # Keep the output fields specified by the user
-  left_dataset <- subset(left_dataset, select = fields_to_keep)
-
-  # Bind what's left of the left dataset to the output data frame
-  output_df <- rbind(output_df, left_dataset)
-
-  # Change the stage values to be the linkage indicator
-  output_df <- output_df %>% mutate(link_indicator = ifelse(stage == "UNLINKED",0,1))
-
-  # Apply Labels to the output data frame
-  for(row_num in 1:nrow(output_fields)){
+    # Apply Labels to the output data frame
+    for(row_num in 1:nrow(output_fields)){
       # Get the field to apply a label to
       dataset_field <- output_fields$field_name[row_num]
 
@@ -1417,102 +1424,121 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # Apply the label to the field
       label(output_df[[dataset_field]]) <- dataset_label
-  }
-
-  # Apply a label to the link Indicator
-  label(output_df[["stage"]]) <- "Passes"
-  #----
-
-  ### Step 6: Save performance measures, linkage rates, auditing information and whatever
-  ###         we may need to the database and export data for linkage reports if asked
-  #----
-  performance_measures_df <- data.frame()
-  # Try to calculate and export the performance measures
-  if(("calculate_performance_measures" %in% names(extra_parameters) && extra_parameters[["calculate_performance_measures"]] == TRUE) &&
-     "linkage_output_folder" %in% names(extra_parameters)){
-
-    # Grab the performance measure variables
-    TP <- performance_measures[[1]]
-    TN <- performance_measures[[2]]
-    FP <- performance_measures[[3]]
-    FN <- performance_measures[[4]]
-
-    # Calculate the PPV
-    PPV <- (TP/(TP + FP)) * 100
-
-    # Calculate the NPV
-    NPV <- (TN/(TN + FN)) * 100
-
-    # Sensitivity
-    SENS <- (TP/(TP + FN)) * 100
-
-    # Specificity
-    SPEC <- (TN/(TN + FP)) * 100
-
-    # F1-Score
-    F1_SCORE <- (TP/(TP + (0.5 * (FP + FN)))) * 100
-
-    # Calculate the linkage rate
-    linkage_rate <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
-
-    # Create a performance measures data frame to store all the information
-    performance_measures_df <- data.frame(
-      positive_predictive_value = PPV,
-      negative_predictive_value = NPV,
-      sensitivity = SENS,
-      specificity = SPEC,
-      f1_score = F1_SCORE,
-      linkage_rate = linkage_rate
-    )
-
-    # Apply labels to the performance measures data frame
-    label(performance_measures_df$positive_predictive_value) <- "PPV"
-    label(performance_measures_df$negative_predictive_value) <- "NPV"
-    label(performance_measures_df$sensitivity) <- "Sensitivity"
-    label(performance_measures_df$specificity) <- "Specificity"
-    label(performance_measures_df$f1_score) <- "F1-Score"
-    label(performance_measures_df$linkage_rate) <- "Linkage Rate"
-
-    # Get the output directory
-    output_dir <- extra_parameters[["linkage_output_folder"]]
-
-    # Get the algorithm name
-    df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
-    algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
-
-    # Define base file name
-    base_filename <- paste0(algorithm_name, '_linkage_performance_measures')
-
-    # Start with the base file name
-    full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
-    counter <- 1
-
-    # While the file exists, append a number and keep checking
-    while (file.exists(full_filename)) {
-      full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
-      counter <- counter + 1
     }
 
-    # Save the .CSV file
-    full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
-    fwrite(performance_measures_df, file = full_filename, append = TRUE)
+    # Apply a label to the link Indicator
+    label(output_df[["stage"]]) <- "Passes"
+    #----
 
-    # Print a success message
-    print(paste0("Performance measures have been exported to: ", full_filename))
-  }
+    ### Step 6: Save performance measures, linkage rates, auditing information and whatever
+    ###         we may need to the database and export data for linkage reports if asked
+    #----
+    performance_measures_df <- data.frame()
+    # Try to calculate and export the performance measures
+    if(("calculate_performance_measures" %in% names(extra_parameters) && extra_parameters[["calculate_performance_measures"]] == TRUE) &&
+       "linkage_output_folder" %in% names(extra_parameters)){
 
-  # Try to create report using the output data frame if the user wanted to
-  if(("generate_linkage_report" %in% names(extra_parameters) && extra_parameters[["generate_linkage_report"]] == TRUE) &&
-     "linkage_output_folder" %in% names(extra_parameters) && "data_linker" %in% names(extra_parameters)){
-    # Get the output directory
-    output_dir <- extra_parameters[["linkage_output_folder"]]
-    tryCatch({
+      # Grab the performance measure variables
+      TP <- performance_measures[[1]]
+      TN <- performance_measures[[2]]
+      FP <- performance_measures[[3]]
+      FN <- performance_measures[[4]]
+
+      # Calculate the PPV
+      PPV <- (TP/(TP + FP)) * 100
+
+      # Calculate the NPV
+      NPV <- (TN/(TN + FN)) * 100
+
+      # Sensitivity
+      SENS <- (TP/(TP + FN)) * 100
+
+      # Specificity
+      SPEC <- (TN/(TN + FP)) * 100
+
+      # F1-Score
+      F1_SCORE <- (TP/(TP + (0.5 * (FP + FN)))) * 100
+
+      # Calculate the linkage rate
+      linkage_rate <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
+
       # Get the algorithm name
       df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
       algorithm_name <- df$algorithm_name
 
-      # Get the datasets used for this algorithm
-      query <- "SELECT
+      # Make sure all the values are good, otherwise replace them with invalid numbers
+      PPV <- ifelse(is.na(PPV), 0, PPV)
+      NPV <- ifelse(is.na(NPV), 0, NPV)
+      SENS <- ifelse(is.na(SENS), 0, SENS)
+      SPEC <- ifelse(is.na(SPEC), 0, SPEC)
+      F1_SCORE <- ifelse(is.na(F1_SCORE), 0, F1_SCORE)
+
+      # print(PPV)
+      # print(NPV)
+      # print(SENS)
+      # print(SPEC)
+      # print(F1_SCORE)
+
+      # Create a performance measures data frame to store all the information
+      performance_measures_df <- data.frame(
+        algorithm_name = algorithm_name,
+        positive_predictive_value = PPV,
+        negative_predictive_value = NPV,
+        sensitivity = SENS,
+        specificity = SPEC,
+        f1_score = F1_SCORE,
+        linkage_rate = linkage_rate
+      )
+
+      # Apply labels to the performance measures data frame
+      label(performance_measures_df$algorithm_name) <- "Algorithm Name"
+      label(performance_measures_df$positive_predictive_value) <- "PPV"
+      label(performance_measures_df$negative_predictive_value) <- "NPV"
+      label(performance_measures_df$sensitivity) <- "Sensitivity"
+      label(performance_measures_df$specificity) <- "Specificity"
+      label(performance_measures_df$f1_score) <- "F1-Score"
+      label(performance_measures_df$linkage_rate) <- "Linkage Rate"
+
+      # Get the output directory
+      output_dir <- extra_parameters[["linkage_output_folder"]]
+
+      # Get the algorithm name
+      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+      algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+      # Define base file name
+      base_filename <- paste0(algorithm_name, '_linkage_performance_measures')
+
+      # Start with the base file name
+      full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+      counter <- 1
+
+      # While the file exists, append a number and keep checking
+      while (file.exists(full_filename)) {
+        full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+        counter <- counter + 1
+      }
+
+      # Save the .CSV file
+      full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+      fwrite(performance_measures_df, file = full_filename, append = TRUE)
+
+      # Print a success message
+      print(paste0("Performance measures have been exported to: ", full_filename))
+    }
+
+    # Try to create report using the output data frame if the user wanted to
+    if(("generate_linkage_report" %in% names(extra_parameters) && extra_parameters[["generate_linkage_report"]] == TRUE) &&
+       "linkage_output_folder" %in% names(extra_parameters) && "data_linker" %in% names(extra_parameters)){
+      # Get the output directory
+      output_dir <- extra_parameters[["linkage_output_folder"]]
+      tryCatch({
+        # Get the algorithm name
+        df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+        algorithm_name <- df$algorithm_name
+
+        # Get the datasets used for this algorithm
+        query <- "SELECT
                     dalg.algorithm_id,
                     dleft.dataset_name AS left_dataset_name,
                     dright.dataset_name AS right_dataset_name
@@ -1525,52 +1551,86 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                 WHERE
                     dalg.algorithm_id = ?"
 
-      # Get the datasets for this algorithm to get the left and right dataset names
-      datasets <- dbGetQuery(linkage_metadata_db, query, params = list(algorithm_id))
+        # Get the datasets for this algorithm to get the left and right dataset names
+        datasets <- dbGetQuery(linkage_metadata_db, query, params = list(algorithm_id))
 
-      # Get the username
-      username <- extra_parameters[["data_linker"]]
+        # Get the username
+        username <- extra_parameters[["data_linker"]]
 
-      # Get the output variabls that we'll be using
-      strata_vars <- colnames(output_df)
-      strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
+        # Get the output variabls that we'll be using
+        strata_vars <- colnames(output_df)
+        strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
 
-      # Relabel the algo summary
-      label(algo_summary$pass) <- "Pass"
-      label(algo_summary$linkage_rate_pass) <- "Within Pass Linkage Rate (%)"
-      label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
-      label(algo_summary$blocking_variables) <- "Blocking Scheme"
-      label(algo_summary$matching_variables) <- "Matching Criteria"
-      label(algo_summary$linkage_implementation) <- "Linkage Technique"
-      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate (%)"
+        # Relabel the algo summary
+        label(algo_summary$pass) <- "Pass"
+        label(algo_summary$linkage_rate_pass) <- "Within Pass Linkage Rate (%)"
+        label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
+        label(algo_summary$blocking_variables) <- "Blocking Scheme"
+        label(algo_summary$matching_variables) <- "Matching Criteria"
+        label(algo_summary$linkage_implementation) <- "Linkage Technique"
+        label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate (%)"
 
-      # Load the 'linkrep' library and generate a linkage quality report
-      library("linkrep")
-      # If we have performance measures, include them, otherwise generate a normal report
-      if(nrow(performance_measures_df) <= 0){
-        linkage_quality_report(output_df, algorithm_name, "Subtitle Here", datasets$left_dataset_name,
-                               paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
-                               "link_indicator", strata_vars, strata_vars, save_linkage_rate = F, algorithm_summary_data = algo_summary,
-                               algorithm_summary_tbl_footnotes = algo_summary_footnotes,
-                               R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
-      }
-      else{
-        performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.", "Data are presented as percentages (%).")
-        ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
-        ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
-        linkage_quality_report(output_df, algorithm_name, "Subtitle Here", datasets$left_dataset_name,
-                               paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
-                               "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
-                               algorithm_summary_data = algo_summary, algorithm_summary_tbl_footnotes = algo_summary_footnotes,
-                               performance_measures_data = performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
-                               ground_truth = ground_truth_fields,
-                               R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
-      }
-    },
-    error = function(e){
-      print(geterrmessage())
-      # If we failed to generate a linkage report, write to a csv file instead
-      print("Error: Unable to generate linkage report, saving output data frame to specified output folder.")
+        # Load the 'linkrep' library and generate a linkage quality report
+        library("linkrep")
+        # If we have performance measures, include them, otherwise generate a normal report
+        if(nrow(performance_measures_df) <= 0){
+          linkage_quality_report(output_df, algorithm_name, "Subtitle Here", datasets$left_dataset_name,
+                                 paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
+                                 "link_indicator", strata_vars, strata_vars, save_linkage_rate = F, algorithm_summary_data = algo_summary,
+                                 algorithm_summary_tbl_footnotes = algo_summary_footnotes,
+                                 R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
+        }
+        else{
+          # print(sapply(performance_measures_df, class))
+          # print(performance_measures_df)
+          # print(lapply(performance_measures_df, function(x) attr(x, "label")))
+          performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
+          ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+          ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
+          linkage_quality_report(output_df, algorithm_name, "Subtitle Here", datasets$left_dataset_name,
+                                 paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
+                                 "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
+                                 algorithm_summary_data = algo_summary, algorithm_summary_tbl_footnotes = algo_summary_footnotes,
+                                 performance_measures_data = performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
+                                 ground_truth = ground_truth_fields,
+                                 R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
+        }
+        detach("package:linkrep", unload = TRUE)
+      },
+      error = function(e){
+        detach("package:linkrep", unload = TRUE)
+        print(geterrmessage())
+        # If we failed to generate a linkage report, write to a csv file instead
+        print("Error: Unable to generate linkage report, saving output data frame to specified output folder.")
+
+        # Get the algorithm name
+        df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+        algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+        # Define base file name
+        base_filename <- paste0(algorithm_name, '_complete_linkage_results')
+
+        # Start with the base file name
+        full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+        counter <- 1
+
+        # While the file exists, append a number and keep checking
+        while (file.exists(full_filename)) {
+          full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+          counter <- counter + 1
+        }
+
+        # Save the .CSV file
+        full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+        fwrite(output_df, file = full_filename, append = TRUE)
+
+        # Print a success message
+        print(paste0("Linkage report data has been exported to: ", full_filename))
+      })
+    }
+    else{
+      # Get the output directory
+      output_dir <- extra_parameters[["linkage_output_folder"]]
 
       # Get the algorithm name
       df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
@@ -1595,40 +1655,40 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # Print a success message
       print(paste0("Linkage report data has been exported to: ", full_filename))
-    })
-  }
-
-  # Try to export an algorithm summary
-  if(("generate_algorithm_summary" %in% names(extra_parameters) && extra_parameters[["generate_algorithm_summary"]] == TRUE) &&
-     "linkage_output_folder" %in% names(extra_parameters)){
-    # Get the output directory
-    output_dir <- extra_parameters[["linkage_output_folder"]]
-
-    # Get the algorithm name
-    df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
-    algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
-
-    # Define base file name
-    base_filename <- paste0(algorithm_name, '_linkage_summary')
-
-    # Start with the base file name
-    full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
-    counter <- 1
-
-    # While the file exists, append a number and keep checking
-    while (file.exists(full_filename)) {
-      full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
-      counter <- counter + 1
     }
 
-    # Save the .CSV file
-    full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
-    fwrite(algo_summary, file = full_filename, append = TRUE)
+    # Try to export an algorithm summary
+    if(("generate_algorithm_summary" %in% names(extra_parameters) && extra_parameters[["generate_algorithm_summary"]] == TRUE) &&
+       "linkage_output_folder" %in% names(extra_parameters)){
+      # Get the output directory
+      output_dir <- extra_parameters[["linkage_output_folder"]]
 
-    # Print a success message
-    print(paste0("Algorithm summary has been exported to: ", full_filename))
+      # Get the algorithm name
+      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+      algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+      # Define base file name
+      base_filename <- paste0(algorithm_name, '_linkage_summary')
+
+      # Start with the base file name
+      full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
+      counter <- 1
+
+      # While the file exists, append a number and keep checking
+      while (file.exists(full_filename)) {
+        full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+        counter <- counter + 1
+      }
+
+      # Save the .CSV file
+      full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+      fwrite(algo_summary, file = full_filename, append = TRUE)
+
+      # Print a success message
+      print(paste0("Algorithm summary has been exported to: ", full_filename))
+    }
+    #----
   }
-  #----
 
   # Disconnect from the linkage metadata database after we finish
   dbDisconnect(linkage_metadata_db)

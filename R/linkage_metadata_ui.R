@@ -2140,7 +2140,7 @@ linkage_ui <- page_navbar(
 
       ### STEP 1
       h5(strong("Step 1: Provide the Output Folder")),
-      # Create a card for editing/viewing algorithm output information
+      # Create a card for the output location
       div(style = "display: flex; justify-content: center; align-items: center;",
         card(
           width = 1,
@@ -2150,7 +2150,12 @@ linkage_ui <- page_navbar(
           card_body(
             fluidRow(
               column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
-                shinyDirButton("linkage_output_dir", "Choose Linkage Output Directory", 'Please Select a Directory')
+                # Boxed text output for showing the uploaded folder name
+                div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                  textOutput("uploaded_linkage_output_dir")
+                ),
+                # Upload Button
+                shinyDirButton("linkage_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
               )),
               column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
                 helpText("Select a folder where all output will be saved.")
@@ -2162,25 +2167,88 @@ linkage_ui <- page_navbar(
 
       HTML("<br>"), # Spacing
 
-      # Step 2: Output options
-      fluidRow(
-        column(width = 12, h5(strong("Step 2: Select Output Options"))),
-        column(width = 6, checkboxInput("output_linked_iterations", "Output Linked Iterations", FALSE)),
-        column(width = 6, checkboxInput("output_unlinked_iteration_pairs", "Output Unlinked Iterations", FALSE)),
-        column(width = 6, checkboxInput("generate_linkage_report", "Generate Linkage Quality Report", FALSE)),
-        column(width = 6, checkboxInput("generate_algorithm_summary", "Generate Algorithm Summary", FALSE))
+      ### STEP 2
+      h5(strong("Step 2: Select Output Options")),
+      # Create a card for editing/viewing algorithm output information
+      div(style = "display: flex; justify-content: center; align-items: center;",
+        card(
+          width = 1,
+          height = 225,
+          full_screen = FALSE,
+          card_header("Select Output Options", class = 'bg-dark'),
+          card_body(
+            fluidRow(
+              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                checkboxInput("output_linked_iterations_pairs", "Output Linked Iteration Pairs (Unmodified)", FALSE)
+              )),
+              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                checkboxInput("output_unlinked_iteration_pairs", "Output Unlinked Iteration Pairs (Unmodified)", FALSE)
+              )),
+              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                checkboxInput("generate_linkage_report", "Generate Linkage Quality Report", FALSE)
+              )),
+              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                checkboxInput("generate_algorithm_summary", "Generate Algorithm Summary", FALSE)
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                checkboxInput("calculate_performance_measures", "Calculate Performance Measures", FALSE),
+              ))
+            ),
+          )
+        )
       ),
+
       HTML("<br>"), # Spacing
 
-      # Step 3: Advanced options (Collapsible)
-      fluidRow(
-        column(width = 12, h5(strong("Step 3: Advanced Options (Optional)"))),
-        column(width = 12, shiny::wellPanel(
-          checkboxInput("calculate_performance_measures", "Calculate Performance Measures", FALSE),
-          textInput("data_linker", label = "Data Linker (Optional)", value = ""),
-          fileInput("standardize_names_file", label = "Standardize Names CSV", accept = ".csv")
-        ))
-      )
+      ### STEP 3
+      h5(strong("Step 3: Advanced Options (Optional)")),
+      # Create a card for editing/viewing algorithm output information
+      div(style = "display: flex; justify-content: center; align-items: center;",
+       card(
+          width = 1,
+          height = 150,
+          full_screen = FALSE,
+          card_header("Select Advanced Options", class = 'bg-dark'),
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                # Boxed text output for showing the uploaded file name
+                div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                    textOutput("uploaded_linkage_standardize_names_file", )
+                ),
+                # Upload Button
+                shinyFilesButton("standardize_names_file", label = "", icon = icon("upload"), title = "Select a File For Name Standardization (CSV)", multiple = F)
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                helpText("Select a file for standardizing names (must contain the columns 'common' and 'unique').")
+              ))
+            ),
+          )
+        )
+      ),
+
+      HTML("<br>"), # Spacing
+
+      ### STEP 4
+      h5(strong("Step 4: Run Record Linkage for the Selected Algorithm(s)")),
+      # Create a card for editing/viewing algorithm output information
+      div(style = "display: flex; justify-content: center; align-items: center;",
+        card(
+          width = 1,
+          height = 125,
+          full_screen = FALSE,
+          card_header("Run Record Linkage", class = 'bg-dark'),
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("run_linkage_btn", "Run Linkage", width = validateCssUnit(200), class = "btn-success")
+              ))
+            ),
+          )
+        )
+      ),
+
+      HTML("<br>"), # Spacing
     )
   ),
   #----
@@ -2195,7 +2263,7 @@ linkage_ui <- page_navbar(
 )
 
 # Script/Server
-linkage_server <- function(input, output, session, linkage_metadata_conn, username){
+linkage_server <- function(input, output, session, linkage_metadata_conn, metadata_file_path, username){
   #-- HIDING PAGES EVENTS --#
   # Initially hide some tabs we don't need the users to access
   nav_hide('main_navbar', 'linkage_rule_page')
@@ -3194,10 +3262,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
 
     # Create a new entry query for entering into the database
     #----#
-    new_entry_query <- paste("INSERT INTO linkage_algorithms (dataset_id_left, dataset_id_right, algorithm_name, modified_date, modified_by, enabled)",
-                             "VALUES(?, ?, ?, ?, ?, ?);")
+    new_entry_query <- paste("INSERT INTO linkage_algorithms (dataset_id_left, dataset_id_right, algorithm_name, modified_date, modified_by, enabled, enabled_for_testing)",
+                             "VALUES(?, ?, ?, ?, ?, ?, ?);")
     new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-    dbBind(new_entry, list(left_dataset_id, right_dataset_id, algorithm_name, modified_date, modified_by, 0))
+    dbBind(new_entry, list(left_dataset_id, right_dataset_id, algorithm_name, modified_date, modified_by, 0, 1))
     dbClearResult(new_entry)
     #----#
 
@@ -3396,14 +3464,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
       dbBind(update, list(algorithm_id))
       dbClearResult(update)
     }else{
-      # Disable all algorithms for the selected data sets,
-      update_query <- paste("UPDATE linkage_algorithms
-                          SET enabled_for_testing = 0
-                          WHERE dataset_id_left = ? AND dataset_id_right = ?")
-      update <- dbSendStatement(linkage_metadata_conn, update_query)
-      dbBind(update, list(left_dataset_id, right_dataset_id))
-      dbClearResult(update)
-
       # Error handling - don't allow user to have two algorithms enabled with the same name
       #----#
       get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND enabled_for_testing = 1;')
@@ -9800,15 +9860,128 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, userna
   run_algorithm_right_dataset_id <- 1
   run_algorithm_return_page  <- "linkage_algorithms_page"
 
-  # Linkage Output Directory Chooser
+  # Initialize the selected file and folder to be empty
+  output$uploaded_linkage_standardize_names_file <- renderText({
+    "No File Has Been Chosen"
+  })
+  output$uploaded_linkage_output_dir <- renderText({
+    "No Folder Has Been Chosen"
+  })
+
+  # Get the computer volumes
   volumes <- getVolumes()()
+
+  # Linkage Output Directory Chooser
   shinyDirChoose(input, 'linkage_output_dir', roots=volumes, filetypes=c('', 'txt'), allowDirCreate = F)
+
+  # Observes which linkage output directory was chosen
+  observeEvent(input$linkage_output_dir, {
+    # Get the output linkage directory
+    output_dir <- parseDirPath(volumes, input$linkage_output_dir)
+
+    # Render the output text
+    if(identical(output_dir, character(0))){
+      output$uploaded_linkage_output_dir <- renderText({
+        "No Folder Has Been Chosen"
+      })
+    }
+    else{
+      output$uploaded_linkage_output_dir <- renderText({
+        output_dir
+      })
+    }
+  })
+
+  # Linkage Name Standardizing File Chooser
+  shinyFileChoose(input, 'standardize_names_file', roots=volumes, filetypes=c('csv'))
+
+  # Observes which linkage output directory was chosen
+  observeEvent(input$standardize_names_file, {
+    # Get the output linkage directory
+    file_path <- input$standardize_names_file
+
+    # Render the output text
+    if(is.integer(file_path)){
+      output$uploaded_linkage_standardize_names_file <- renderText({
+        "No File Has Been Chosen"
+      })
+    }
+    else{
+      file_path <- parseFilePaths(volumes, file_path)$datapath
+      output$uploaded_linkage_standardize_names_file <- renderText({
+        file_path
+      })
+    }
+  })
+
+  # Attempts to run the linkage algorithms the user chose
+  observeEvent(input$run_linkage_btn, {
+    # Disable this button
+    disable("run_linkage_btn")
+
+    # Get the user toggle inputs
+    output_linked_iterations_pairs  <- input$output_linked_iterations_pairs
+    output_unlinked_iteration_pairs <- input$output_unlinked_iteration_pairs
+    generate_linkage_report         <- input$generate_linkage_report
+    generate_algorithm_summary      <- input$generate_algorithm_summary
+    calculate_performance_measures  <- input$calculate_performance_measures
+
+    # Get the folder and file inputs
+    output_dir       <- parseDirPath(volumes, input$linkage_output_dir)
+    standardize_file <- input$standardize_names_file
+
+    #-- Error Handling --#
+    # We need to make sure the user supplied an output folder
+    if(identical(output_dir, character(0))){
+      showNotification("Failed to Run Linkage - Missing Output Folder", type = "error", closeButton = FALSE)
+      enable("run_linkage_btn")
+      return()
+    }
+
+    # Check if the standardize file was provided
+    if(is.integer(standardize_file)){
+      standardize_file <- ""
+    }
+    #--------------------#
+
+    # Get the parameters that will be passed to the linkage function
+    left_dataset   <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_left_dataset_id))$dataset_location
+    right_dataset  <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_right_dataset_id))$dataset_location
+    link_metadata  <- metadata_file_path
+    algorithm_ids  <- algorithms_to_run
+    extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, output_linkage_iterations = output_linked_iterations_pairs,
+                                                   output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, generate_linkage_report = generate_linkage_report,
+                                                   generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
+                                                   data_linker = username, standardize_names_file_path = standardize_file)
+
+    # Run the algorithms
+    successful <- TRUE
+    tryCatch({
+      run_main_linkage(left_dataset, right_dataset, link_metadata, algorithm_ids, extra_params)
+    },
+    error = function(e){
+      # If we fail, let the user know why
+      showNotification(paste0("Linkage Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
+      enable("run_linkage_btn")
+      successful <- FALSE
+      return()
+    })
+
+    # If we failed, then return
+    if(successful == FALSE) return()
+
+    # If we succeed, let the user know where they can find their information
+    showNotification(paste0("Linkage Succeeded - Check the Output Folder for Data [", output_dir, "]"), type = "message", closeButton = FALSE)
+
+    # Call garbage collector after we finish processing
+    gc()
+    Sys.sleep(3)
+
+    enable("run_linkage_btn")
+    return()
+  })
   #----
   #----------------------------------------#
-
-  observeEvent(input$file_test_input, {
-    #shinyFiles::shinyDirChoose(input = input, id = file_test_input, session = session) # This needs to use a shinyDirButton() call and use its ID
-  })
 }
 
 #' Start Linkage Metadata UI
@@ -9881,7 +10054,7 @@ start_linkage_metadata_ui <- function(metadata_file_path, username){
   # Start the Shiny Application
   shinyApp(ui = linkage_ui,
            server = function(input, output, session){
-             linkage_server(input, output, session, linkage_metadata_conn, username)
+             linkage_server(input, output, session, linkage_metadata_conn, metadata_file_path, username)
            },
            onStart = function(){
              cat("Data Linkage App - OPENED")
