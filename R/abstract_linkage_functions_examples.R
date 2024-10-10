@@ -420,7 +420,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           compare_pairs(linkage_pairs, on = matching_keys,
                         inplace=TRUE)
         }
-        #print(linkage_pairs)
         #---------------------------#
 
         #-- STEP 3: SCORE PAIRS --#
@@ -432,7 +431,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Afterwards, we'll score the pair using type = "all" to get all score types
         linkage_pairs <- predict(em_pairs, pairs = linkage_pairs, type = "all", add = TRUE)
-        #print(linkage_pairs)
         #-------------------------#
 
         #-- STEP 4: SELECT PAIRS --#
@@ -455,7 +453,131 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           select_greedy(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE)
         }
         else{
-          stop("Error: Acceptance Threshold Missing.")
+          # Create a list of plots we'll return
+          plot_list <- list()
+
+          # Get the pass name
+          iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
+
+          # Create the first plot of all candidate pair records
+          candidate_weights_plot <- ggplot(linkage_pairs, mapping = aes(weight)) +
+            geom_histogram(binwidth = 0.05, fill = "gray", colour = "black") +
+            labs(title = paste0("Weight Distribution of Candidate Record Pairs (", iteration_name, ")"),
+                 x = "Weight",
+                 y = "Frequency") +
+            theme_minimal() +
+            theme(
+              # Set the entire background to black
+              plot.background = element_rect(fill = "black", color = NA),
+
+              # Set the plotting area background to white
+              panel.background = element_rect(fill = "white", color = "black"),
+
+              # Major grid lines
+              panel.grid.major = element_line(color = "gray"),
+
+              # Black box border around the plotting area
+              panel.border = element_rect(color = "black", fill = NA, size = 1.5),
+
+              # Axis titles (ensuring white background here)
+              axis.title.x = element_text(color = "white"),
+              axis.title.y = element_text(color = "white"),
+
+              # Axis text (ensuring labels are visible in white)
+              axis.text.x = element_text(color = "white"),
+              axis.text.y = element_text(color = "white"),
+
+              # Title and legend text in white for readability
+              plot.title = element_text(color = "white", hjust = 0.5),
+              legend.title = element_text(color = "white"),
+              legend.text = element_text(color = "white")
+            )
+          plot_list[["candidate_weights_plot"]] <- candidate_weights_plot
+
+          # Create the second plot of the subset of candidate pair records (IF GROUND TRUTH IS PROVIDED)
+          ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+          if(nrow(ground_truth_df) > 0){
+            # Rename the fields of our ground truth keys so that they match in both datasets
+            for(row_num in 1:nrow(ground_truth_df)){
+              # Get the current row
+              row <- ground_truth_df[row_num,]
+
+              # Get the left dataset field name (what we'll be renaming to)
+              left_dataset_field_name <- row$left_dataset_field
+
+              # Get the right dataset field name (what's being renamed)
+              right_dataset_field_name <- row$right_dataset_field
+
+              # Rename the right dataset field to match the field it's going to be matching with
+              names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+            }
+
+            # Get the left fields
+            left_ground_truth_fields <- ground_truth_df$left_dataset_field
+
+            # Get the right fields
+            right_ground_truth_fields <- ground_truth_df$right_dataset_field
+
+            # Compare variables to get the truth
+            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+
+            # Filter out pairs with missing ground truth
+            linkage_pairs_non_missing <- linkage_pairs[!is.na(linkage_pairs$truth),] # Works for now, more testing should be done
+
+            # Add a "Match Type" column to identify what we color the plot as
+            linkage_pairs_non_missing$match_type <- ifelse(linkage_pairs_non_missing$truth == TRUE, "Match", "Miss")
+
+            # Create the histogram, coloring based on match type
+            candidate_weights_plot_gt <- ggplot(linkage_pairs_non_missing, aes(x = weight, fill = match_type)) +
+              geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
+              scale_fill_manual(values = c("Match" = "blue", "Miss" = "red")) +
+              labs(title = paste0("Weight Distribution of Candidate Record Pairs (", iteration_name, ") by ",
+                                  paste0(left_ground_truth_fields, collapse = ", "), " (Ground Truth)"),
+                   x = "Weight",
+                   y = "Frequency",
+                   fill = "Match Type") +
+              theme_minimal() +
+              theme(
+                # Set the entire background to black
+                plot.background = element_rect(fill = "black", color = NA),
+
+                # Set the plotting area background to white
+                panel.background = element_rect(fill = "white", color = "black"),
+
+                # Major grid lines
+                panel.grid.major = element_line(color = "gray"),
+
+                # Black box border around the plotting area
+                panel.border = element_rect(color = "black", fill = NA, size = 1.5),
+
+                # Axis titles (ensuring white background here)
+                axis.title.x = element_text(color = "white"),
+                axis.title.y = element_text(color = "white"),
+
+                # Axis text (ensuring labels are visible in white)
+                axis.text.x = element_text(color = "white"),
+                axis.text.y = element_text(color = "white"),
+
+                # Title and legend text in white for readability
+                plot.title = element_text(color = "white", hjust = 0.5),
+                legend.title = element_text(color = "white"),
+                legend.text = element_text(color = "white")
+              )
+            plot_list[["candidate_weights_plot_ground_truth"]] <- candidate_weights_plot_gt
+          }
+
+          # Create a list of return parameters
+          return_list <- list()
+
+          ### Get the linked indices
+          return_list[["linked_indices"]] <- NA
+
+          ### Returned the greedy select dataset
+          return_list[["unlinked_dataset_pairs"]] <- linkage_pairs
+
+          ### Returned the plot list
+          return_list[["threshold_plots"]] <- plot_list
+          return(return_list)
         }
 
         # Now, if a ground truth is provided get the ground truth variables to calculate specificity later on
@@ -487,8 +609,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Compare variables to get the truth
           linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
         }
-
-        #print(linkage_pairs)
         #--------------------------#
 
         #-- STEP 5: LINK THE PAIRS --#
@@ -498,12 +618,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # Attach the linkage name/pass name to the records for easier identification later
         stage_name <- get_iteration_name(linkage_metadata_db, iteration_id)
         linked_dataset <- cbind(linked_dataset, stage=stage_name)
-        #print(linked_dataset)
         #----------------------------#
 
         #-- STEP 6: RETURN VALUES --#
         # Create a list of all the data we will be returning
         return_list <- list()
+
+        # Create a list for plots
+        plot_list <- list()
 
         ### Get the linked indices
         linked_indices <- linked_dataset$.x
@@ -550,6 +672,93 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Store the filtered data for return
         return_list[["output_linkage_df"]] <- filtered_data
+
+        ### Plot the decision boundary and performance results
+        # Get the pass name
+        iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
+
+        # Create a histogram of the weights with the decision boundary
+        decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = factor(selected))) +
+          geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
+          scale_fill_manual(values = c("FALSE" = "red", "TRUE" = "blue"), name = "Selected") +
+          labs(title = paste("Candidate Pairs - Decision Boundary (", iteration_name, ")"),
+               x = "Weight", y = "Frequency") +
+          geom_vline(aes(xintercept = threshold), linetype = "dashed", color = "black", size = 1) +
+          theme_minimal() +
+          theme(
+            # Set the entire background to black
+            plot.background = element_rect(fill = "black", color = NA),
+
+            # Set the plotting area background to white
+            panel.background = element_rect(fill = "white", color = "black"),
+
+            # Major grid lines
+            panel.grid.major = element_line(color = "gray"),
+
+            # Black box border around the plotting area
+            panel.border = element_rect(color = "black", fill = NA, size = 1.5),
+
+            # Axis titles (ensuring white background here)
+            axis.title.x = element_text(color = "white"),
+            axis.title.y = element_text(color = "white"),
+
+            # Axis text (ensuring labels are visible in white)
+            axis.text.x = element_text(color = "white"),
+            axis.text.y = element_text(color = "white"),
+
+            # Title and legend text in white for readability
+            plot.title = element_text(color = "white", hjust = 0.5),
+            legend.title = element_text(color = "white"),
+            legend.text = element_text(color = "white")
+          )
+        plot_list[["decision_boundary_plot"]] <- decision_boundary
+
+        # Plot the performance results
+        if(has_ground_truth){
+          # Predict the performance
+          linkage_pairs$performance <- factor(ifelse(linkage_pairs$truth == TRUE & linkage_pairs$selected == TRUE, "TP",
+                                                     ifelse(linkage_pairs$truth == TRUE & linkage_pairs$selected == FALSE, "FN",
+                                                            ifelse(linkage_pairs$truth == FALSE & linkage_pairs$selected == TRUE, "FP", "TN"))),
+                                              levels = c("TP", "FP", "TN", "FN"))
+
+          # Generate the histogram with TP, FP, TN, FN
+          performance_plot <- ggplot(linkage_pairs, aes(x = weight, fill = performance)) +
+            geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
+            scale_fill_manual(values = c("TP" = "green", "FP" = "red", "TN" = "blue", "FN" = "orange")) +
+            labs(title = paste0("Weight Distribution of Candidate Record Pairs (", iteration_name, ") with Ground Truth"),
+                 x = "Weight", y = "Frequency", fill = "Performance") +
+            theme_minimal() +
+            theme(
+              # Set the entire background to black
+              plot.background = element_rect(fill = "black", color = NA),
+
+              # Set the plotting area background to white
+              panel.background = element_rect(fill = "white", color = "black"),
+
+              # Major grid lines
+              panel.grid.major = element_line(color = "gray"),
+
+              # Black box border around the plotting area
+              panel.border = element_rect(color = "black", fill = NA, size = 1.5),
+
+              # Axis titles (ensuring white background here)
+              axis.title.x = element_text(color = "white"),
+              axis.title.y = element_text(color = "white"),
+
+              # Axis text (ensuring labels are visible in white)
+              axis.text.x = element_text(color = "white"),
+              axis.text.y = element_text(color = "white"),
+
+              # Title and legend text in white for readability
+              plot.title = element_text(color = "white", hjust = 0.5),
+              legend.title = element_text(color = "white"),
+              legend.text = element_text(color = "white")
+            )
+          plot_list[["performance_plot"]] <- performance_plot
+        }
+
+        # Return the plot list
+        return_list[["threshold_plots"]] <- plot_list
 
         ### Return our list of return values
         return(return_list)
@@ -1313,7 +1522,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       ### RESULT 2: Unlinked dataset pairs for exportation
       if(("output_unlinked_iteration_pairs" %in% names(extra_parameters) && extra_parameters[["output_unlinked_iteration_pairs"]] == TRUE) &&
-         "linkage_output_folder" %in% names(extra_parameters)){
+         "linkage_output_folder" %in% names(extra_parameters) && "unlinked_dataset_pairs" %in% names(results)){
         # Get the output directory
         output_dir <- extra_parameters[["linkage_output_folder"]]
 
@@ -1344,7 +1553,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       ### RESULT 3: Linked Dataset for Exportation
       if(("output_linkage_iterations" %in% names(extra_parameters) && extra_parameters[["output_linkage_iterations"]] == TRUE) &&
-         "linkage_output_folder" %in% names(extra_parameters)){
+         "linkage_output_folder" %in% names(extra_parameters) && "linked_dataset" %in% names(results)){
         # Get the output directory
         output_dir <- extra_parameters[["linkage_output_folder"]]
 
@@ -1391,6 +1600,43 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         performance_measures[2] <- performance_measures[2] + iteration_performance_measures[2]
         performance_measures[3] <- performance_measures[3] + iteration_performance_measures[3]
         performance_measures[4] <- performance_measures[4] + iteration_performance_measures[4]
+      }
+
+      ### RESULT 6: Save/Export Plots
+      if(("generate_threshold_plots" %in% names(extra_parameters) && extra_parameters[["generate_threshold_plots"]] == TRUE) &&
+         "linkage_output_folder" %in% names(extra_parameters) && "threshold_plots" %in% names(results)){
+        # For each of the saved plots, save them as PNGs to the output folder
+        for(plot_name in names(results[["threshold_plots"]])){
+          # Get the plot object using the plot name
+          plot <- results[["threshold_plots"]][[plot_name]]
+
+          # Get the output directory
+          output_dir <- extra_parameters[["linkage_output_folder"]]
+
+          # Get the algorithm name
+          df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+          algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+
+          # Define base file name
+          base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_', plot_name)
+
+          # Start with the base file name
+          full_filename <- file.path(output_dir, paste0(base_filename, ".png"))
+          counter <- 1
+
+          # While the file exists, append a number and keep checking
+          while (file.exists(full_filename)) {
+            full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+            counter <- counter + 1
+          }
+
+          # Save the ggplot
+          full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
+          ggsave(filename = full_filename, plot = plot, width = 8, height = 6)
+
+          # Specify that the file was successfully written
+          print(paste0("Linkage Plot Saved As: ", full_filename))
+        }
       }
     }
     #----

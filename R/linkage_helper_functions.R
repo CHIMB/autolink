@@ -536,6 +536,7 @@ load_linkage_file <- function(dataset_file){
 #' @param data_linker A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).
 #' @param standardize_names_file_path A path to a CSV containing common alternative spellings of names that will standardize to a singular spelling. Must have the columns 'START' and 'LABEL'.
 #' @param generate_algorithm_summary A TRUE or FALSE value for whether you'd like to export a CSV summary of the algorithm that was run.
+#' @param generate_threshold_plots A TRUE or FALSE value for whether you'd like to export threshold plots for each pass.
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, generate_linkage_report = TRUE)
 #' @export
@@ -546,7 +547,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          calculate_performance_measures = FALSE,
                                          data_linker = NULL,
                                          standardize_names_file_path = NULL,
-                                         generate_algorithm_summary = FALSE){
+                                         generate_algorithm_summary = FALSE,
+                                         generate_threshold_plots = FALSE){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -597,6 +599,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!isFALSE(generate_algorithm_summary) && !is.na(generate_algorithm_summary) && !is.null(generate_algorithm_summary) &&
      (isTRUE(generate_algorithm_summary) || generate_algorithm_summary == "TRUE")){
     extra_params_list[["generate_algorithm_summary"]] <- TRUE
+  }
+
+  ### Output Algorithm Summary
+  if(!isFALSE(generate_threshold_plots) && !is.na(generate_threshold_plots) && !is.null(generate_threshold_plots) &&
+     (isTRUE(generate_threshold_plots) || generate_threshold_plots == "TRUE")){
+    extra_params_list[["generate_threshold_plots"]] <- TRUE
   }
   #----------------------------------------------------------------------------#
 
