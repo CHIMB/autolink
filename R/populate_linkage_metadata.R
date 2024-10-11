@@ -196,6 +196,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       iteration_num INTEGER,
       linkage_method_id INTEGER REFERENCES linkage_methods(linkage_method_id),
       acceptance_rule_id INTEGER REFERENCES acceptance_rules(acceptance_rule_id),
+      standardization_file_id INTEGER REFERENCES name_standardization_files(standardization_file_id),
       modified_date TEXT,
       modified_by VARCHAR (255),
       enabled INTEGER
@@ -258,6 +259,16 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       PRIMARY KEY (iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id, comparison_rule_id)
     );
   ")
+
+  ### NAME STANDARDIZATION FILES/DATASETS
+  dbExecute(my_db, "
+    CREATE TABLE name_standardization_files (
+      standardization_file_id INTEGER PRIMARY KEY,
+      standardization_file_label VARCHAR(255),
+      standardization_file_name VARCHAR(255)
+    );
+  ")
+  # If Barret and Jess don't like this idea, just replace the file name with the actual file path and grab it from there instead
   #----
 
   # Run insert queries to pre-populate the metadata with some starting linkage, acceptance, and

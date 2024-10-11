@@ -620,11 +620,11 @@ linkage_ui <- page_navbar(
               card_body(
                 fluidRow(
                   column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                      actionButton("run_default_algorithm", "Run Default Algorithm", class = "btn-warning", width = validateCssUnit(400)),
+                      actionButton("run_default_algorithm", "Run Active Algorithm", class = "btn-warning", width = validateCssUnit(400)),
                     )
                   ),
                   column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                      actionButton("run_enabled_for_testing_algorithms", "Run Algorithm(s) Enabled for Testing", class = "btn-warning", width = validateCssUnit(400)),
+                      actionButton("run_enabled_for_testing_algorithms", "Run Sensitivity Testing Algorithm(s)", class = "btn-warning", width = validateCssUnit(400)),
                     )
                   ),
                 )
@@ -889,7 +889,7 @@ linkage_ui <- page_navbar(
         card_header("Create New Linkage Iteration", class = "bg-dark"),
         card_body(
           fluidRow(
-            column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+            column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
                 textAreaInput("add_iteration_name", label = "Iteration/Pass Name:", value = "",
                               width = validateCssUnit(500), resize = "none"),
 
@@ -913,7 +913,7 @@ linkage_ui <- page_navbar(
                            options = list(container = "body")))
               )
             ),
-            column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+            column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
                 uiOutput("add_iteration_linkage_method_input"),
 
                 # Add the popover manually
@@ -930,8 +930,43 @@ linkage_ui <- page_navbar(
       # Line break between the previous card
       HTML("<br>"),
 
+      # CARD FOR GENERAL INFORMATION
+      h5(strong("Step 2: Select a Name Standardization Dataset")),
+      h6(p(strong("NOTE: "), "Name standardization will only be applied if the user selects the 'Standardize Names' linkage rule.")),
+      # Create a card for editing/viewing algorithm output information
+      #column(width = 6, offset = 3,  # Control the card's width and center it
+      div(style = "display: flex; justify-content: center; align-items: center;",
+        card(
+          width = 1,
+          height = 150,
+          full_screen = FALSE,
+          card_header("Create New Linkage Iteration", class = "bg-dark"),
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                # Label for the selected dataset
+                div(style = "margin-right: 10px;", "Standardization Dataset:"),
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Boxed text output for showing the selected dataset
+                div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                  textOutput("selected_standardization_dataset")
+                ),
+                # Add standardization dataset button
+                actionButton("prepare_standardization_dataset", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                # Remove standardization dataset button
+                actionButton("remove_standardization_dataset", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+              ))
+            )
+          )
+        )
+      ),
+
+      # Line break between the previous card
+      HTML("<br>"),
+
       # CARD FOR BLOCKING VARIABLES
-      h5(strong("Step 2: Select the Blocking Variables")),
+      h5(strong("Step 3: Select the Blocking Variables")),
       h6(p(strong("NOTE: "), "Blocking variables cannot contain duplicate pairs.")),
       # CARD FOR BLOCKING VARIABLES
       card(full_screen = TRUE, card_header("Blocking Variables", class = "bg-dark"), height = 400,
@@ -1031,7 +1066,7 @@ linkage_ui <- page_navbar(
       HTML("<br>"),
 
       # CARD FOR MATCHING VARIABLES
-      h5(strong("Step 3: Select the Matching Variables")),
+      h5(strong("Step 4: Select the Matching Variables")),
       h6(p(strong("NOTE: "), "Matching variables cannot contain duplicate pairs.")),
       card(full_screen = TRUE, card_header("Matching Variables", class = "bg-dark"), height = 400,
         card_body(
@@ -1168,7 +1203,7 @@ linkage_ui <- page_navbar(
       HTML("<br>"),
 
       # CARD FOR PREVIWING THE PASS
-      h5(strong("Step 4: Preview the Algorithm & Passes")),
+      h5(strong("Step 5: Preview the Algorithm & Passes")),
       card(card_header("Preview Algorithm Pass", class = "bg-dark"), height = 150,
         card_body(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -1182,7 +1217,7 @@ linkage_ui <- page_navbar(
       HTML("<br>"),
 
       # CARD FOR ACCEPTANCE RULE
-      h5(strong("Step 5: Select the Acceptance Rule")),
+      h5(strong("Step 6: Select the Acceptance Rule")),
       card(card_header("Acceptance Rule", class = "bg-dark"), height = 150,
         card_body(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -2174,33 +2209,34 @@ linkage_ui <- page_navbar(
       HTML("<br>"), # Spacing
 
       ### STEP 2
-      h5(strong("Step 2: Select Output Options")),
-      # Create a card for editing/viewing algorithm output information
+      h5(strong("Step 2: Select the Type of Linkage Quality Report")),
+      # Create a card for the linkage quality report type
       div(style = "display: flex; justify-content: center; align-items: center;",
         card(
           width = 1,
-          height = 225,
+          height = 250,
           full_screen = FALSE,
-          card_header("Select Output Options", class = 'bg-dark'),
+          card_header("Report Type", class = 'bg-dark'),
           card_body(
             fluidRow(
-              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                checkboxInput("output_linked_iterations_pairs", "Output Linked Iteration Pairs (Unmodified)", FALSE)
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Radio button for selecting report type
+                radioButtons(
+                  inputId = "linkage_report_type",
+                  label = "Choose Linkage Report Type:",
+                  choices = list(
+                    "No Report" = 1,
+                    "Intermediate Report" = 2,
+                    "Final Report" = 3
+                  )
+                ),
+                helpText("Select a report type to see more information about what is included in each.")
               )),
-              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                checkboxInput("output_unlinked_iteration_pairs", "Output Unlinked Iteration Pairs (Unmodified)", FALSE)
-              )),
-              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                checkboxInput("generate_linkage_report", "Generate Linkage Quality Report", FALSE)
-              )),
-              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                checkboxInput("generate_algorithm_summary", "Generate Algorithm Summary", FALSE)
-              )),
-              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                checkboxInput("calculate_performance_measures", "Calculate Performance Measures", FALSE),
-              )),
-              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                checkboxInput("generate_threshold_plots", "Generate Threshold Plots", FALSE),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Boxed text output for showing the uploaded folder name
+                div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                   textOutput("linkage_report_type_help")
+                ),
               ))
             ),
           )
@@ -2210,7 +2246,57 @@ linkage_ui <- page_navbar(
       HTML("<br>"), # Spacing
 
       ### STEP 3
-      h5(strong("Step 3: Advanced Options (Optional)")),
+      h5(strong("Step 3: Select Output Options")),
+      # Create a card for editing/viewing algorithm output information
+      column(width = 6, offset = 3,  # Control the card's width and center it
+        div(style = "display: flex; justify-content: center; align-items: center;",
+          card(
+            width = NULL,  # Remove the width inside the card and control it from the column
+            height = 425,
+            full_screen = FALSE,
+            card_header("Select Output Options", class = 'bg-dark'),
+            card_body(
+            fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Per Pass CSV output of the linked pairs that were selected.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("output_linked_iterations_pairs", "Output Linked Iteration Pairs", FALSE)
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Per Pass CSV output of the unlinked pairs before pairs were selected.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("output_unlinked_iteration_pairs", "Output Unlinked Iteration Pairs", FALSE)
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Singular CSV output of each pass of the algorithm, including the fields used, acceptance threshold, and linkage rate.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("generate_algorithm_summary", "Algorithm Summary", FALSE)
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Singular CSV output of performance metrics calculated during the linkage process if a ground truth was provided for the algorithm.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("calculate_performance_measures", "Performance Measures", FALSE)
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Per Pass PNG plots of the linkage algorithm and its acceptance threshold distribution.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("generate_threshold_plots", "Threshold Plots", FALSE)
+                ))
+              )
+            )
+          )
+        )
+      ),
+
+      HTML("<br>"), # Spacing
+
+      ### STEP 4
+      h5(strong("Step 4: Advanced Options (Optional)")),
       # Create a card for editing/viewing algorithm output information
       div(style = "display: flex; justify-content: center; align-items: center;",
        card(
@@ -2261,7 +2347,13 @@ linkage_ui <- page_navbar(
     )
   ),
   #----
-  #-------------------------------#
+  #--------------------------------#
+
+  #-- UPLOAD NAME STANDARDIZATION DATASETS --#
+  #----
+
+  #----
+  #------------------------------------------#
 
   nav_spacer(),
   nav_menu(
@@ -3227,8 +3319,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df$enabled_for_testing <- str_replace(df$enabled_for_testing, "1", "Yes")
 
     # Rename the remaining columns
-    names(df)[names(df) == 'enabled'] <- 'Enabled as Default Algorithm'
-    names(df)[names(df) == 'enabled_for_testing'] <- 'Enabled for Testing'
+    names(df)[names(df) == 'enabled'] <- 'Active Algorithm'
+    names(df)[names(df) == 'enabled_for_testing'] <- 'Enabled for Sensitivity Testing'
 
     # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
     df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right))
@@ -4645,7 +4737,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df$Enabled <- str_replace(df$Enabled, "1", "Yes")
 
     # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
-    df <- subset(df, select = -c(algorithm_id, iteration_id))
+    df <- subset(df, select = -c(algorithm_id, iteration_id, standardization_file_id))
 
     # Reorder the columns so that 'Blocking Keys' and 'Matching Keys' come after 'Linkage Method'
     df <- df[, c('Iteration Name', 'Iteration Order/Priority', 'Linkage Method', 'Blocking Keys', 'Matching Keys',
@@ -4890,8 +4982,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     updateTextAreaInput(session, "add_iteration_name", value = "")
     updateNumericInput(session, "add_iteration_order", value = NA)
     iteration_acceptance_rule_to_add <<- NA
+    standardization_dataset_to_add <<- NA
     output$selected_iteration_acceptance_rule <- renderText({
       " "
+    })
+    output$selected_standardization_dataset <- renderText({
+      "Default Standardization Dataset"
     })
 
     # Show the add linkage iteration page
@@ -5006,16 +5102,18 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                    'ORDER BY iteration_id ASC;')
     df_temp <- dbGetQuery(linkage_metadata_conn, query)
 
-    iteration_name     <- df_temp$iteration_name
-    iteration_num      <- df_temp$iteration_num
-    linkage_method_id  <- df_temp$linkage_method_id
-    acceptance_rule_id <- df_temp$acceptance_rule_id
+    iteration_name          <- df_temp$iteration_name
+    iteration_num           <- df_temp$iteration_num
+    linkage_method_id       <- df_temp$linkage_method_id
+    acceptance_rule_id      <- df_temp$acceptance_rule_id
+    standardization_file_id <- df_temp$standardization_file_id
 
     # Pre-populate the general information from the database
     updateTextAreaInput(session, "add_iteration_name", value = iteration_name)
     updateNumericInput(session, "add_iteration_order", value = iteration_num)
     updateSelectizeInput(session, "add_iteration_linkage_method", selected = linkage_method_id)
     iteration_acceptance_rule_to_add <<- acceptance_rule_id
+    standardization_dataset_to_add <<- standardization_file_id
     if(!is.na(acceptance_rule_id)){
       # Query to get the acceptance method name from the acceptance_rules table
       method_query <- paste('SELECT method_name FROM acceptance_rules ar
@@ -5034,6 +5132,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       method_with_params <- paste0(method_name, " (", params_str, ")")
       output$selected_iteration_acceptance_rule <- renderText({
         method_with_params
+      })
+    }
+    if(!is.na(standardization_file_id)){
+      # Get the standardization dataset name
+      standardization_dataset_name <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM name_standardization_files
+                                                                               WHERE standardization_file_id = ', standardization_file_id))$standardization_file_label
+      # Render the text output
+      output$selected_standardization_dataset <- renderText({
+        standardization_dataset_name
       })
     }
 
@@ -5191,16 +5298,18 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                    'ORDER BY iteration_id ASC;')
     df_temp <- dbGetQuery(linkage_metadata_conn, query)
 
-    iteration_name     <- df_temp$iteration_name
-    iteration_num      <- df_temp$iteration_num
-    linkage_method_id  <- df_temp$linkage_method_id
-    acceptance_rule_id <- df_temp$acceptance_rule_id
+    iteration_name          <- df_temp$iteration_name
+    iteration_num           <- df_temp$iteration_num
+    linkage_method_id       <- df_temp$linkage_method_id
+    acceptance_rule_id      <- df_temp$acceptance_rule_id
+    standardization_file_id <- df_temp$standardization_file_id
 
     # Pre-populate the general information from the database
     updateTextAreaInput(session, "add_iteration_name", value = iteration_name)
     updateNumericInput(session, "add_iteration_order", value = iteration_num)
     updateSelectizeInput(session, "add_iteration_linkage_method", selected = linkage_method_id)
     iteration_acceptance_rule_to_add <<- acceptance_rule_id
+    standardization_dataset_to_add <<- standardization_file_id
     if(!is.na(acceptance_rule_id)){
       # Query to get the acceptance method name from the acceptance_rules table
       method_query <- paste('SELECT method_name FROM acceptance_rules ar
@@ -5221,6 +5330,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         method_with_params
       })
     }
+    if(!is.na(standardization_file_id)){
+      # Get the standardization dataset name
+      standardization_dataset_name <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM name_standardization_files
+                                                                               WHERE standardization_file_id = ', standardization_file_id))$standardization_file_label
+      # Render the text output
+      output$selected_standardization_dataset <- renderText({
+        standardization_dataset_name
+      })
+    }
 
     # Show the add linkage iteration page
     nav_show('main_navbar', 'add_linkage_iterations_page')
@@ -5232,6 +5350,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   #-- ADD LINKAGE ITERATION PAGE EVENTS --#
   #----
+  # Reactive value for the standardization file path (ADD)
+  standardization_file_path <- reactiveValues(
+    path=NULL
+  )
+
   # GLOBAL VARIABLES FOR RETURNING TO PREVIOUS PAGE
   add_linkage_iterations_return_page  <- "view_linkage_algorithms_page"
 
@@ -5259,6 +5382,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   matching_linkage_rule_to_update    <- NA
   matching_comparison_rule_to_add    <- NA
   matching_comparison_rule_to_update <- NA
+
+  # GLOBAL VARIABLE FOR SELECTED STANDARDIZATION DATASET
+  standardization_dataset_to_add <- NA
 
   #-- SELECT INPUT UI FOR ADDING AND UPDATING BLOCKING FIELDS --#
   # Creates the select input UI for available left fields
@@ -5523,6 +5649,17 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Render the text output to not include anything
     output$matching_comparison_rules_update <- renderText({
       " "
+    })
+  })
+
+  # Remove the standardization dataset for this iteration
+  observeEvent(input$remove_standardization_dataset, {
+    # Set the global variable value to NA
+    standardization_dataset_to_add <<- NA
+
+    # Render the text output
+    output$selected_standardization_dataset <- renderText({
+      "Default Standardization Dataset"
     })
   })
   #-------------------------------------------------------------#
@@ -5828,6 +5965,112 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     nav_show("main_navbar", add_linkage_iterations_return_page)
     updateNavbarPage(session, "main_navbar", selected = add_linkage_iterations_return_page)
   })
+
+  #-- NAME STANDARDIZATION UI EVENTS --#
+  observeEvent(input$prepare_standardization_dataset, {
+    # Creates the select input UI for available standardization datasets
+    output$available_standardization_datasets <- renderUI({
+      # Perform query using linkage_metadata_conn
+      query_result <- dbGetQuery(linkage_metadata_conn, "SELECT * from name_standardization_files")
+
+      # Extract columns from query result
+      choices <- setNames(query_result$standardization_file_id, query_result$standardization_file_label)
+
+      # Create select input with dynamic choices
+      span(selectizeInput("standardization_dataset_to_use", label = "Select Standardization Dataset:",
+                          choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                          options = list(
+                            placeholder = 'Select a Right Matching Field',
+                            onInitialize = I('function() { this.setValue(""); }')
+                          )))
+    })
+
+    showModal(modalDialog(
+      title = "Choose Acceptance Rule",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidPage(
+        # Acceptance rule table
+        h5("Upload a New Standardization Dataset, or Select an Existing Dataset:"),
+        layout_column_wrap(
+          width = 1/2,
+          height = 350,
+
+          # Card for uploading a new standardization dataset
+          card(card_header("Upload New Standardization Dataset", class = "bg-dark"),
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                textAreaInput("add_standardization_label", label = "Dataset Label/Identifier:", value = "",
+                               width = validateCssUnit(500), resize = "none"),
+              )),
+              column(width = 6, offset = 3, div(style = "display: flex; justify-content: left; align-items: left;",
+                # Label for the uploaded file name
+                div(style = "margin-right: 10px;", "Uploaded File:"),
+              )),
+              column(width = 6, offset = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Boxed text output for showing the uploaded file name
+                div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                  textOutput("uploaded_standardization_file")
+                ),
+                # Upload button
+                actionButton("upload_standardization_file", label = "", shiny::icon("upload")), #or use 'upload'
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Add margin-top to the save button for spacing
+                actionButton("select_uploaded_standardization_file", "Save and Use Standardization File",
+                             class = "btn-success", width = validateCssUnit(500),
+                             style = "margin-top: 15px;"),
+              )),
+            )
+          ),
+
+          # Card for selecting an existing standardization dataset
+          card(card_header("Select Existing Standardization Dataset", class = "bg-dark"),
+            fluidRow(
+              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                # UI Output for the available standardization datasets
+                uiOutput("available_standardization_datasets")
+              )),
+              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                actionButton("select_standardization_file", "Use Standardization File",
+                              class = "btn-success", width = validateCssUnit(300),
+                              style = "margin-top: 15px;"),
+              ))
+            )
+          )
+        ),
+      ),
+      size = "l"  # Large modal size to fit both tables
+    ))
+  })
+
+  # Allows user to upload a file for grabbing column names and storing path
+  observeEvent(input$upload_standardization_file,{
+    tryCatch({
+      standardization_file_path$path <- file.choose()
+    },
+    error = function(e){
+      standardization_file_path$path <- NULL
+    })
+  })
+
+  # Render the uploaded file
+  observe({
+    uploaded_file_add    <- standardization_file_path$path
+
+    # Uploaded dataset file (ADD)
+    if(is.null(uploaded_file_add)){
+      output$uploaded_standardization_file <- renderText({
+        "No File Uploaded"
+      })
+    }
+    else{
+      output$uploaded_standardization_file <- renderText({
+        basename(uploaded_file_add)
+      })
+    }
+  })
+  #------------------------------------#
 
   #-- DYNAMIC UI GENERATION CODE --#
   modify_iteration_get_acceptance_rule_inputs <- function(acceptance_method_id, label_name){
@@ -7834,10 +8077,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
         # Create a new iteration
         #----#
-        new_entry_query <- paste("INSERT INTO linkage_iterations (algorithm_id, iteration_name, iteration_num, linkage_method_id, acceptance_rule_id, modified_date, modified_by, enabled)",
+        new_entry_query <- paste("INSERT INTO linkage_iterations (algorithm_id, iteration_name, iteration_num, linkage_method_id, acceptance_rule_id, modified_date, modified_by, enabled, standardization_file_id)",
                                  "VALUES(?, ?, ?, ?, ?, ?, ?, ?);")
         new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-        dbBind(new_entry, list(algorithm_id, iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, 1))
+        dbBind(new_entry, list(algorithm_id, iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, 1, standardization_dataset_to_add))
         dbClearResult(new_entry)
         #----#
 
@@ -7955,10 +8198,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Create a new entry query for updating the linkage iteration
         #----#
         update_query <- paste("UPDATE linkage_iterations
-                          SET iteration_name = ?, iteration_num = ?, linkage_method_id = ?, acceptance_rule_id = ?, modified_date = ?, modified_by = ?
+                          SET iteration_name = ?, iteration_num = ?, linkage_method_id = ?, acceptance_rule_id = ?, modified_date = ?, modified_by = ?, standardization_file_id = ?
                           WHERE iteration_id = ?")
         update <- dbSendStatement(linkage_metadata_conn, update_query)
-        dbBind(update, list(iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, stored_iteration_id))
+        dbBind(update, list(iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, standardization_dataset_to_add, stored_iteration_id))
         dbClearResult(update)
         #----#
 
@@ -8060,6 +8303,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     matching_linkage_rule_to_update    <<- NA
     matching_comparison_rule_to_add    <<- NA
     matching_comparison_rule_to_update <<- NA
+    standardization_dataset_to_add     <<- NA
 
     # Update the table of iterations on the 'view iterations' page
     output$currently_added_linkage_iterations <- renderDataTable({
@@ -8181,10 +8425,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
         # Create a new iteration
         #----#
-        new_entry_query <- paste("INSERT INTO linkage_iterations (algorithm_id, iteration_name, iteration_num, linkage_method_id, acceptance_rule_id, modified_date, modified_by, enabled)",
+        new_entry_query <- paste("INSERT INTO linkage_iterations (algorithm_id, iteration_name, iteration_num, linkage_method_id, acceptance_rule_id, modified_date, modified_by, enabled, standardization_file_id)",
                                  "VALUES(?, ?, ?, ?, ?, ?, ?, ?);")
         new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-        dbBind(new_entry, list(algorithm_id, iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, 1))
+        dbBind(new_entry, list(algorithm_id, iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, 1, standardization_dataset_to_add))
         dbClearResult(new_entry)
         #----#
 
@@ -8298,10 +8542,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Create a new entry query for updating the linkage iteration
         #----#
         update_query <- paste("UPDATE linkage_iterations
-                          SET iteration_name = ?, iteration_num = ?, linkage_method_id = ?, acceptance_rule_id = ?, modified_date = ?, modified_by = ?
+                          SET iteration_name = ?, iteration_num = ?, linkage_method_id = ?, acceptance_rule_id = ?, modified_date = ?, modified_by = ?, standardization_file_id = ?
                           WHERE iteration_id = ?")
         update <- dbSendStatement(linkage_metadata_conn, update_query)
-        dbBind(update, list(iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, stored_iteration_id))
+        dbBind(update, list(iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, standardization_dataset_to_add, stored_iteration_id))
         dbClearResult(update)
         #----#
 
@@ -8403,6 +8647,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     matching_linkage_rule_to_update    <<- NA
     matching_comparison_rule_to_add    <<- NA
     matching_comparison_rule_to_update <<- NA
+    standardization_dataset_to_add     <<- NA
 
     # Update the table of iterations on the 'view iterations' page
     output$currently_added_linkage_iterations <- renderDataTable({
@@ -10287,6 +10532,28 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     }
   })
 
+  # Observes which linkage report type was chosen
+  observeEvent(input$linkage_report_type, {
+    # Render the text
+    if(input$linkage_report_type == 1){
+      output$linkage_report_type_help <- renderText({
+        "No linkage quality report will be generated for any algorithm(s) that are being run."
+      })
+    }
+    else if(input$linkage_report_type == 2){
+      output$linkage_report_type_help <- renderText({
+        "The intermediate report will generate a singular report for all algorithms being run. Information includes
+        a linked data summary, linkage rate summary, linkage algorithm summary, and a performance metrics table and plot."
+      })
+    }
+    else if(input$linkage_report_type == 3){
+      output$linkage_report_type_help <- renderText({
+        "The final report will generate a full quality report for each algorithm being ran. Information includes
+        a linked data summary, linkage rate summary, linkage algorithm summary, and a performance metrics table and plot."
+      })
+    }
+  })
+
   # Attempts to run the linkage algorithms the user chose
   observeEvent(input$run_linkage_btn, {
     # Disable this button
@@ -10295,7 +10562,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Get the user toggle inputs
     output_linked_iterations_pairs  <- input$output_linked_iterations_pairs
     output_unlinked_iteration_pairs <- input$output_unlinked_iteration_pairs
-    generate_linkage_report         <- input$generate_linkage_report
+    linkage_report_type             <- as.numeric(input$linkage_report_type)
     generate_algorithm_summary      <- input$generate_algorithm_summary
     calculate_performance_measures  <- input$calculate_performance_measures
     generate_threshold_plots        <- input$generate_threshold_plots
@@ -10324,7 +10591,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     link_metadata  <- metadata_file_path
     algorithm_ids  <- algorithms_to_run
     extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, output_linkage_iterations = output_linked_iterations_pairs,
-                                                   output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, generate_linkage_report = generate_linkage_report,
+                                                   output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, linkage_report_type = linkage_report_type,
                                                    generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
                                                    data_linker = username, standardize_names_file_path = standardize_file, generate_threshold_plots = generate_threshold_plots)
 

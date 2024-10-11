@@ -466,31 +466,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                  x = "Weight",
                  y = "Frequency") +
             theme_minimal() +
+            # Set the entire background white with a black border
             theme(
-              # Set the entire background to black
-              plot.background = element_rect(fill = "black", color = NA),
-
-              # Set the plotting area background to white
+              plot.background = element_rect(fill = "white", color = "black", size = 1),
               panel.background = element_rect(fill = "white", color = "black"),
-
-              # Major grid lines
-              panel.grid.major = element_line(color = "gray"),
-
-              # Black box border around the plotting area
-              panel.border = element_rect(color = "black", fill = NA, size = 1.5),
-
-              # Axis titles (ensuring white background here)
-              axis.title.x = element_text(color = "white"),
-              axis.title.y = element_text(color = "white"),
-
-              # Axis text (ensuring labels are visible in white)
-              axis.text.x = element_text(color = "white"),
-              axis.text.y = element_text(color = "white"),
-
-              # Title and legend text in white for readability
-              plot.title = element_text(color = "white", hjust = 0.5),
-              legend.title = element_text(color = "white"),
-              legend.text = element_text(color = "white")
+              panel.grid = element_blank(), # Remove gridlines
+              axis.line = element_line(color = "black"), # Black axis lines
+              axis.ticks = element_line(color = "black"),
+              legend.background = element_rect(fill = "white", color = "black"),
+              legend.position = "bottom"
             )
           plot_list[["candidate_weights_plot"]] <- candidate_weights_plot
 
@@ -537,31 +521,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                    y = "Frequency",
                    fill = "Match Type") +
               theme_minimal() +
+              # Set the entire background white with a black border
               theme(
-                # Set the entire background to black
-                plot.background = element_rect(fill = "black", color = NA),
-
-                # Set the plotting area background to white
+                plot.background = element_rect(fill = "white", color = "black", size = 1),
                 panel.background = element_rect(fill = "white", color = "black"),
-
-                # Major grid lines
-                panel.grid.major = element_line(color = "gray"),
-
-                # Black box border around the plotting area
-                panel.border = element_rect(color = "black", fill = NA, size = 1.5),
-
-                # Axis titles (ensuring white background here)
-                axis.title.x = element_text(color = "white"),
-                axis.title.y = element_text(color = "white"),
-
-                # Axis text (ensuring labels are visible in white)
-                axis.text.x = element_text(color = "white"),
-                axis.text.y = element_text(color = "white"),
-
-                # Title and legend text in white for readability
-                plot.title = element_text(color = "white", hjust = 0.5),
-                legend.title = element_text(color = "white"),
-                legend.text = element_text(color = "white")
+                panel.grid = element_blank(), # Remove gridlines
+                axis.line = element_line(color = "black"), # Black axis lines
+                axis.ticks = element_line(color = "black"),
+                legend.background = element_rect(fill = "white", color = "black"),
+                legend.position = "bottom"
               )
             plot_list[["candidate_weights_plot_ground_truth"]] <- candidate_weights_plot_gt
           }
@@ -677,85 +645,30 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # Get the pass name
         iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
 
+        # Use mutate to create a factor variable with custom labels for 'selected'
+        linkage_pairs <- linkage_pairs %>%
+          mutate(selected_label = factor(selected, levels = c(FALSE, TRUE), labels = c("Miss", "Match")))
+
+        #-- Visualize histogram after threshold is applied --#
+
         # Create a histogram of the weights with the decision boundary
-        decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = factor(selected))) +
+        decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
           geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
-          scale_fill_manual(values = c("FALSE" = "red", "TRUE" = "blue"), name = "Selected") +
-          labs(title = paste("Candidate Pairs - Decision Boundary (", iteration_name, ")"),
-               x = "Weight", y = "Frequency") +
+          scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+          labs(x = "Weight", y = "Frequency") +
           geom_vline(aes(xintercept = threshold), linetype = "dashed", color = "black", size = 1) +
-          theme_minimal() +
+          theme_minimal(base_size = 14) +
+          # Set the entire background white with a black border
           theme(
-            # Set the entire background to black
-            plot.background = element_rect(fill = "black", color = NA),
-
-            # Set the plotting area background to white
+            plot.background = element_rect(fill = "white", color = "black", size = 1),
             panel.background = element_rect(fill = "white", color = "black"),
-
-            # Major grid lines
-            panel.grid.major = element_line(color = "gray"),
-
-            # Black box border around the plotting area
-            panel.border = element_rect(color = "black", fill = NA, size = 1.5),
-
-            # Axis titles (ensuring white background here)
-            axis.title.x = element_text(color = "white"),
-            axis.title.y = element_text(color = "white"),
-
-            # Axis text (ensuring labels are visible in white)
-            axis.text.x = element_text(color = "white"),
-            axis.text.y = element_text(color = "white"),
-
-            # Title and legend text in white for readability
-            plot.title = element_text(color = "white", hjust = 0.5),
-            legend.title = element_text(color = "white"),
-            legend.text = element_text(color = "white")
+            panel.grid = element_blank(), # Remove gridlines
+            axis.line = element_line(color = "black"), # Black axis lines
+            axis.ticks = element_line(color = "black"),
+            legend.background = element_rect(fill = "white", color = "black"),
+            legend.position = "bottom"
           )
         plot_list[["decision_boundary_plot"]] <- decision_boundary
-
-        # Plot the performance results
-        if(has_ground_truth){
-          # Predict the performance
-          linkage_pairs$performance <- factor(ifelse(linkage_pairs$truth == TRUE & linkage_pairs$selected == TRUE, "TP",
-                                                     ifelse(linkage_pairs$truth == TRUE & linkage_pairs$selected == FALSE, "FN",
-                                                            ifelse(linkage_pairs$truth == FALSE & linkage_pairs$selected == TRUE, "FP", "TN"))),
-                                              levels = c("TP", "FP", "TN", "FN"))
-
-          # Generate the histogram with TP, FP, TN, FN
-          performance_plot <- ggplot(linkage_pairs, aes(x = weight, fill = performance)) +
-            geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
-            scale_fill_manual(values = c("TP" = "green", "FP" = "red", "TN" = "blue", "FN" = "orange")) +
-            labs(title = paste0("Weight Distribution of Candidate Record Pairs (", iteration_name, ") with Ground Truth"),
-                 x = "Weight", y = "Frequency", fill = "Performance") +
-            theme_minimal() +
-            theme(
-              # Set the entire background to black
-              plot.background = element_rect(fill = "black", color = NA),
-
-              # Set the plotting area background to white
-              panel.background = element_rect(fill = "white", color = "black"),
-
-              # Major grid lines
-              panel.grid.major = element_line(color = "gray"),
-
-              # Black box border around the plotting area
-              panel.border = element_rect(color = "black", fill = NA, size = 1.5),
-
-              # Axis titles (ensuring white background here)
-              axis.title.x = element_text(color = "white"),
-              axis.title.y = element_text(color = "white"),
-
-              # Axis text (ensuring labels are visible in white)
-              axis.text.x = element_text(color = "white"),
-              axis.text.y = element_text(color = "white"),
-
-              # Title and legend text in white for readability
-              plot.title = element_text(color = "white", hjust = 0.5),
-              legend.title = element_text(color = "white"),
-              legend.text = element_text(color = "white")
-            )
-          plot_list[["performance_plot"]] <- performance_plot
-        }
 
         # Return the plot list
         return_list[["threshold_plots"]] <- plot_list
@@ -1356,6 +1269,15 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
     ### Step 4: For each iteration ID loop through and perform data linkage
     #----
+    # Print a message to specify which algorithm we're in
+    algorithm_name <- dbGetQuery(linkage_metadata_db, paste0("SELECT * from linkage_algorithms where algorithm_id = ", algorithm_id))$algorithm_name
+    tryCatch({
+      showNotification(paste0("Beginning Linkage for ", algorithm_name), type = "warning", closeButton = FALSE)
+    },
+    error = function(e){
+      print(paste0("Beginning Linkage for ", algorithm_name))
+    })
+
     # Keep a value for the number of values that are linked
     linkage_rate_cumulative_numer <- 0
     linkage_rate_cumulative_denom <- nrow(left_dataset)
@@ -1402,6 +1324,14 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # Track start time so that we may make note of how long each pass takes
       start_time = proc.time()
 
+      # Print a message to indicate we're beginning this pass
+      tryCatch({
+        showNotification(paste0("Beginning Linkage pass (", curr_iteration_name, ")"), type = "warning", closeButton = FALSE)
+      },
+      error = function(e){
+        print(paste0("Beginning Linkage pass (", curr_iteration_name, ")"))
+      })
+
       # Call the run_iteration method implemented by the desired class
       results <- linkage_implementation$run_iteration(left_dataset, right_dataset, linkage_metadata_db, curr_iteration_id, algorithm_id, extra_parameters)
 
@@ -1412,7 +1342,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       formatted_time <- format(round((end_time - start_time)[3], 3), nsmall = 3)
 
       # Print a success message for linking record pairs
-      print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished in ", formatted_time, " seconds"))
+      tryCatch({
+        showNotification(paste0(curr_iteration_name, " using the ", implementation_name, " class finished in ", formatted_time, " seconds"), type = "warning", closeButton = FALSE)
+      },
+      error = function(e){
+        print(paste0(curr_iteration_name, " using the ", implementation_name, " class finished in ", formatted_time, " seconds"))
+      })
 
       ### STORE INFORMATION FOR ALGORITHM SUMMARY
       # Get the implementation name
@@ -1626,7 +1561,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
           # While the file exists, append a number and keep checking
           while (file.exists(full_filename)) {
-            full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".csv"))
+            full_filename <- file.path(output_dir, paste0(base_filename, " (", counter, ")", ".png"))
             counter <- counter + 1
           }
 
@@ -1774,7 +1709,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     }
 
     # Try to create report using the output data frame if the user wanted to
-    if(("generate_linkage_report" %in% names(extra_parameters) && extra_parameters[["generate_linkage_report"]] == TRUE) &&
+    if(("linkage_report_type" %in% names(extra_parameters) && extra_parameters[["linkage_report_type"]] == 3) &&
        "linkage_output_folder" %in% names(extra_parameters) && "data_linker" %in% names(extra_parameters)){
       # Get the output directory
       output_dir <- extra_parameters[["linkage_output_folder"]]
@@ -1803,7 +1738,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         # Get the username
         username <- extra_parameters[["data_linker"]]
 
-        # Get the output variabls that we'll be using
+        # Get the output variables that we'll be using
         strata_vars <- colnames(output_df)
         strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
 
