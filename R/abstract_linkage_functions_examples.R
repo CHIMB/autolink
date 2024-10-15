@@ -193,26 +193,21 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # The last linkage rule for standardizing names to use the most common spelling of that name
             if("standardize_names" %in% names(linkage_rules)){
-              if("standardize_names_file_path" %in% names(extra_parameters)){
-                # Get the file path (DEFINED/PASSED BY THE USER WHICH MUST BE A .csv)
-                file_path <- extra_parameters$standardize_names_file_path
+              # Get the field(s) we'll be standardizing
+              dataset_field <- row$left_dataset_field
 
-                # Get the field(s) we'll be standardizing
-                dataset_field <- row$left_dataset_field
+              # Get the standardized name for both datasets by calling the helper function
+              standardized_names_left <- ifelse(!is.na(get_standardized_names(linkage_metadata_db, iteration_id, left_dataset[[dataset_field]])),
+                                                get_standardized_names(linkage_metadata_db, iteration_id, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
+              standardized_names_right <- ifelse(!is.na(get_standardized_names(linkage_metadata_db, iteration_id, right_dataset[[dataset_field]])),
+                                                 get_standardized_names(linkage_metadata_db, iteration_id, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
 
-                # Get the standardized name for both datasets by calling the helper function
-                standardized_names_left <- ifelse(!is.na(get_standardized_names(file_path, left_dataset[[dataset_field]])),
-                                                  get_standardized_names(file_path, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
-                standardized_names_right <- ifelse(!is.na(get_standardized_names(file_path, right_dataset[[dataset_field]])),
-                                                   get_standardized_names(file_path, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
+              # Place the standardized names back into the dataset
+              left_dataset[[dataset_field]] <- standardized_names_left
+              right_dataset[[dataset_field]] <- standardized_names_right
 
-                # Place the standardized names back into the dataset
-                left_dataset[[dataset_field]] <- standardized_names_left
-                right_dataset[[dataset_field]] <- standardized_names_right
-
-                # Store this field name as one of our blocking fields
-                blocking_keys <- append(blocking_keys, dataset_field)
-              }
+              # Store this field name as one of our blocking fields
+              blocking_keys <- append(blocking_keys, dataset_field)
             }
           }
           else{
@@ -362,26 +357,21 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # The last linkage rule for standardizing names to use the most common spelling of that name
             if("standardize_names" %in% names(linkage_rules)){
-              if("standardize_names_file_path" %in% names(extra_parameters)){
-                # Get the file path (DEFINED/PASSED BY THE USER WHICH MUST BE A .csv)
-                file_path <- extra_parameters$standardize_names_file_path
+              # Get the field(s) we'll be standardizing
+              dataset_field <- row$left_dataset_field
 
-                # Get the field(s) we'll be standardizing
-                dataset_field <- row$left_dataset_field
+              # Get the standardized name for both datasets by calling the helper function
+              standardized_names_left <- ifelse(!is.na(get_standardized_names(linkage_metadata_db, iteration_id, left_dataset[[dataset_field]])),
+                                                get_standardized_names(linkage_metadata_db, iteration_id, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
+              standardized_names_right <- ifelse(!is.na(get_standardized_names(linkage_metadata_db, iteration_id, right_dataset[[dataset_field]])),
+                                                 get_standardized_names(linkage_metadata_db, iteration_id, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
 
-                # Get the standardized name for both datasets by calling the helper function
-                standardized_names_left <- ifelse(!is.na(get_standardized_names(file_path, left_dataset[[dataset_field]])),
-                                                  get_standardized_names(file_path, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
-                standardized_names_right <- ifelse(!is.na(get_standardized_names(file_path, right_dataset[[dataset_field]])),
-                                                   get_standardized_names(file_path, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
+              # Place the standardized names back into the dataset
+              left_dataset[[dataset_field]] <- standardized_names_left
+              right_dataset[[dataset_field]] <- standardized_names_right
 
-                # Place the standardized names back into the dataset
-                left_dataset[[dataset_field]] <- standardized_names_left
-                right_dataset[[dataset_field]] <- standardized_names_right
-
-                # Store this field name as one of our matching fields
-                matching_keys <- append(matching_keys, dataset_field)
-              }
+              # Store this field name as one of our matching fields
+              matching_keys <- append(matching_keys, dataset_field)
             }
           }
           else{
@@ -657,7 +647,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
           labs(x = "Weight", y = "Frequency") +
           geom_vline(aes(xintercept = threshold), linetype = "dashed", color = "black", size = 1) +
-          theme_minimal(base_size = 14) +
+          theme_minimal(base_size = 8) +
           # Set the entire background white with a black border
           theme(
             plot.background = element_rect(fill = "white", color = "black", size = 1),
@@ -857,26 +847,21 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # The last linkage rule for standardizing names to use the most common spelling of that name
             if("standardize_names" %in% names(linkage_rules)){
-              if("standardize_names_file_path" %in% names(extra_parameters)){
-                # Get the file path (DEFINED/PASSED BY THE USER WHICH MUST BE A .csv)
-                file_path <- extra_parameters$standardize_names_file_path
+              # Get the field(s) we'll be standardizing
+              dataset_field <- row$left_dataset_field
 
-                # Get the field(s) we'll be standardizing
-                dataset_field <- row$left_dataset_field
+              # Get the standardized name for both datasets by calling the helper function
+              standardized_names_left <- ifelse(!is.na(get_standardized_names(linkage_metadata_db, iteration_id, left_dataset[[dataset_field]])),
+                                                get_standardized_names(linkage_metadata_db, iteration_id, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
+              standardized_names_right <- ifelse(!is.na(get_standardized_names(linkage_metadata_db, iteration_id, right_dataset[[dataset_field]])),
+                                                 get_standardized_names(linkage_metadata_db, iteration_id, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
 
-                # Get the standardized name for both datasets by calling the helper function
-                standardized_names_left <- ifelse(!is.na(get_standardized_names(file_path, left_dataset[[dataset_field]])),
-                                                  get_standardized_names(file_path, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
-                standardized_names_right <- ifelse(!is.na(get_standardized_names(file_path, right_dataset[[dataset_field]])),
-                                                   get_standardized_names(file_path, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
+              # Place the standardized names back into the dataset
+              left_dataset[[dataset_field]] <- standardized_names_left
+              right_dataset[[dataset_field]] <- standardized_names_right
 
-                # Place the standardized names back into the dataset
-                left_dataset[[dataset_field]] <- standardized_names_left
-                right_dataset[[dataset_field]] <- standardized_names_right
-
-                # Store this field name as one of our blocking fields
-                blocking_keys <- append(blocking_keys, dataset_field)
-              }
+              # Store this field name as one of our blocking fields
+              blocking_keys <- append(blocking_keys, dataset_field)
             }
           }
           else{
@@ -1029,26 +1014,21 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # The last linkage rule for standardizing names to use the most common spelling of that name
             if("standardize_names" %in% names(linkage_rules)){
-              if("standardize_names_file_path" %in% names(extra_parameters)){
-                # Get the file path (DEFINED/PASSED BY THE USER WHICH MUST BE A .csv)
-                file_path <- extra_parameters$standardize_names_file_path
+              # Get the field(s) we'll be standardizing
+              dataset_field <- row$left_dataset_field
 
-                # Get the field(s) we'll be standardizing
-                dataset_field <- row$left_dataset_field
+              # Get the standardized name for both datasets by calling the helper function
+              standardized_names_left <- ifelse(!is.na(get_standardized_names(linkage_metadata_db, iteration_id, left_dataset[[dataset_field]])),
+                                                get_standardized_names(linkage_metadata_db, iteration_id, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
+              standardized_names_right <- ifelse(!is.na(get_standardized_names(linkage_metadata_db, iteration_id, right_dataset[[dataset_field]])),
+                                                 get_standardized_names(linkage_metadata_db, iteration_id, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
 
-                # Get the standardized name for both datasets by calling the helper function
-                standardized_names_left <- ifelse(!is.na(get_standardized_names(file_path, left_dataset[[dataset_field]])),
-                                                  get_standardized_names(file_path, left_dataset[[dataset_field]]), left_dataset[[dataset_field]])
-                standardized_names_right <- ifelse(!is.na(get_standardized_names(file_path, right_dataset[[dataset_field]])),
-                                                   get_standardized_names(file_path, right_dataset[[dataset_field]]), right_dataset[[dataset_field]])
+              # Place the standardized names back into the dataset
+              left_dataset[[dataset_field]] <- standardized_names_left
+              right_dataset[[dataset_field]] <- standardized_names_right
 
-                # Place the standardized names back into the dataset
-                left_dataset[[dataset_field]] <- standardized_names_left
-                right_dataset[[dataset_field]] <- standardized_names_right
-
-                # Store this field name as one of our matching fields
-                matching_keys <- append(matching_keys, dataset_field)
-              }
+              # Store this field name as one of our matching fields
+              matching_keys <- append(matching_keys, dataset_field)
             }
           }
           else{
@@ -1567,7 +1547,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
           # Save the ggplot
           full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
-          ggsave(filename = full_filename, plot = plot, width = 8, height = 6)
+          ggsave(filename = full_filename, plot = plot, width = 6, height = 4)
 
           # Specify that the file was successfully written
           print(paste0("Linkage Plot Saved As: ", full_filename))

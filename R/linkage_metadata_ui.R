@@ -2296,35 +2296,6 @@ linkage_ui <- page_navbar(
       HTML("<br>"), # Spacing
 
       ### STEP 4
-      h5(strong("Step 4: Advanced Options (Optional)")),
-      # Create a card for editing/viewing algorithm output information
-      div(style = "display: flex; justify-content: center; align-items: center;",
-       card(
-          width = 1,
-          height = 150,
-          full_screen = FALSE,
-          card_header("Select Advanced Options", class = 'bg-dark'),
-          card_body(
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
-                # Boxed text output for showing the uploaded file name
-                div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                    textOutput("uploaded_linkage_standardize_names_file", )
-                ),
-                # Upload Button
-                shinyFilesButton("standardize_names_file", label = "", icon = icon("upload"), title = "Select a File For Name Standardization (CSV)", multiple = F)
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
-                helpText("Select a file for standardizing names (must contain the columns 'common' and 'unique').")
-              ))
-            ),
-          )
-        )
-      ),
-
-      HTML("<br>"), # Spacing
-
-      ### STEP 4
       h5(strong("Step 4: Run Record Linkage for the Selected Algorithm(s)")),
       # Create a card for editing/viewing algorithm output information
       div(style = "display: flex; justify-content: center; align-items: center;",
@@ -2348,12 +2319,6 @@ linkage_ui <- page_navbar(
   ),
   #----
   #--------------------------------#
-
-  #-- UPLOAD NAME STANDARDIZATION DATASETS --#
-  #----
-
-  #----
-  #------------------------------------------#
 
   nav_spacer(),
   nav_menu(
@@ -5976,11 +5941,27 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       # Extract columns from query result
       choices <- setNames(query_result$standardization_file_id, query_result$standardization_file_label)
 
+      # Go through each of the choices, keep the datasets that exist
+      for(choice in choices){
+        # Get the dataset file
+        dataset_file <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * from name_standardization_files
+                                                                  WHERE standardization_file_id = ', choice))$standardization_file_name
+
+        # Get the file path
+        file_path <- file.path(system.file(package = "datalink", "data"), dataset_file)
+
+        # If the file path does not exist, drop it from the vector
+        if(!file.exists(file_path)){
+          # Remove this choice from the list of choices
+          choices <- choices[!choices %in% choice]
+        }
+      }
+
       # Create select input with dynamic choices
       span(selectizeInput("standardization_dataset_to_use", label = "Select Standardization Dataset:",
                           choices = choices, multiple = FALSE, width = validateCssUnit(300),
                           options = list(
-                            placeholder = 'Select a Right Matching Field',
+                            placeholder = 'Select a Standardization Dataset',
                             onInitialize = I('function() { this.setValue(""); }')
                           )))
     })
@@ -6056,7 +6037,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   # Render the uploaded file
   observe({
-    uploaded_file_add    <- standardization_file_path$path
+    uploaded_file_add <- standardization_file_path$path
 
     # Uploaded dataset file (ADD)
     if(is.null(uploaded_file_add)){
@@ -6069,6 +6050,127 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         basename(uploaded_file_add)
       })
     }
+  })
+
+  # Saves and selects the name standardization file
+  observeEvent(input$select_uploaded_standardization_file, {
+    # Get the input data
+    name_standardization_label <- trimws(input$add_standardization_label)
+    name_standardization_file  <- standardization_file_path$path
+
+    #-- ERROR HANDLING --#
+    # Verify that the dataset label/identifier is not blank
+    if(name_standardization_label == ""){
+      showNotification("Failed to Save Standardization Dataset - Label is Missing", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # Verify that the uploaded file exists (still), and that it is a valid dataset
+    if(is.null(name_standardization_file) || !file.exists(name_standardization_file) || file_ext(name_standardization_file) != "csv"){
+      showNotification("Failed to Save Standardization Dataset - Invalid Input File", type = "error", closeButton = FALSE)
+      return()
+    }
+    #--------------------#
+
+    # Check if the database has this dataset, if it does, don't upload it and select it instead, otherwise save it
+    file_name <- paste0(file_path_sans_ext(basename(name_standardization_file)), ".rds")
+    query <- 'SELECT * from name_standardization_files
+              WHERE standardization_file_name = ?'
+    df <- dbGetQuery(linkage_metadata_conn, query, params = file_name)
+    if(nrow(df) > 0){
+      # Read in the CSV
+      name_standardization_dataset <- fread(name_standardization_file)
+
+      # Verify that it has the columns "unique" and "common"
+      dataset_col_names <- colnames(name_standardization_dataset)
+      if(!("unique" %in% dataset_col_names) || !("common" %in% dataset_col_names)){
+        showNotification("Failed to Save Standardization Dataset - Dataset is Missing Columns", type = "error", closeButton = FALSE)
+        rm(name_standardization_dataset)
+        gc()
+        return()
+      }
+
+      # Get the ID
+      standardization_file_id <- df$standardization_file_id
+
+      # Save as .rds in package data folder
+      saveRDS(name_standardization_dataset, file.path(system.file(package = "datalink", "data"), file_name))
+
+      # Save the uploaded dataset and select it
+      standardization_dataset_to_add <<- standardization_file_id
+      output$selected_standardization_dataset <- renderText({
+        df$standardization_file_label
+      })
+
+      # Show a success message and return
+      showNotification("Name Standardization Dataset Selected Successfully", type = "message", closeButton = FALSE)
+      removeModal()
+    }
+    else{
+      # Read in the CSV
+      name_standardization_dataset <- fread(name_standardization_file)
+
+      # Verify that it has the columns "unique" and "common"
+      dataset_col_names <- colnames(name_standardization_dataset)
+      if(!("unique" %in% dataset_col_names) || !("common" %in% dataset_col_names)){
+        showNotification("Failed to Save Standardization Dataset - Dataset is Missing Columns", type = "error", closeButton = FALSE)
+        rm(name_standardization_dataset)
+        gc()
+        return()
+      }
+
+      # Extract the file name without the extension and apply a ".rds" extension for the output
+      name_standardization_file <- paste0(file_path_sans_ext(basename(name_standardization_file)), ".rds")
+
+      # Query to add a new row to the database for storing the dataset
+      new_entry_query <- paste("INSERT INTO name_standardization_files (standardization_file_label, standardization_file_name)",
+                               "VALUES(?, ?);")
+      new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+      dbBind(new_entry, list(name_standardization_label, name_standardization_file))
+      dbClearResult(new_entry)
+
+      # Get the ID
+      standardization_file_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS standardization_file_id;")$standardization_file_id
+
+      # Save as .rds in package data folder
+      saveRDS(name_standardization_dataset, file.path(system.file(package = "datalink", "data"), name_standardization_file))
+
+      # Save the uploaded dataset and select it, then return
+      standardization_dataset_to_add <<- standardization_file_id
+      output$selected_standardization_dataset <- renderText({
+        name_standardization_label
+      })
+
+      # Show a success message and return
+      showNotification("Name Standardization Dataset Saved Successfully", type = "message", closeButton = FALSE)
+      removeModal()
+    }
+  })
+
+  # Selects the name standardization file (ALREADY SAVED)
+  observeEvent(input$select_standardization_file, {
+    # Get the selected file
+    selected_dataset_id <- input$standardization_dataset_to_use
+
+    # Verify that a dataset was selected
+    if(selected_dataset_id == ""){
+      return()
+    }
+    else{
+      selected_dataset_id <- as.integer(selected_dataset_id)
+    }
+
+    # Get the file name using the dataset ID
+    dataset_label <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * from name_standardization_files
+                                                               WHERE standardization_file_id = ', selected_dataset_id))$standardization_file_label
+    # Set the global variable
+    standardization_dataset_to_add <<- selected_dataset_id
+
+    # Render the text output and close the modal
+    output$selected_standardization_dataset <- renderText({
+      dataset_label
+    })
+    removeModal()
   })
   #------------------------------------#
 
@@ -6381,7 +6483,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   # Brings the user to the acceptance methods page
   observeEvent(input$add_linkage_iteration_to_add_acceptance_methods, {
-
     # Set the return page to the add linkage iterations page
     acceptance_methods_return_page <<- "add_linkage_iterations_page"
 
@@ -10568,8 +10669,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     generate_threshold_plots        <- input$generate_threshold_plots
 
     # Get the folder and file inputs
-    output_dir       <- parseDirPath(volumes, input$linkage_output_dir)
-    standardize_file <- input$standardize_names_file
+    output_dir <- parseDirPath(volumes, input$linkage_output_dir)
 
     #-- Error Handling --#
     # We need to make sure the user supplied an output folder
@@ -10577,11 +10677,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       showNotification("Failed to Run Linkage - Missing Output Folder", type = "error", closeButton = FALSE)
       enable("run_linkage_btn")
       return()
-    }
-
-    # Check if the standardize file was provided
-    if(is.integer(standardize_file)){
-      standardize_file <- ""
     }
     #--------------------#
 
@@ -10593,7 +10688,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, output_linkage_iterations = output_linked_iterations_pairs,
                                                    output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, linkage_report_type = linkage_report_type,
                                                    generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
-                                                   data_linker = username, standardize_names_file_path = standardize_file, generate_threshold_plots = generate_threshold_plots)
+                                                   data_linker = username, generate_threshold_plots = generate_threshold_plots)
 
     # Run the algorithms
     successful <- TRUE

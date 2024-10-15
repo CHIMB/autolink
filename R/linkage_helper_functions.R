@@ -441,24 +441,34 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
 #-- HELPER FUNCTIONS FOR LINKAGE RULES --#
 #' Get Standardized Names
 #'
-#' The get_standardized_names() function will take in a standardizing names file in
-#' the form of the csv which must contain the columns 'unique' which indicates all possible
-#' forms of a common name, and a column 'common' which is the most common spelling of that
-#' name which it will be standardized to. If no spelling is found, the name is replaced with
-#' NA
-#' @param file_path A path to the .csv file that will be read
+#' The get_standardized_names() function will take in an integer iteration ID
+#' which will grab the .rds dataset file from the datalink packages 'data' folder, the
+#' data should contain two columns, one of variant spellings of a name called 'unique',
+#' and a column 'common' which is the most common spelling of that name which it will be
+#' standardized to. If no spelling is found, the name is replaced with NA
+#' @param iteration_id An integer ID for the current iteration.
 #' @param data_field A vector of names that will be standardized.
 #' @param lookupvector The vector of names we'll try to unname.
 #' @examples
-#' file_path <- choose.file() # Select the '.csv'
+#' my_db <- dbConnect(SQLite(), file.choose())
+#' iteration_id <- 1
 #' data_field <- c("John", "Johnnie", "Johnny", "Jon")
-#' get_standardized_names(file_path, data_field)
+#' get_standardized_names(my_db, 1, data_field)
 #' @export
-get_standardized_names <- function(file_path, data_field, lookupvector = common_standardized_names){
+get_standardized_names <- function(linkage_db, iteration_id, data_field, lookupvector = common_standardized_names){
+  # Check to see if the iteration is using a custom file, if so, try to get it
+  file_name <- dbGetQuery(linkage_db, "SELECT standardization_file_name FROM linkage_iterations li
+                                       JOIN name_standardization_files sf ON li.standardization_file_id = sf.standardization_file_id
+                                       WHERE iteration_id = ?",
+                          params = list(iteration_id))
+
+  # Get the file_path
+  file_path <- file.path(system.file(package = "datalink", "data"), file_name)
+
   # Read in the standardization data frame
   standardization_df <- data.frame()
-  if(!is.null(file_path)){
-    standardization_df <- fread(file_path, select = c("unique","common"))
+  if(!is.null(file_path) && !is.na(file_path) && file.exists(file_path)){
+    standardization_df <- readRDS(file_path)
   }
   else{
     # Load the internal dataset without affecting the global environment
@@ -534,7 +544,6 @@ load_linkage_file <- function(dataset_file){
 #' @param linkage_report_type 1 = No Report, 2 = Intermediate Report, 3 = Final Report.
 #' @param calculate_performance_measures A TRUE or FALSE value for whether you'd like to calculate and export performance measures from the algorithms being run.
 #' @param data_linker A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).
-#' @param standardize_names_file_path A path to a CSV containing common alternative spellings of names that will standardize to a singular spelling. Must have the columns 'START' and 'LABEL'.
 #' @param generate_algorithm_summary A TRUE or FALSE value for whether you'd like to export a CSV summary of the algorithm that was run.
 #' @param generate_threshold_plots A TRUE or FALSE value for whether you'd like to export threshold plots for each pass.
 #' @examples
@@ -546,7 +555,6 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          linkage_report_type = NULL,
                                          calculate_performance_measures = FALSE,
                                          data_linker = NULL,
-                                         standardize_names_file_path = NULL,
                                          generate_algorithm_summary = FALSE,
                                          generate_threshold_plots = FALSE){
 
@@ -605,17 +613,6 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!isFALSE(generate_threshold_plots) && !is.na(generate_threshold_plots) && !is.null(generate_threshold_plots) &&
      (isTRUE(generate_threshold_plots) || generate_threshold_plots == "TRUE")){
     extra_params_list[["generate_threshold_plots"]] <- TRUE
-  }
-  #----------------------------------------------------------------------------#
-
-  # Linkage Rules
-  #----------------------------------------------------------------------------#
-  ### Linkage Output Folder
-  if(!is.null(standardize_names_file_path)){
-    # Make sure the input is valid
-    if(!is.na(standardize_names_file_path) && file.exists(standardize_names_file_path)){
-      extra_params_list[["standardize_names_file_path"]] <- standardize_names_file_path
-    }
   }
   #----------------------------------------------------------------------------#
 
