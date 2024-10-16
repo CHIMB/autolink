@@ -641,27 +641,57 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         #-- Visualize histogram after threshold is applied --#
 
-        # Create a histogram of the weights with the decision boundary
-        decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
-          geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
-          scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
-          labs(x = "Weight", y = "Frequency") +
-          geom_vline(aes(xintercept = threshold), linetype = "dashed", color = "black", size = 1) +
-          theme_minimal(base_size = 8) +
-          # Set the entire background white with a black border
-          theme(
-            plot.background = element_rect(fill = "white", color = "black", size = 1),
-            panel.background = element_rect(fill = "white", color = "black"),
-            panel.grid = element_blank(), # Remove gridlines
-            axis.line = element_line(color = "black"), # Black axis lines
-            axis.ticks = element_line(color = "black"),
-            legend.background = element_rect(fill = "white", color = "black"),
-            legend.position = "bottom"
-          )
-        plot_list[["decision_boundary_plot"]] <- decision_boundary
+        # Get the acceptance threshold
+        acceptance_threshold <- get_acceptence_thresholds(linkage_metadata_db, iteration_id)
 
-        # Return the plot list
-        return_list[["threshold_plots"]] <- plot_list
+        # Get the acceptance threshold value
+        if("posterior_threshold" %in% names(acceptance_threshold)){
+          acceptance_threshold <- acceptance_threshold[["posterior_threshold"]]
+          # Create a histogram of the posterior thresholds with the decision boundary
+          decision_boundary <- ggplot(linkage_pairs, aes(x = mpost, fill = selected_label)) +
+            geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
+            scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+            labs(x = "Weight", y = "Frequency") +
+            geom_vline(aes(xintercept = acceptance_threshold), linetype = "dashed", color = "black", size = 1) +
+            theme_minimal(base_size = 8) +
+            # Set the entire background white with a black border
+            theme(
+              plot.background = element_rect(fill = "white", color = "black", size = 1),
+              panel.background = element_rect(fill = "white", color = "black"),
+              panel.grid = element_blank(), # Remove gridlines
+              axis.line = element_line(color = "black"), # Black axis lines
+              axis.ticks = element_line(color = "black"),
+              legend.background = element_rect(fill = "white", color = "black"),
+              legend.position = "bottom"
+            )
+          plot_list[["decision_boundary_plot"]] <- decision_boundary
+
+          # Return the plot list
+          return_list[["threshold_plots"]] <- plot_list
+        }else if ("match_weight" %in% names(acceptance_threshold)){
+          acceptance_threshold <- acceptance_threshold[["match_weight"]]
+          # Create a histogram of the weights with the decision boundary
+          decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
+            geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
+            scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+            labs(x = "Weight", y = "Frequency") +
+            geom_vline(aes(xintercept = acceptance_threshold), linetype = "dashed", color = "black", size = 1) +
+            theme_minimal(base_size = 8) +
+            # Set the entire background white with a black border
+            theme(
+              plot.background = element_rect(fill = "white", color = "black", size = 1),
+              panel.background = element_rect(fill = "white", color = "black"),
+              panel.grid = element_blank(), # Remove gridlines
+              axis.line = element_line(color = "black"), # Black axis lines
+              axis.ticks = element_line(color = "black"),
+              legend.background = element_rect(fill = "white", color = "black"),
+              legend.position = "bottom"
+            )
+          plot_list[["decision_boundary_plot"]] <- decision_boundary
+
+          # Return the plot list
+          return_list[["threshold_plots"]] <- plot_list
+        }
 
         ### Return our list of return values
         return(return_list)
@@ -1335,6 +1365,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       linkage_method_desc <- get_linkage_technique_description(linkage_metadata_db, curr_iteration_id)
       linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
       algo_summary_footnotes <- append(algo_summary_footnotes, linkage_footnote)
+      algo_summary_footnotes <- unique(algo_summary_footnotes)
 
       # Get the blocking variables
       blocking_fields_df <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
@@ -1717,6 +1748,9 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
         # Get the username
         username <- extra_parameters[["data_linker"]]
+
+        # Edit the output data frame by applying cutoffs to variables that may have many different values
+        output_df <- apply_output_cutoffs(linkage_metadata_db, algorithm_id, output_df)
 
         # Get the output variables that we'll be using
         strata_vars <- colnames(output_df)

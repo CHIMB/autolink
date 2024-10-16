@@ -5,27 +5,29 @@
 \title{Get Standardized Names}
 \usage{
 get_standardized_names(
-  file_path,
+  linkage_db,
+  iteration_id,
   data_field,
   lookupvector = common_standardized_names
 )
 }
 \arguments{
-\item{file_path}{A path to the .csv file that will be read}
+\item{iteration_id}{An integer ID for the current iteration.}
 
 \item{data_field}{A vector of names that will be standardized.}
 
 \item{lookupvector}{The vector of names we'll try to unname.}
 }
 \description{
-The get_standardized_names() function will take in a standardizing names file in
-the form of the csv which must contain the columns 'START' which indicates all possible
-forms of a common name, and a column 'LABEL' which is the most common spelling of that
-name which it will be standardized to. If no spelling is found, the name is replaced with
-NA
+The get_standardized_names() function will take in an integer iteration ID
+which will grab the .rds dataset file from the datalink packages 'data' folder, the
+data should contain two columns, one of variant spellings of a name called 'unique',
+and a column 'common' which is the most common spelling of that name which it will be
+standardized to. If no spelling is found, the name is replaced with NA
 }
 \examples{
-file_path <- choose.file() # Select the '.csv'
+my_db <- dbConnect(SQLite(), file.choose())
+iteration_id <- 1
 data_field <- c("John", "Johnnie", "Johnny", "Jon")
-get_standardized_names(file_path, data_field)
+get_standardized_names(my_db, 1, data_field)
 }

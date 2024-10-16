@@ -438,6 +438,85 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
 }
 #------------------------------------------------------------#
 
+#-- HELPER FUNCTIONS FOR REPORT OUTPUT --#
+#' Apply Output Cutoffs
+#'
+#' The apply_output_cutoffs() function will take in a linkage database connection containing
+#' all the metadata, along with an algorithm ID and the dataframe being used for report generation.
+#' A dataframe is returned which contains the dataset fields being kept (with cutoffs)
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param algorithm_id An iteration number.
+#' @param output_df The data frame being used during report generation
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' algorithm_id <- 1
+#' apply_output_cutoffs(linkage_db, algorithm_id, output_df)
+#' @export
+apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df){
+  # Get the output fields
+  stored_fields_with_names <- dbGetQuery(linkage_db, "SELECT lao.algorithm_id, lao.dataset_label, lao.field_type, df.field_name
+                                                 FROM linkage_algorithms_output_fields lao
+                                                 JOIN dataset_fields df
+                                                 ON lao.dataset_field_id = df.field_id
+                                                 WHERE lao.algorithm_id = ?
+                                                 ORDER BY parameter_id", params = list(algorithm_id))
+
+  # Loop through the columns of our output data frame, and obtain the field type
+  for(col_name in colnames(output_df)){
+    # Get the corresponding field type for each column
+    field_type <- stored_fields_with_names$field_type[stored_fields_with_names$field_name == col_name]
+    dataset_label <- stored_fields_with_names$dataset_label[stored_fields_with_names$field_name == col_name]
+
+    # Make sure a field type exists for this field, otherwise skip it
+    if(!identical(field_type, integer(0))){
+      # DATE
+      if(field_type == 2){
+        output_df[[col_name]] <- cut(output_df[[col_name]],
+                                     breaks = c(-Inf, 1975, 1985, 1995, 2005, 2015, Inf),
+                                     labels = c("<1975", "1975-1984", "1985-1994", "1995-2004", "2005-2014", "2015-2024"),
+                                     right = FALSE)
+      }
+      # AGE
+      else if(field_type == 3){
+        output_df[[col_name]] <- cut(output_df[[col_name]],
+                                     breaks = c(-Inf, 18, 35, 65, Inf),
+                                     labels = c("<18", "18-34", "35-64", "65+"),
+                                     right = F)
+      }
+      # POSTAL CODE
+      else if(field_type == 4){
+        output_df[[col_name]] <- substr(output_df[[col_name]], 1, 3)
+      }
+      # NAME LENGTH
+      else if(field_type == 5){
+        output_df[[col_name]] <- cut(nchar(output_df[[col_name]]),
+                                     breaks = c(-Inf, 5, 6, 7, 8, Inf),
+                                     labels = c("<5", "5", "6", "7", "8+"),
+                                     right = F)
+      }
+      # AGE (BIRTH YEAR)
+      else if(field_type == 6){
+
+      }
+      # AGE (BIRTH MONTH)
+      else if(field_type == 7){
+
+      }
+      # AGE (BIRTH DAY)
+      else if(field_type == 8){
+
+      }
+      # REAPPLY THE DATASET LABEL
+      label(output_df[[col_name]]) <- dataset_label
+    }
+  }
+
+  # Return the output fields
+  return(output_df)
+}
+#----------------------------------------#
+
 #-- HELPER FUNCTIONS FOR LINKAGE RULES --#
 #' Get Standardized Names
 #'

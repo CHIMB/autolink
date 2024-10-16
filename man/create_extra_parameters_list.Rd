@@ -7,9 +7,12 @@
 create_extra_parameters_list(
   linkage_output_folder = NULL,
   output_linkage_iterations = FALSE,
-  generate_linkage_report = FALSE,
+  output_unlinked_iteration_pairs = FALSE,
+  linkage_report_type = NULL,
+  calculate_performance_measures = FALSE,
   data_linker = NULL,
-  standardize_names_file_path = NULL
+  generate_algorithm_summary = FALSE,
+  generate_threshold_plots = FALSE
 )
 }
 \arguments{
@@ -17,11 +20,17 @@ create_extra_parameters_list(
 
 \item{output_linkage_iterations}{A TRUE or FALSE value for whether you'd like each iteration to write the linked pairs (UNEDITED) to the output directory.}
 
-\item{generate_linkage_report}{A TRUE or FALSE value for whether you'd like a Linkage Quality Report to be generated and written to the output directory (from the linkrep package).}
+\item{output_unlinked_iteration_pairs}{A TRUE or FALSE value for whether you'd like each iteration to write the unlinked pairs (UNEDITED) to the output directory}
+
+\item{linkage_report_type}{1 = No Report, 2 = Intermediate Report, 3 = Final Report.}
+
+\item{calculate_performance_measures}{A TRUE or FALSE value for whether you'd like to calculate and export performance measures from the algorithms being run.}
 
 \item{data_linker}{A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).}
 
-\item{standardize_names_file_path}{A path to a CSV containing common alternative spellings of names that will standardize to a singular spelling. Must have the columns 'START' and 'LABEL'.}
+\item{generate_algorithm_summary}{A TRUE or FALSE value for whether you'd like to export a CSV summary of the algorithm that was run.}
+
+\item{generate_threshold_plots}{A TRUE or FALSE value for whether you'd like to export threshold plots for each pass.}
 }
 \description{
 The create_extra_parameters_list() function will allow users to modify any of the default
