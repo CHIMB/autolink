@@ -337,6 +337,34 @@ get_iteration_name <- function(linkage_db, iteration_id){
   return(iteration_name_df$iteration_name)
 }
 
+#' Get Iteration Implementation Name
+#'
+#' The get_algorithm_name() function will take in a linkage database connection
+#' containing all the metadata, along with an algorithm ID for the current algorithm being run.
+#' A singular string is returned which is the user defined name of the the algorithm which
+#' is currently being run.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param algorithm_id An algorithm number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' algorithm_id <- 1
+#' get_algorithm_name(linkage_db, algorithm_id)
+#' @export
+get_algorithm_name <- function(linkage_db, algorithm_id){
+  # Perform a query that joins linkage_iterations with linkage methods
+  algorithm_name_df <- dbGetQuery(linkage_db, paste0('SELECT algorithm_name FROM linkage_algorithms
+                                                        WHERE algorithm_id = ', algorithm_id))
+
+  # If somehow, there is no iteration name, return NA
+  if(nrow(algorithm_name_df) <= 0){
+    return(NA)
+  }
+
+  # Return the label
+  return(algorithm_name_df$algorithm_name)
+}
+
 #' Get Algorithm Ground Truth Keys
 #'
 #' The get_ground_truth_fields() function will take in a linkage database connection containing
