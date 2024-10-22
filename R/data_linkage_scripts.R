@@ -1170,15 +1170,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         #-- STEP 3: SCORE PAIRS --#
         # Since this is a deterministic pass, we'll use the 'score_simple()' function instead
         # of creating an EM algorithm
-        score_simple(linkage_pairs, "score", on = matching_keys, inplace = T) #v1
-        #score_simple(linkage_pairs, "score", on = matching_keys, w1 = 1, inplace = T) #v2
+        #score_simple(linkage_pairs, "score", on = matching_keys, inplace = T) #v1
+        score_simple(linkage_pairs, "score", on = matching_keys, w1 = 1, inplace = T) #v2
         #-------------------------#
 
         #-- STEP 4: SELECT PAIRS --#
         # There is no need for a user defined acceptance rule since it is a deterministic pass
         # which means our threshold for "score" is just 1 (either it links or it doesn't)
-        select_greedy(linkage_pairs, "selected", "score", threshold = 1, include_ties = TRUE, inplace = TRUE) #v1
-        #select_greedy(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T) #v2
+        #select_greedy(linkage_pairs, "selected", "score", threshold = 1, include_ties = TRUE, inplace = TRUE) #v1
+        select_greedy(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T) #v2
         #--------------------------#
 
         #-- STEP 5: LINK THE PAIRS --#
