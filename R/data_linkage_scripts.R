@@ -398,6 +398,25 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               # (NOT SURE IF THIS WORKS YET, IF NOT, TRY SOMETHING SIMILAR TO as.formula()?)
               comparison_rules_list[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
             }
+            else if ("numeric_tolerance" %in% names(comparison_rules)){
+              # custom "error tolerance" function
+              numeric_error_tolerance <- function(tolerance){
+                function(x , y){
+                  if(!missing(x) && !missing(y)){
+                    return(abs(x - y) <= tolerance)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the tolerance value
+              tolerance <- comparison_rules[["numeric_tolerance"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- numeric_error_tolerance(tolerance)
+            }
           }
         }
 
@@ -688,7 +707,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
           ### Returned the plot captions
           return_list[["plot_captions"]] <- plot_caps_list
-        }else if ("match_weight" %in% names(acceptance_threshold)){
+        }
+        else if ("match_weight" %in% names(acceptance_threshold)){
           acceptance_threshold <- acceptance_threshold[["match_weight"]]
           # Create a histogram of the weights with the decision boundary
           decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
@@ -987,7 +1007,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             gc()
           }
         }
-
         #----------------------------#
 
         #-- STEP 2: COMPARE PAIRS --#
@@ -1116,43 +1135,59 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               # (NOT SURE IF THIS WORKS YET, IF NOT, TRY SOMETHING SIMILAR TO as.formula()?)
               comparison_rules_list[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
             }
-          }
-          else{
+            else if ("numeric_tolerance" %in% names(comparison_rules)){
+              # custom "error tolerance" function
+              numeric_error_tolerance <- function(tolerance){
+                function(x , y){
+                  if(!missing(x) && !missing(y)){
+                    return(abs(x - y) <= tolerance)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
 
+              # Get the tolerance value
+              tolerance <- comparison_rules[["numeric_tolerance"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- numeric_error_tolerance(tolerance)
+            }
           }
         }
 
         # Now, we'll move onto the matching keys, using the compare_pairs() function from reclin2
-        compare_pairs(linkage_pairs, on = matching_keys, inplace = TRUE)
+        if(length(comparison_rules_list) > 0){
+          compare_pairs(linkage_pairs, on = matching_keys,
+                        comparators = comparison_rules_list, inplace=TRUE)
+        }
+        else{
+          compare_pairs(linkage_pairs, on = matching_keys, inplace=TRUE)
+        }
         #---------------------------#
 
         #-- STEP 3: SCORE PAIRS --#
-
         # Since this is a deterministic pass, we'll use the 'score_simple()' function instead
         # of creating an EM algorithm
-        linkage_pairs <- score_simple(linkage_pairs, "score", on = matching_keys)
-
+        score_simple(linkage_pairs, "score", on = matching_keys, inplace = T) #v1
+        #score_simple(linkage_pairs, "score", on = matching_keys, w1 = 1, inplace = T) #v2
         #-------------------------#
 
         #-- STEP 4: SELECT PAIRS --#
-
         # There is no need for a user defined acceptance rule since it is a deterministic pass
         # which means our threshold for "score" is just 1 (either it links or it doesn't)
-        linkage_pairs <- select_greedy(linkage_pairs, "selected", "score", threshold = 1, include_ties = TRUE, inplace = TRUE)
-
+        select_greedy(linkage_pairs, "selected", "score", threshold = 1, include_ties = TRUE, inplace = TRUE) #v1
+        #select_greedy(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T) #v2
         #--------------------------#
 
         #-- STEP 5: LINK THE PAIRS --#
-
         # Call the link() function to finally get our linked dataset
         linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "score"))
-
-        # How would we like to handle de-duplicating pairs here?
 
         # Attach the linkage name/pass name to the records for easier identification later
         stage_name <- get_iteration_name(linkage_metadata_db, iteration_id)
         linked_dataset <- cbind(linked_dataset, stage=stage_name)
-
         #----------------------------#
 
         #-- STEP 6: RETURN VALUES --#
