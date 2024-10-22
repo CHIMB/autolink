@@ -1763,6 +1763,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # F1-Score
       F1_SCORE <- (TP/(TP + (0.5 * (FP + FN)))) * 100
 
+      # FDR (False Discover Rate) WE CAN CHOOSE TO ADD IT LATER
+      #FDR <- (FP/(FP + TP)) * 100
+
+      # FOR (False Omission Rate) WE CAN CHOOSE TO ADD IT LATER
+      #FOR <- (FN/(FN + TN)) * 100
+
       # Calculate the linkage rate
       linkage_rate <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
 
