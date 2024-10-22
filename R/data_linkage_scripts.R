@@ -457,9 +457,11 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Filter out rows with NA in 'mpost'
           linkage_pairs <- linkage_pairs[!is.na(linkage_pairs$mpost), ]
           select_greedy(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE)
+          #select_threshold(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE) #IF WE WANT DUPES
         }else if ("match_weight" %in% names(acceptance_threshold)){
           linkage_weight <- acceptance_threshold[["match_weight"]]
           select_greedy(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE)
+          #select_threshold(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE) #IF WE WANT DUPES
         }
         else{
           # Create a list of plots and captions that we'll return
@@ -1179,6 +1181,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # which means our threshold for "score" is just 1 (either it links or it doesn't)
         #select_greedy(linkage_pairs, "selected", "score", threshold = 1, include_ties = TRUE, inplace = TRUE) #v1
         select_greedy(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T) #v2
+        #select_threshold(linkage_pairs, variable = "selected", score = "score", threshold = length(matching_keys), include_ties = TRUE, inplace = TRUE) #IF WE WANT DUPES
         #--------------------------#
 
         #-- STEP 5: LINK THE PAIRS --#
