@@ -653,6 +653,7 @@ load_linkage_file <- function(dataset_file){
 #' @param data_linker A single string input for whom performed the data linkage (used for generating a Linkage Quality Report).
 #' @param generate_algorithm_summary A TRUE or FALSE value for whether you'd like to export a CSV summary of the algorithm that was run.
 #' @param generate_threshold_plots A TRUE or FALSE value for whether you'd like to export threshold plots for each pass.
+#' @param save_all_linkage_results A TRUE or FALSE value for whether you'd like a list of all report data returned after all algorithms have been ran.
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, generate_linkage_report = TRUE)
 #' @export
@@ -663,7 +664,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          calculate_performance_measures = FALSE,
                                          data_linker = NULL,
                                          generate_algorithm_summary = FALSE,
-                                         generate_threshold_plots = FALSE){
+                                         generate_threshold_plots = FALSE,
+                                         save_all_linkage_results = FALSE){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -720,6 +722,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!isFALSE(generate_threshold_plots) && !is.na(generate_threshold_plots) && !is.null(generate_threshold_plots) &&
      (isTRUE(generate_threshold_plots) || generate_threshold_plots == "TRUE")){
     extra_params_list[["generate_threshold_plots"]] <- TRUE
+  }
+
+  ### Save All Linkage Results
+  if(!isFALSE(save_all_linkage_results) && !is.na(save_all_linkage_results) && !is.null(save_all_linkage_results) &&
+     (isTRUE(save_all_linkage_results) || save_all_linkage_results == "TRUE")){
+    extra_params_list[["save_all_linkage_results"]] <- TRUE
   }
   #----------------------------------------------------------------------------#
 

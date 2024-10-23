@@ -2277,4 +2277,24 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
   # Disconnect from the linkage metadata database after we finish
   dbDisconnect(linkage_metadata_db)
+
+  # If the user wanted linkage results of all ran algorithms to be returned, check that
+  # the parameter was specified
+  if("save_all_linkage_results" %in% names(extra_parameters)){
+    # Create a result list of all the data we collected
+    result_list <- list()
+    result_list[["linked_data"]]            <- linked_data_list
+    result_list[["linked_algorithm_ids"]]   <- algorithm_ids
+    result_list[["linked_algorithm_names"]] <- linked_data_algorithm_names
+    result_list[["algorithm_summaries"]]    <- linkage_algorithm_summary_list
+    result_list[["algorithm_footnotes"]]    <- linkage_algorithm_footnote_list
+    result_list[["performance_measures"]]   <- intermediate_performance_measures_df
+
+    # Return the result list
+    return(result_list)
+  }
+  else{
+    # Return NULL if the user doesn't want to save all the linkage results
+    return(NULL)
+  }
 }

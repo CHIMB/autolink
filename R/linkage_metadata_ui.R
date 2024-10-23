@@ -496,7 +496,28 @@ linkage_ui <- page_navbar(
         # If a row WAS selected
         conditionalPanel(
           condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
-          HTML("<br>"),
+
+          HTML("<br>"), # White space
+
+          div(style = "display: flex; justify-content: center; align-items: center;",
+            card(
+              width = 1,
+              height = 125,
+              full_screen = FALSE,
+              card_header("Regenerate Linkage Report for the Successfully Ran Algorithm", class = 'bg-dark'),
+              card_body(
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("go_to_regenerate_report", "Regenerate Report", class = "btn-success", width = validateCssUnit(300)),
+                    )
+                  ),
+                ),
+              )
+            )
+          ),
+
+          HTML("<br>"), # White space
+
           # Create a card for the buttons
           div(style = "display: flex; justify-content: center; align-items: center;",
             card(
@@ -508,51 +529,24 @@ linkage_ui <- page_navbar(
                 fluidRow(
                   column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
                       actionButton("toggle_algorithm", "Set as Default Algorithm", class = "btn-success", width = validateCssUnit(300)),
-
-                      # # Add the popover manually
-                      # h1(tooltip(bs_icon("question-circle"),
-                      #            paste("Toggle whether an algorithm is available to be used in data linkage.",
-                      #                  "If an algorithm is Enabled, you may select/view/add/modify linkage passes",
-                      #                  "and ground truth variables for that algorithm, and may also use the algorithm",
-                      #                  "to perform data linkage. If Disabled, the algorithm, and passes will be ignored,",
-                      #                  "and it may not be used for data linkage."),
-                      #            placement = "right",
-                      #            options = list(container = "body")
-                      # ))
                     )
                   ),
 
                   column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
                       actionButton("toggle_algorithm_for_testing", "Toggle for Testing", class = "btn-success", width = validateCssUnit(300)),
-
-                      # # Add the popover manually
-                      # h1(tooltip(bs_icon("question-circle"),
-                      #            paste("Toggle whether an algorithm is available to be used in data linkage.",
-                      #                  "If an algorithm is Enabled, you may select/view/add/modify linkage passes",
-                      #                  "and ground truth variables for that algorithm, and may also use the algorithm",
-                      #                  "to perform data linkage. If Disabled, the algorithm, and passes will be ignored,",
-                      #                  "and it may not be used for data linkage."),
-                      #            placement = "right",
-                      #            options = list(container = "body")
-                      # ))
                     )
                   ),
                   column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
                       actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes", class = "btn-success", width = validateCssUnit(300)),
-
-                      # # Add the popover manually
-                      # h1(tooltip(bs_icon("question-circle"),
-                      #            paste("View, add, and modify the individual passes for this algorithm."),
-                      #            placement = "right",
-                      #            options = list(container = "body")
-                      # ))
                     )
                   ),
                 ),
               )
             )
           ),
-          HTML("<br>"),
+
+          HTML("<br>"), # White space
+
           # Create a card for editing/viewing algorithm output information
           div(style = "display: flex; justify-content: center; align-items: center;",
             card(
@@ -564,35 +558,14 @@ linkage_ui <- page_navbar(
                 fluidRow(
                   column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
                       actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables", class = "btn-info", width = validateCssUnit(300)),
-
-                      # # Add the popover manually
-                      # h1(tooltip(bs_icon("question-circle"),
-                      #            paste("View, add, and modify the ground truth variables for this algorithm."),
-                      #            placement = "right",
-                      #            options = list(container = "body")
-                      # ))
                     )
                   ),
                   column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
                       actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output", class = "btn-info", width = validateCssUnit(300)),
-
-                      # # Add the popover manually
-                      # h1(tooltip(bs_icon("question-circle"),
-                      #            paste("View, add, and modify the algorithms output fields."),
-                      #            placement = "right",
-                      #            options = list(container = "body")
-                      # ))
                     )
                   ),
                   column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
                       actionButton("linkage_algorithms_to_audits", "Saved Performance Measures", class = "btn-info", width = validateCssUnit(300)),
-
-                      # # Add the popover manually
-                      # h1(tooltip(bs_icon("question-circle"),
-                      #            paste("View and export saved performance measure audits for this algorithm."),
-                      #            placement = "right",
-                      #            options = list(container = "body")
-                      # ))
                     )
                   )
                 )
@@ -658,6 +631,7 @@ linkage_ui <- page_navbar(
             ))
           )
         ),
+
         # Conditional panel for if a row was selected
         conditionalPanel(
           condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
@@ -2165,6 +2139,73 @@ linkage_ui <- page_navbar(
   #----
   #------------------------#
 
+  #-- REGENERATE REPORTS PAGE --#
+  #----
+  nav_panel(title = "Regenerate Report", value = "regenerate_report_page",
+    fluidPage(
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+          actionButton("regenerate_report_back", "Back", class = "btn-info"),
+        ))
+      ),
+
+      # Line break to give the back button some breathing room
+      HTML("<br><br>"),
+
+      ### STEP 1
+      h5(strong("Step 1: Provide the Output Folder")),
+      # Create a card for the output location
+      div(style = "display: flex; justify-content: center; align-items: center;",
+          card(
+            width = 1,
+            height = 150,
+            full_screen = FALSE,
+            card_header("Supply Output Location", class = 'bg-dark'),
+            card_body(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                  # Boxed text output for showing the uploaded folder name
+                  div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                    textOutput("uploaded_regenerated_report_output_dir")
+                  ),
+                  # Upload Button
+                  shinyDirButton("regenerated_report_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                  helpText("Select a folder where the regenerated linkage report will be placed.")
+                ))
+              ),
+            )
+          )
+      ),
+
+      HTML("<br>"), # Spacing
+
+      ### STEP 2
+      h5(strong("Step 2: Regenerate Linkage Report")),
+      # Create a card for editing/viewing algorithm output information
+      div(style = "display: flex; justify-content: center; align-items: center;",
+          card(
+            width = 1,
+            height = 125,
+            full_screen = FALSE,
+            card_header("Regenerate Linkage Report for the Selected Algorithm", class = 'bg-dark'),
+            card_body(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("regenerate_report_btn", "Regenerate Report", width = validateCssUnit(300), class = "btn-success")
+                ))
+              ),
+            )
+          )
+      ),
+      HTML("<br>"), # Spacing
+    )
+  ),
+  #----
+  #-----------------------------#
+
   #-- RUN LINKAGE ALGORITHM PAGE --#
   #----
   nav_panel(title = "Run Algorithm", value = "run_algorithm_page",
@@ -2296,7 +2337,34 @@ linkage_ui <- page_navbar(
       HTML("<br>"), # Spacing
 
       ### STEP 4
-      h5(strong("Step 4: Run Record Linkage for the Selected Algorithm(s)")),
+      h5(strong("Step 4: Retain Record Linkage Data")),
+      # Create a card for saving the results obtained during record linkage
+      column(width = 6, offset = 3,  # Control the card's width and center it
+        div(style = "display: flex; justify-content: center; align-items: center;",
+         card(
+            width = NULL,  # Remove the width inside the card and control it from the column
+            height = 150,
+            full_screen = FALSE,
+            card_header("Retain Record Linkage Results?", class = 'bg-dark'),
+            card_body(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText(paste0("Retain the linked data results that will be generated for the algorithms being ",
+                                  "ran in the packages 'AppData' folder to be used for regenerating future reports."))
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("save_all_linkage_results", "Save All Linkage Results?", FALSE)
+                ))
+              )
+            )
+          )
+        )
+      ),
+
+      HTML("<br>"), # Spacing
+
+      ### STEP 5
+      h5(strong("Step 5: Run Record Linkage for the Selected Algorithm(s)")),
       # Create a card for editing/viewing algorithm output information
       div(style = "display: flex; justify-content: center; align-items: center;",
         card(
@@ -2344,6 +2412,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   nav_hide('main_navbar', 'audits_page')
   nav_hide('main_navbar', 'linkage_algorithm_output_page')
   nav_hide('main_navbar', 'run_algorithm_page')
+  nav_hide('main_navbar', 'regenerate_report_page')
 
   # If the user goes off of an inner tab, hide it
   observeEvent(input$main_navbar, {
@@ -2351,7 +2420,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     tabs_to_hide <- c("linkage_rule_page", "acceptance_rules_page", "comparison_rules_page",
                       "view_linkage_iterations_page", "add_linkage_iterations_page", "update_linkage_iterations_page",
                       "acceptance_methods_page", "comparison_methods_page", "ground_truth_variables_page", "audits_page",
-                      "linkage_algorithm_output_page", "run_algorithm_page")
+                      "linkage_algorithm_output_page", "run_algorithm_page", "regenerate_report_page")
     selected_panel <- input$main_navbar
 
     # Hide the page if its not the one you're currently on
@@ -3708,6 +3777,35 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Show the iterations page
     nav_show('main_navbar', 'run_algorithm_page')
     updateNavbarPage(session, "main_navbar", selected = "run_algorithm_page")
+  })
+
+  # Move to the "Regenerate Report Page"
+  observeEvent(input$go_to_regenerate_report, {
+    # Get the row that we're supposed to be toggling
+    #----#
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+    selected_row     <- input$currently_added_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'ORDER BY algorithm_id ASC'))
+
+    algorithm_id <- df[selected_row, "algorithm_id"]
+    #----#
+
+    # Set global variables
+    #----#
+    algorithm_ids_to_regenerate        <<- c(algorithm_id)
+    regenerate_report_left_dataset_id  <<- left_dataset_id
+    regenerate_report_right_dataset_id <<- right_dataset_id
+    regenerate_report_return_page      <<- "linkage_algorithms_page"
+    #----#
+
+    # Switch pages
+    #----#
+    nav_show('main_navbar', 'regenerate_report_page')
+    updateNavbarPage(session, "main_navbar", selected = "regenerate_report_page")
+    #----#
   })
   #----
   #------------------------------------#
@@ -10562,6 +10660,295 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #----
   #-------------------------------#
 
+  #-- REGENERATE REPORT PAGE EVENTS --#
+  #----
+  # Variables for this page
+  algorithm_ids_to_regenerate <- c()
+  regenerate_report_left_dataset_id <- 1
+  regenerate_report_right_dataset_id <- 1
+  regenerate_report_return_page  <- "linkage_algorithms_page"
+
+  # Initialize the selected file and folder to be empty
+  output$uploaded_regenerated_report_output_dir <- renderText({
+    "No Folder Has Been Chosen"
+  })
+
+  # Get the computer volumes
+  volumes <- getVolumes()()
+
+  # Linkage Output Directory Chooser
+  shinyDirChoose(input, 'regenerated_report_output_dir', roots=volumes, filetypes=c('', 'txt'), allowDirCreate = F)
+
+  # Observes which linkage output directory was chosen
+  observeEvent(input$regenerated_report_output_dir, {
+    # Get the output linkage directory
+    output_dir <- parseDirPath(volumes, input$regenerated_report_output_dir)
+
+    # Render the output text
+    if(identical(output_dir, character(0))){
+      output$uploaded_regenerated_report_output_dir <- renderText({
+        "No Folder Has Been Chosen"
+      })
+    }
+    else{
+      output$uploaded_regenerated_report_output_dir <- renderText({
+        output_dir
+      })
+    }
+  })
+
+  # Back button
+  observeEvent(input$regenerate_report_back, {
+    # Show the page we need to return to
+    nav_show("main_navbar", regenerate_report_return_page)
+
+    # Return to the page you came from
+    updateNavbarPage(session, "main_navbar", selected = regenerate_report_return_page)
+  })
+
+  # Attempts to run the linkage algorithms the user chose
+  observeEvent(input$regenerate_report_btn, {
+    # Disable this button
+    disable("regenerate_report_btn")
+
+    # Get the folder and file inputs
+    output_dir <- parseDirPath(volumes, input$regenerated_report_output_dir)
+
+    # Make sure a output folder was provided
+    if(identical(output_dir, character(0))){
+      showNotification("Failed to Regenerate Reports - Missing Output Folder", type = "error", closeButton = FALSE)
+      enable("regenerate_report_btn")
+      return()
+    }
+
+    # For each of our algorithms that we want to have regenerated, individually generate the reports
+    for(algorithm_id in algorithm_ids_to_regenerate){
+      # Get the file path where the .RData file should be
+      saved_file_path <- file.path(system.file(package = "datalink", "data"), paste0("linkage_report_metadata_id_", algorithm_id, ".RData"))
+
+      # Make sure the file exists
+      if(!file.exists(saved_file_path)){
+        showNotification(paste0("Failed to Regenerate Report - Saved Data for Algorithm with ID [", algorithm_id, "] Does Not Exist, Skipping."), type = "error", closeButton = FALSE)
+      }
+      else{
+        ### Load the RData file in
+        load(saved_file_path)
+
+        ### Get the data individually
+        linked_data          <- get("linked_data")
+        algorithm_name       <- get("algorithm_name")
+        algorithm_summary    <- get("algorithm_summ")
+        algorithm_footers    <- get("algorithm_foot")
+        performance_measures <- get("performance_df")
+        performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
+
+        ### Get the dataset names
+        left_dataset_name <- dbGetQuery(linkage_metadata_conn,
+                                        paste0('SELECT * FROM datasets where dataset_id = ', regenerate_report_left_dataset_id))$dataset_name
+        right_dataset_name <- dbGetQuery(linkage_metadata_conn,
+                                        paste0('SELECT * FROM datasets where dataset_id = ', regenerate_report_right_dataset_id))$dataset_name
+
+        ### Initialize the report variables
+        strata_vars <- colnames(linked_data)[!(colnames(linked_data) == "stage")]
+        ground_truth_df <- get_ground_truth_fields(linkage_metadata_conn, algorithm_id)
+        ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
+
+        # If we have no performance measures, then ignore them
+        if(nrow(performance_measures) <= 0){
+          performance_measures <- NULL
+          performance_measures_footnotes <- NULL
+          ground_truth_fields <- NULL
+        }
+
+        ### If we considered other algorithms, add them to the report appendix
+        considered_algo_summary_list           <- list()
+        considered_algo_summary_footnotes_list <- list()
+        considered_algo_summary_table_names    <- c()
+
+        # Get the algorithms enabled for testing
+        enabled_algorithms <- dbGetQuery(linkage_metadata_conn, 'SELECT algorithm_id FROM linkage_algorithms
+                                                               WHERE enabled_for_testing = 1 AND enabled = 0
+                                                               ORDER BY algorithm_id ASC')$algorithm_id
+
+        # Loop through each algorithm and create a table for its iterations
+        for(tested_algorithm_id in enabled_algorithms){
+          # Create an empty algorithm summary for binding
+          considered_algo_summary <- data.frame(
+            pass = character(),
+            linkage_implementation = character(),
+            blocking_variables = character(),
+            matching_variables = character(),
+            acceptance_threshold = character()
+          )
+          considered_algo_summary_footnotes <- c()
+
+          # Get the algorithm name
+          considered_algorithm_name <- get_algorithm_name(linkage_metadata_conn, tested_algorithm_id)
+          considered_algo_summary_table_names <- append(considered_algo_summary_table_names, considered_algorithm_name)
+
+          # Get the list of iteration IDs for the current algorithm
+          enabled_iterations <- dbGetQuery(linkage_metadata_conn, paste0('SELECT iteration_id FROM linkage_iterations
+                                                                 WHERE algorithm_id = ', tested_algorithm_id,
+                                                                       ' ORDER by iteration_id ASC'))$iteration_id
+
+          # Set a variable for counting the current pass
+          curr_pass <- 1
+
+          # Loop through each iteration ID to make our algorithm summary
+          for(tested_iteration_id in enabled_iterations){
+            # Get the implementation name
+            linkage_method <- get_linkage_technique(linkage_metadata_conn, tested_iteration_id)
+            linkage_method_desc <- get_linkage_technique_description(linkage_metadata_conn, tested_iteration_id)
+            linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
+            considered_algo_summary_footnotes <- append(considered_algo_summary_footnotes, linkage_footnote)
+            considered_algo_summary_footnotes <- unique(considered_algo_summary_footnotes)
+
+            # Get the blocking variables
+            blocking_fields_df <- get_blocking_keys(linkage_metadata_conn, tested_iteration_id)
+            blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
+
+            # Get the matching variables
+            matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', tested_iteration_id)
+            matching_df <- dbGetQuery(linkage_metadata_conn, matching_query)
+
+            # Loop through each matching variable to get its comparison methods
+            for(j in 1:nrow(matching_df)){
+              # Get the comparison_rule_id for this row
+              comparison_rule_id <- matching_df$comparison_rule_id[j]
+              if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
+                # Query to get the acceptance method name from the comparison_rules table
+                method_query <- paste('SELECT method_name FROM comparison_rules cr
+                             JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                             WHERE comparison_rule_id =', comparison_rule_id)
+                method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+                # Query to get the associated parameters for the comparison_rule_id
+                params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+                params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+                # Combine the parameters into a string
+                params_str <- paste(params_df$parameter, collapse = ", ")
+
+                # Create the final string "method_name (key1=value1, key2=value2)"
+                method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+
+                # Replace the comparison_rule_id with the method and parameters string
+                matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+              }
+            }
+
+            matching_fields <- paste(matching_df$field_name, collapse = ", ")
+
+            # Get the acceptance threshold
+            acceptance_query <- paste('SELECT * FROM linkage_iterations
+                               WHERE iteration_id =', tested_iteration_id,
+                                      'ORDER BY iteration_num ASC;')
+            acceptance_df <- dbGetQuery(linkage_metadata_conn, acceptance_query)
+            acceptance_rule_id <- acceptance_df$acceptance_rule_id
+            acceptance_threshold <- ""
+
+            # Make the rules more readable
+            if (nrow(acceptance_df) > 0 && !is.na(acceptance_rule_id)) {
+              # Query to get the acceptance method name from the acceptance_rules table
+              method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                             WHERE acceptance_rule_id =', acceptance_rule_id)
+              method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+              # Query to get the associated parameters for the acceptance_rule_id
+              params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+              params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+              # Combine the parameters into a string
+              params_str <- paste(params_df$parameter, collapse = ", ")
+
+              # Create the final string "method_name (key1=value1, key2=value2)"
+              method_with_params <- paste0(method_name, " (", params_str, ")")
+
+              # Replace the acceptance_rule_id with the method and parameters string
+              acceptance_threshold <- method_with_params
+            }
+
+            # Create a data frame for the current passes summary
+            temp_algo_summary <- data.frame(
+              pass = as.integer(curr_pass),
+              linkage_implementation = linkage_method,
+              blocking_variables = blocking_fields,
+              matching_variables = matching_fields,
+              acceptance_threshold = acceptance_threshold
+            )
+
+            # Bind this summary
+            considered_algo_summary <- rbind(considered_algo_summary, temp_algo_summary)
+
+            # Update the current pass
+            curr_pass <- curr_pass + 1
+          }
+
+          # Label the considered algorithm summary
+          label(considered_algo_summary$pass)                   <- "Pass"
+          label(considered_algo_summary$linkage_implementation) <- "Linkage Technique"
+          label(considered_algo_summary$blocking_variables)     <- "Blocking Scheme"
+          label(considered_algo_summary$matching_variables)     <- "Matching Criteria"
+          label(considered_algo_summary$acceptance_threshold)   <- "Acceptance Threshold"
+
+          # Once we finish this considered algorithm summary, save it to a list
+          considered_algo_summary_list[[length(considered_algo_summary_list)+1]] <- considered_algo_summary
+          considered_algo_summary_footnotes_list[[length(considered_algo_summary_footnotes_list)+1]] <- considered_algo_summary_footnotes
+        }
+
+        # Finally, if we don't have any enabled algorithms, set the input values to NULL
+        if(length(considered_algo_summary_list) <= 0 || length (considered_algo_summary_footnotes_list) <= 0 || length(considered_algo_summary_table_names) <= 0){
+          considered_algo_summary_footnotes_list <- NULL
+          considered_algo_summary_list <- NULL
+          considered_algo_summary_table_names <- NULL
+        }
+
+        # Attempt to generate the report
+        tryCatch({
+          # Load the 'linkrep' library and generate a linkage quality report
+          library("linkrep")
+
+          final_linkage_quality_report(linked_data, algorithm_name, "", left_dataset_name,
+                                       paste0("the ", right_dataset_name), output_dir, username, "datalink (Record Linkage)",
+                                       "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
+                                       algorithm_summary_data = algorithm_summary, algorithm_summary_tbl_footnotes = algorithm_footers,
+                                       performance_measures_data = performance_measures, performance_measures_tbl_footnotes = performance_measures_footnotes,
+                                       ground_truth = ground_truth_fields,
+                                       considered_algorithm_summary_data = considered_algo_summary_list, considered_algorithm_summary_tbl_footnotes = considered_algo_summary_footnotes_list,
+                                       considered_algorithm_summary_table_names = considered_algo_summary_table_names,
+                                       R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
+
+
+          # If we succeed, let the user know where they can find their information
+          showNotification(paste0("Regenerating Report Succeeded - Check the Output Folder for Data [", output_dir, "]"), type = "message", closeButton = FALSE)
+
+          # Call garbage collector after we finish processing
+          gc()
+
+          # Detach the package
+          detach("package:linkrep", unload = TRUE)
+        },
+        error = function(e){
+          # Detach the package
+          detach("package:linkrep", unload = TRUE)
+
+          # If we fail, let the user know why
+          showNotification(paste0("Regenerating Report Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
+          enable("regenerate_report_btn")
+          return()
+        })
+      }
+    }
+
+    # Enable the button
+    enable("regenerate_report_btn")
+  })
+  #----
+  #-----------------------------------#
+
   #-- RUN LINKAGE ALGORITHMS PAGE EVENTS --#
   #----
   # Variables for this page
@@ -10667,6 +11054,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     generate_algorithm_summary      <- input$generate_algorithm_summary
     calculate_performance_measures  <- input$calculate_performance_measures
     generate_threshold_plots        <- input$generate_threshold_plots
+    save_all_linkage_results        <- input$save_all_linkage_results
 
     # Get the folder and file inputs
     output_dir <- parseDirPath(volumes, input$linkage_output_dir)
@@ -10688,18 +11076,53 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, output_linkage_iterations = output_linked_iterations_pairs,
                                                    output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, linkage_report_type = linkage_report_type,
                                                    generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
-                                                   data_linker = username, generate_threshold_plots = generate_threshold_plots)
+                                                   data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results)
 
     # Run the algorithms
     successful <- TRUE
     tryCatch({
-      run_main_linkage(left_dataset, right_dataset, link_metadata, algorithm_ids, extra_params)
+      # Run the linkage algorithms
+      results <- run_main_linkage(left_dataset, right_dataset, link_metadata, algorithm_ids, extra_params)
+
+      # If the user wanted to save this data then handle that
+      if(save_all_linkage_results == T){
+        # Get all the linkage results by themselves first
+        linked_data_list                     <- results[["linked_data"]]
+        algorithm_ids                        <- results[["linked_algorithm_ids"]]
+        linked_data_algorithm_names          <- results[["linked_algorithm_names"]]
+        linkage_algorithm_summary_list       <- results[["algorithm_summaries"]]
+        linkage_algorithm_footnote_list      <- results[["algorithm_footnotes"]]
+        intermediate_performance_measures_df <- results[["performance_measures"]]
+
+        # We will go through each of the algorithm IDs and save the data to an .Rdata file that can be used later
+        for(index in 1:length(algorithm_ids)){
+          # Get the current information for this algorithm
+          linked_data    <- linked_data_list[[index]]
+          algorithm_id   <- algorithm_ids[index]
+          algorithm_name <- linked_data_algorithm_names[index]
+          algorithm_summ <- linkage_algorithm_summary_list[[index]]
+          algorithm_foot <- linkage_algorithm_footnote_list[[index]]
+          performance_df <- as.data.frame(intermediate_performance_measures_df[intermediate_performance_measures_df$algorithm_name == algorithm_name, ])
+
+          # Obtain a file path
+          file_path <- file.path(system.file(package = "datalink", "data"), paste0("linkage_report_metadata_id_", algorithm_id, ".RData"))
+
+          # Save the data for this algorithm
+          save(linked_data, algorithm_id, algorithm_name, algorithm_summ,
+               algorithm_foot, performance_df, file=file_path)
+        }
+
+      }
+      else{
+        rm(results)
+        gc()
+      }
     },
     error = function(e){
       # If we fail, let the user know why
       showNotification(paste0("Linkage Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
       enable("run_linkage_btn")
-      successful <- FALSE
+      successful <<- FALSE
       return()
     })
 
