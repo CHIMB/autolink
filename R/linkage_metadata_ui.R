@@ -3799,7 +3799,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                 WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
                                                   'ORDER BY algorithm_id ASC'))
 
-    algorithm_id <- df[selected_row, "algorithm_id"]
+    algorithm_id <- df$algorithm_id[selected_row]
     #----#
 
     # Set global variables
@@ -10723,237 +10723,273 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Disable this button
     disable("regenerate_report_btn")
 
-    # Get the folder and file inputs
-    output_dir <- parseDirPath(volumes, input$regenerated_report_output_dir)
+    # Create variables for the number of steps
+    total_steps  <- length(algorithm_ids_to_regenerate)*2
+    current_step <- 1
 
-    # Make sure a output folder was provided
-    if(identical(output_dir, character(0))){
-      showNotification("Failed to Regenerate Reports - Missing Output Folder", type = "error", closeButton = FALSE)
-      enable("regenerate_report_btn")
-      return()
-    }
+    # Start a progress bar
+    withProgress(message = "Regenerating Linkage Report...", value = 0, {
 
-    # For each of our algorithms that we want to have regenerated, individually generate the reports
-    for(algorithm_id in algorithm_ids_to_regenerate){
-      # Get the file path where the .RData file should be
-      saved_file_path <- file.path(system.file(package = "datalink", "data"), paste0("linkage_report_metadata_id_", algorithm_id, ".RData"))
+      # Get the folder and file inputs
+      output_dir <- parseDirPath(volumes, input$regenerated_report_output_dir)
 
-      # Make sure the file exists
-      if(!file.exists(saved_file_path)){
-        showNotification(paste0("Failed to Regenerate Report - Saved Data for Algorithm with ID [", algorithm_id, "] Does Not Exist, Skipping."), type = "error", closeButton = FALSE)
+      # Make sure a output folder was provided
+      if(identical(output_dir, character(0))){
+        showNotification("Failed to Regenerate Reports - Missing Output Folder", type = "error", closeButton = FALSE)
+        enable("regenerate_report_btn")
+        return()
       }
-      else{
-        ### Load the RData file in
-        load(saved_file_path)
 
-        ### Get the data individually
-        linked_data          <- get("linked_data")
-        algorithm_name       <- get("algorithm_name")
-        algorithm_summary    <- get("algorithm_summ")
-        algorithm_footers    <- get("algorithm_foot")
-        performance_measures <- get("performance_df")
-        performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
+      # For each of our algorithms that we want to have regenerated, individually generate the reports
+      for(algorithm_id in algorithm_ids_to_regenerate){
+        # Get the algorithm_name
+        algorithm_name <- get_algorithm_name(linkage_metadata_conn, algorithm_id)
 
-        ### Get the dataset names
-        left_dataset_name <- dbGetQuery(linkage_metadata_conn,
-                                        paste0('SELECT * FROM datasets where dataset_id = ', regenerate_report_left_dataset_id))$dataset_name
-        right_dataset_name <- dbGetQuery(linkage_metadata_conn,
-                                        paste0('SELECT * FROM datasets where dataset_id = ', regenerate_report_right_dataset_id))$dataset_name
+        # Progress for reading in this algorithms data
+        progress_value <- 1/(total_steps+1)
+        incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Loading Saved Data for ", algorithm_name))
+        current_step <- current_step + 1
 
-        ### Initialize the report variables
-        strata_vars <- colnames(linked_data)[!(colnames(linked_data) == "stage")]
-        ground_truth_df <- get_ground_truth_fields(linkage_metadata_conn, algorithm_id)
-        ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
+        # Get the file path where the .RData file should be
+        saved_file_path <- file.path(system.file(package = "datalink", "data"), paste0("linkage_report_metadata_id_", algorithm_id, ".RData"))
 
-        # If we have no performance measures, then ignore them
-        if(nrow(performance_measures) <= 0){
-          performance_measures <- NULL
-          performance_measures_footnotes <- NULL
-          ground_truth_fields <- NULL
+        # Make sure the file exists
+        if(!file.exists(saved_file_path)){
+          progress_value <- 1/(total_steps+1)
+          incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Skipping Regenerating Report for ", algorithm_name))
+          current_step <- current_step + 1
+          showNotification(paste0("Failed to Regenerate Report - Saved Data for Algorithm with ID [", algorithm_id, "] Does Not Exist, Skipping."), type = "error", closeButton = FALSE)
         }
+        else{
+          ### Load the RData file in
+          load(saved_file_path)
 
-        ### If we considered other algorithms, add them to the report appendix
-        considered_algo_summary_list           <- list()
-        considered_algo_summary_footnotes_list <- list()
-        considered_algo_summary_table_names    <- c()
+          ### Get the data individually
+          linked_data          <- get("linked_data")
+          algorithm_name       <- get("algorithm_name")
+          algorithm_summary    <- get("algorithm_summ")
+          algorithm_footers    <- get("algorithm_foot")
+          performance_measures <- get("performance_df")
+          performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
 
-        # Get the algorithms enabled for testing
-        enabled_algorithms <- dbGetQuery(linkage_metadata_conn, 'SELECT algorithm_id FROM linkage_algorithms
-                                                               WHERE enabled_for_testing = 1 AND enabled = 0
-                                                               ORDER BY algorithm_id ASC')$algorithm_id
+          ### Get the dataset names
+          left_dataset_name <- dbGetQuery(linkage_metadata_conn,
+                                          paste0('SELECT * FROM datasets where dataset_id = ', regenerate_report_left_dataset_id))$dataset_name
+          right_dataset_name <- dbGetQuery(linkage_metadata_conn,
+                                          paste0('SELECT * FROM datasets where dataset_id = ', regenerate_report_right_dataset_id))$dataset_name
 
-        # Loop through each algorithm and create a table for its iterations
-        for(tested_algorithm_id in enabled_algorithms){
-          # Create an empty algorithm summary for binding
-          considered_algo_summary <- data.frame(
-            pass = character(),
-            linkage_implementation = character(),
-            blocking_variables = character(),
-            matching_variables = character(),
-            acceptance_threshold = character()
-          )
-          considered_algo_summary_footnotes <- c()
+          ### Initialize the report variables
+          strata_vars <- colnames(linked_data)[!(colnames(linked_data) == "stage")]
+          ground_truth_df <- get_ground_truth_fields(linkage_metadata_conn, algorithm_id)
+          ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
 
-          # Get the algorithm name
-          considered_algorithm_name <- get_algorithm_name(linkage_metadata_conn, tested_algorithm_id)
-          considered_algo_summary_table_names <- append(considered_algo_summary_table_names, considered_algorithm_name)
-
-          # Get the list of iteration IDs for the current algorithm
-          enabled_iterations <- dbGetQuery(linkage_metadata_conn, paste0('SELECT iteration_id FROM linkage_iterations
-                                                                 WHERE algorithm_id = ', tested_algorithm_id,
-                                                                       ' ORDER by iteration_id ASC'))$iteration_id
-
-          # Set a variable for counting the current pass
-          curr_pass <- 1
-
-          # Loop through each iteration ID to make our algorithm summary
-          for(tested_iteration_id in enabled_iterations){
-            # Get the implementation name
-            linkage_method <- get_linkage_technique(linkage_metadata_conn, tested_iteration_id)
-            linkage_method_desc <- get_linkage_technique_description(linkage_metadata_conn, tested_iteration_id)
-            linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
-            considered_algo_summary_footnotes <- append(considered_algo_summary_footnotes, linkage_footnote)
-            considered_algo_summary_footnotes <- unique(considered_algo_summary_footnotes)
-
-            # Get the blocking variables
-            blocking_fields_df <- get_blocking_keys(linkage_metadata_conn, tested_iteration_id)
-            blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
-
-            # Get the matching variables
-            matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
-                              JOIN dataset_fields on field_id = left_dataset_field_id
-                              WHERE iteration_id =', tested_iteration_id)
-            matching_df <- dbGetQuery(linkage_metadata_conn, matching_query)
-
-            # Loop through each matching variable to get its comparison methods
-            for(j in 1:nrow(matching_df)){
-              # Get the comparison_rule_id for this row
-              comparison_rule_id <- matching_df$comparison_rule_id[j]
-              if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
-                # Query to get the acceptance method name from the comparison_rules table
-                method_query <- paste('SELECT method_name FROM comparison_rules cr
-                             JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
-                             WHERE comparison_rule_id =', comparison_rule_id)
-                method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
-
-                # Query to get the associated parameters for the comparison_rule_id
-                params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
-                params_df <- dbGetQuery(linkage_metadata_conn, params_query)
-
-                # Combine the parameters into a string
-                params_str <- paste(params_df$parameter, collapse = ", ")
-
-                # Create the final string "method_name (key1=value1, key2=value2)"
-                method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
-
-                # Replace the comparison_rule_id with the method and parameters string
-                matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
-              }
-            }
-
-            matching_fields <- paste(matching_df$field_name, collapse = ", ")
-
-            # Get the acceptance threshold
-            acceptance_query <- paste('SELECT * FROM linkage_iterations
-                               WHERE iteration_id =', tested_iteration_id,
-                                      'ORDER BY iteration_num ASC;')
-            acceptance_df <- dbGetQuery(linkage_metadata_conn, acceptance_query)
-            acceptance_rule_id <- acceptance_df$acceptance_rule_id
-            acceptance_threshold <- ""
-
-            # Make the rules more readable
-            if (nrow(acceptance_df) > 0 && !is.na(acceptance_rule_id)) {
-              # Query to get the acceptance method name from the acceptance_rules table
-              method_query <- paste('SELECT method_name FROM acceptance_rules ar
-                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
-                             WHERE acceptance_rule_id =', acceptance_rule_id)
-              method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
-
-              # Query to get the associated parameters for the acceptance_rule_id
-              params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
-              params_df <- dbGetQuery(linkage_metadata_conn, params_query)
-
-              # Combine the parameters into a string
-              params_str <- paste(params_df$parameter, collapse = ", ")
-
-              # Create the final string "method_name (key1=value1, key2=value2)"
-              method_with_params <- paste0(method_name, " (", params_str, ")")
-
-              # Replace the acceptance_rule_id with the method and parameters string
-              acceptance_threshold <- method_with_params
-            }
-
-            # Create a data frame for the current passes summary
-            temp_algo_summary <- data.frame(
-              pass = as.integer(curr_pass),
-              linkage_implementation = linkage_method,
-              blocking_variables = blocking_fields,
-              matching_variables = matching_fields,
-              acceptance_threshold = acceptance_threshold
-            )
-
-            # Bind this summary
-            considered_algo_summary <- rbind(considered_algo_summary, temp_algo_summary)
-
-            # Update the current pass
-            curr_pass <- curr_pass + 1
+          # If we have no performance measures, then ignore them
+          if(nrow(performance_measures) <= 0){
+            performance_measures <- NULL
+            performance_measures_footnotes <- NULL
+            ground_truth_fields <- NULL
           }
 
-          # Label the considered algorithm summary
-          label(considered_algo_summary$pass)                   <- "Pass"
-          label(considered_algo_summary$linkage_implementation) <- "Linkage Technique"
-          label(considered_algo_summary$blocking_variables)     <- "Blocking Scheme"
-          label(considered_algo_summary$matching_variables)     <- "Matching Criteria"
-          label(considered_algo_summary$acceptance_threshold)   <- "Acceptance Threshold"
+          ### If we considered other algorithms, add them to the report appendix
+          considered_algo_summary_list           <- list()
+          considered_algo_summary_footnotes_list <- list()
+          considered_algo_summary_table_names    <- c()
 
-          # Once we finish this considered algorithm summary, save it to a list
-          considered_algo_summary_list[[length(considered_algo_summary_list)+1]] <- considered_algo_summary
-          considered_algo_summary_footnotes_list[[length(considered_algo_summary_footnotes_list)+1]] <- considered_algo_summary_footnotes
+          # Check if this algorithm is the "Default" algorithm, if so, then we can
+          # get the considered algorithms
+          default_algorithm <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM linkage_algorithms
+                                                                      WHERE algorithm_id = ', algorithm_id))
+
+          if(default_algorithm$enabled == 1){
+            # Get the left and right dataset IDs
+            left_dataset_id  <- default_algorithm$dataset_id_left
+            right_dataset_id <- default_algorithm$dataset_id_right
+
+            # Get the algorithms enabled for testing
+            enabled_algorithms <- dbGetQuery(linkage_metadata_conn, paste0('SELECT algorithm_id FROM linkage_algorithms
+                                                                 WHERE enabled_for_testing = 1 AND enabled = 0
+                                                                   AND dataset_id_left = ', left_dataset_id, ' AND dataset_id_right = ', right_dataset_id,
+                                                                ' ORDER BY algorithm_id ASC'))$algorithm_id
+
+            # Loop through each algorithm and create a table for its iterations
+            for(tested_algorithm_id in enabled_algorithms){
+              # Create an empty algorithm summary for binding
+              considered_algo_summary <- data.frame(
+                pass = character(),
+                linkage_implementation = character(),
+                blocking_variables = character(),
+                matching_variables = character(),
+                acceptance_threshold = character()
+              )
+              considered_algo_summary_footnotes <- c()
+
+              # Get the algorithm name
+              considered_algorithm_name <- get_algorithm_name(linkage_metadata_conn, tested_algorithm_id)
+              considered_algo_summary_table_names <- append(considered_algo_summary_table_names, considered_algorithm_name)
+
+              # Get the list of iteration IDs for the current algorithm
+              enabled_iterations <- dbGetQuery(linkage_metadata_conn, paste0('SELECT iteration_id FROM linkage_iterations
+                                                                   WHERE algorithm_id = ', tested_algorithm_id,
+                                                                             ' ORDER by iteration_id ASC'))$iteration_id
+
+              # Set a variable for counting the current pass
+              curr_pass <- 1
+
+              # Loop through each iteration ID to make our algorithm summary
+              for(tested_iteration_id in enabled_iterations){
+                # Get the implementation name
+                linkage_method <- get_linkage_technique(linkage_metadata_conn, tested_iteration_id)
+                linkage_method_desc <- get_linkage_technique_description(linkage_metadata_conn, tested_iteration_id)
+                linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
+                considered_algo_summary_footnotes <- append(considered_algo_summary_footnotes, linkage_footnote)
+                considered_algo_summary_footnotes <- unique(considered_algo_summary_footnotes)
+
+                # Get the blocking variables
+                blocking_fields_df <- get_blocking_keys(linkage_metadata_conn, tested_iteration_id)
+                blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
+
+                # Get the matching variables
+                matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
+                                JOIN dataset_fields on field_id = left_dataset_field_id
+                                WHERE iteration_id =', tested_iteration_id)
+                matching_df <- dbGetQuery(linkage_metadata_conn, matching_query)
+
+                # Loop through each matching variable to get its comparison methods
+                for(j in 1:nrow(matching_df)){
+                  # Get the comparison_rule_id for this row
+                  comparison_rule_id <- matching_df$comparison_rule_id[j]
+                  if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
+                    # Query to get the acceptance method name from the comparison_rules table
+                    method_query <- paste('SELECT method_name FROM comparison_rules cr
+                               JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                               WHERE comparison_rule_id =', comparison_rule_id)
+                    method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+                    # Query to get the associated parameters for the comparison_rule_id
+                    params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+                    params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+                    # Combine the parameters into a string
+                    params_str <- paste(params_df$parameter, collapse = ", ")
+
+                    # Create the final string "method_name (key1=value1, key2=value2)"
+                    method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+
+                    # Replace the comparison_rule_id with the method and parameters string
+                    matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+                  }
+                }
+
+                matching_fields <- paste(matching_df$field_name, collapse = ", ")
+
+                # Get the acceptance threshold
+                acceptance_query <- paste('SELECT * FROM linkage_iterations
+                                 WHERE iteration_id =', tested_iteration_id,
+                                          'ORDER BY iteration_num ASC;')
+                acceptance_df <- dbGetQuery(linkage_metadata_conn, acceptance_query)
+                acceptance_rule_id <- acceptance_df$acceptance_rule_id
+                acceptance_threshold <- ""
+
+                # Make the rules more readable
+                if (nrow(acceptance_df) > 0 && !is.na(acceptance_rule_id)) {
+                  # Query to get the acceptance method name from the acceptance_rules table
+                  method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                               JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                               WHERE acceptance_rule_id =', acceptance_rule_id)
+                  method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+                  # Query to get the associated parameters for the acceptance_rule_id
+                  params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+                  params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+                  # Combine the parameters into a string
+                  params_str <- paste(params_df$parameter, collapse = ", ")
+
+                  # Create the final string "method_name (key1=value1, key2=value2)"
+                  method_with_params <- paste0(method_name, " (", params_str, ")")
+
+                  # Replace the acceptance_rule_id with the method and parameters string
+                  acceptance_threshold <- method_with_params
+                }
+
+                # Create a data frame for the current passes summary
+                temp_algo_summary <- data.frame(
+                  pass = as.integer(curr_pass),
+                  linkage_implementation = linkage_method,
+                  blocking_variables = blocking_fields,
+                  matching_variables = matching_fields,
+                  acceptance_threshold = acceptance_threshold
+                )
+
+                # Bind this summary
+                considered_algo_summary <- rbind(considered_algo_summary, temp_algo_summary)
+
+                # Update the current pass
+                curr_pass <- curr_pass + 1
+              }
+
+              # Label the considered algorithm summary
+              label(considered_algo_summary$pass)                   <- "Pass"
+              label(considered_algo_summary$linkage_implementation) <- "Linkage Technique"
+              label(considered_algo_summary$blocking_variables)     <- "Blocking Scheme"
+              label(considered_algo_summary$matching_variables)     <- "Matching Criteria"
+              label(considered_algo_summary$acceptance_threshold)   <- "Acceptance Threshold"
+
+              # Once we finish this considered algorithm summary, save it to a list
+              considered_algo_summary_list[[length(considered_algo_summary_list)+1]] <- considered_algo_summary
+              considered_algo_summary_footnotes_list[[length(considered_algo_summary_footnotes_list)+1]] <- considered_algo_summary_footnotes
+            }
+          }
+
+          # Finally, if we don't have any enabled algorithms, set the input values to NULL
+          if(length(considered_algo_summary_list) <= 0 || length (considered_algo_summary_footnotes_list) <= 0 || length(considered_algo_summary_table_names) <= 0){
+            considered_algo_summary_footnotes_list <- NULL
+            considered_algo_summary_list <- NULL
+            considered_algo_summary_table_names <- NULL
+          }
+
+          # Attempt to generate the report
+          tryCatch({
+            # Set the initial progress
+            progress_value <- 1/(total_steps+1)
+            incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Regenerating Report for ", algorithm_name))
+            current_step <- current_step + 1
+
+            # Load the 'linkrep' library and generate a linkage quality report
+            library("linkrep")
+
+            final_linkage_quality_report(linked_data, algorithm_name, "", left_dataset_name,
+                                         paste0("the ", right_dataset_name), output_dir, username, "datalink (Record Linkage)",
+                                         "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
+                                         algorithm_summary_data = algorithm_summary, algorithm_summary_tbl_footnotes = algorithm_footers,
+                                         performance_measures_data = performance_measures, performance_measures_tbl_footnotes = performance_measures_footnotes,
+                                         ground_truth = ground_truth_fields,
+                                         considered_algorithm_summary_data = considered_algo_summary_list, considered_algorithm_summary_tbl_footnotes = considered_algo_summary_footnotes_list,
+                                         considered_algorithm_summary_table_names = considered_algo_summary_table_names,
+                                         R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
+
+
+            # If we succeed, let the user know where they can find their information
+            showNotification(paste0("Regenerating Report Succeeded - Check the Output Folder for Data [", output_dir, "]"), type = "message", closeButton = FALSE)
+
+            # Call garbage collector after we finish processing
+            gc()
+
+            # Detach the package
+            detach("package:linkrep", unload = TRUE)
+          },
+          error = function(e){
+            # Detach the package
+            detach("package:linkrep", unload = TRUE)
+
+            # If we fail, let the user know why
+            showNotification(paste0("Regenerating Report Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
+            enable("regenerate_report_btn")
+            return()
+          })
         }
-
-        # Finally, if we don't have any enabled algorithms, set the input values to NULL
-        if(length(considered_algo_summary_list) <= 0 || length (considered_algo_summary_footnotes_list) <= 0 || length(considered_algo_summary_table_names) <= 0){
-          considered_algo_summary_footnotes_list <- NULL
-          considered_algo_summary_list <- NULL
-          considered_algo_summary_table_names <- NULL
-        }
-
-        # Attempt to generate the report
-        tryCatch({
-          # Load the 'linkrep' library and generate a linkage quality report
-          library("linkrep")
-
-          final_linkage_quality_report(linked_data, algorithm_name, "", left_dataset_name,
-                                       paste0("the ", right_dataset_name), output_dir, username, "datalink (Record Linkage)",
-                                       "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
-                                       algorithm_summary_data = algorithm_summary, algorithm_summary_tbl_footnotes = algorithm_footers,
-                                       performance_measures_data = performance_measures, performance_measures_tbl_footnotes = performance_measures_footnotes,
-                                       ground_truth = ground_truth_fields,
-                                       considered_algorithm_summary_data = considered_algo_summary_list, considered_algorithm_summary_tbl_footnotes = considered_algo_summary_footnotes_list,
-                                       considered_algorithm_summary_table_names = considered_algo_summary_table_names,
-                                       R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
-
-
-          # If we succeed, let the user know where they can find their information
-          showNotification(paste0("Regenerating Report Succeeded - Check the Output Folder for Data [", output_dir, "]"), type = "message", closeButton = FALSE)
-
-          # Call garbage collector after we finish processing
-          gc()
-
-          # Detach the package
-          detach("package:linkrep", unload = TRUE)
-        },
-        error = function(e){
-          # Detach the package
-          detach("package:linkrep", unload = TRUE)
-
-          # If we fail, let the user know why
-          showNotification(paste0("Regenerating Report Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
-          enable("regenerate_report_btn")
-          return()
-        })
       }
-    }
+    })
 
     # Enable the button
     enable("regenerate_report_btn")

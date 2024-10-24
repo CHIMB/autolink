@@ -1938,138 +1938,150 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         considered_algo_summary_footnotes_list <- list()
         considered_algo_summary_table_names    <- c()
 
-        # Get the algorithms enabled for testing
-        enabled_algorithms <- dbGetQuery(linkage_metadata_db, 'SELECT algorithm_id FROM linkage_algorithms
+        # Check if this algorithm is the "Default" algorithm, if so, then we can
+        # get the considered algorithms
+        default_algorithm <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms
+                                                                    WHERE algorithm_id = ', algorithm_id))
+
+        if(default_algorithm$enabled == 1){
+          # Get the left and right dataset IDs
+          left_dataset_id  <- default_algorithm$dataset_id_left
+          right_dataset_id <- default_algorithm$dataset_id_right
+
+          # Get the algorithms enabled for testing
+          enabled_algorithms <- dbGetQuery(linkage_metadata_db, paste0('SELECT algorithm_id FROM linkage_algorithms
                                                                WHERE enabled_for_testing = 1 AND enabled = 0
-                                                               ORDER BY algorithm_id ASC')$algorithm_id
+                                                                 AND dataset_id_left = ', left_dataset_id, ' AND dataset_id_right = ', right_dataset_id,
+                                                              ' ORDER BY algorithm_id ASC'))$algorithm_id
 
-        # Loop through each algorithm and create a table for its iterations
-        for(tested_algorithm_id in enabled_algorithms){
-          # Create an empty algorithm summary for binding
-          considered_algo_summary <- data.frame(
-            pass = character(),
-            linkage_implementation = character(),
-            blocking_variables = character(),
-            matching_variables = character(),
-            acceptance_threshold = character()
-          )
-          considered_algo_summary_footnotes <- c()
+          # Loop through each algorithm and create a table for its iterations
+          for(tested_algorithm_id in enabled_algorithms){
+            # Create an empty algorithm summary for binding
+            considered_algo_summary <- data.frame(
+              pass = character(),
+              linkage_implementation = character(),
+              blocking_variables = character(),
+              matching_variables = character(),
+              acceptance_threshold = character()
+            )
+            considered_algo_summary_footnotes <- c()
 
-          # Get the algorithm name
-          considered_algorithm_name <- get_algorithm_name(linkage_metadata_db, tested_algorithm_id)
-          considered_algo_summary_table_names <- append(considered_algo_summary_table_names, considered_algorithm_name)
+            # Get the algorithm name
+            considered_algorithm_name <- get_algorithm_name(linkage_metadata_db, tested_algorithm_id)
+            considered_algo_summary_table_names <- append(considered_algo_summary_table_names, considered_algorithm_name)
 
-          # Get the list of iteration IDs for the current algorithm
-          enabled_iterations <- dbGetQuery(linkage_metadata_db, paste0('SELECT iteration_id FROM linkage_iterations
+            # Get the list of iteration IDs for the current algorithm
+            enabled_iterations <- dbGetQuery(linkage_metadata_db, paste0('SELECT iteration_id FROM linkage_iterations
                                                                  WHERE algorithm_id = ', tested_algorithm_id,
-                                                               ' ORDER by iteration_id ASC'))$iteration_id
+                                                                         ' ORDER by iteration_id ASC'))$iteration_id
 
-          # Set a variable for counting the current pass
-          curr_pass <- 1
+            # Set a variable for counting the current pass
+            curr_pass <- 1
 
-          # Loop through each iteration ID to make our algorithm summary
-          for(tested_iteration_id in enabled_iterations){
-            # Get the implementation name
-            linkage_method <- get_linkage_technique(linkage_metadata_db, tested_iteration_id)
-            linkage_method_desc <- get_linkage_technique_description(linkage_metadata_db, tested_iteration_id)
-            linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
-            considered_algo_summary_footnotes <- append(considered_algo_summary_footnotes, linkage_footnote)
-            considered_algo_summary_footnotes <- unique(considered_algo_summary_footnotes)
+            # Loop through each iteration ID to make our algorithm summary
+            for(tested_iteration_id in enabled_iterations){
+              # Get the implementation name
+              linkage_method <- get_linkage_technique(linkage_metadata_db, tested_iteration_id)
+              linkage_method_desc <- get_linkage_technique_description(linkage_metadata_db, tested_iteration_id)
+              linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
+              considered_algo_summary_footnotes <- append(considered_algo_summary_footnotes, linkage_footnote)
+              considered_algo_summary_footnotes <- unique(considered_algo_summary_footnotes)
 
-            # Get the blocking variables
-            blocking_fields_df <- get_blocking_keys(linkage_metadata_db, tested_iteration_id)
-            blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
+              # Get the blocking variables
+              blocking_fields_df <- get_blocking_keys(linkage_metadata_db, tested_iteration_id)
+              blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
 
-            # Get the matching variables
-            matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
+              # Get the matching variables
+              matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
                               JOIN dataset_fields on field_id = left_dataset_field_id
                               WHERE iteration_id =', tested_iteration_id)
-            matching_df <- dbGetQuery(linkage_metadata_db, matching_query)
+              matching_df <- dbGetQuery(linkage_metadata_db, matching_query)
 
-            # Loop through each matching variable to get its comparison methods
-            for(j in 1:nrow(matching_df)){
-              # Get the comparison_rule_id for this row
-              comparison_rule_id <- matching_df$comparison_rule_id[j]
-              if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
-                # Query to get the acceptance method name from the comparison_rules table
-                method_query <- paste('SELECT method_name FROM comparison_rules cr
+              # Loop through each matching variable to get its comparison methods
+              for(j in 1:nrow(matching_df)){
+                # Get the comparison_rule_id for this row
+                comparison_rule_id <- matching_df$comparison_rule_id[j]
+                if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
+                  # Query to get the acceptance method name from the comparison_rules table
+                  method_query <- paste('SELECT method_name FROM comparison_rules cr
                              JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
                              WHERE comparison_rule_id =', comparison_rule_id)
+                  method_name <- dbGetQuery(linkage_metadata_db, method_query)$method_name
+
+                  # Query to get the associated parameters for the comparison_rule_id
+                  params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+                  params_df <- dbGetQuery(linkage_metadata_db, params_query)
+
+                  # Combine the parameters into a string
+                  params_str <- paste(params_df$parameter, collapse = ", ")
+
+                  # Create the final string "method_name (key1=value1, key2=value2)"
+                  method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+
+                  # Replace the comparison_rule_id with the method and parameters string
+                  matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+                }
+              }
+
+              matching_fields <- paste(matching_df$field_name, collapse = ", ")
+
+              # Get the acceptance threshold
+              acceptance_query <- paste('SELECT * FROM linkage_iterations
+                               WHERE iteration_id =', tested_iteration_id,
+                                        'ORDER BY iteration_num ASC;')
+              acceptance_df <- dbGetQuery(linkage_metadata_db, acceptance_query)
+              acceptance_rule_id <- acceptance_df$acceptance_rule_id
+              acceptance_threshold <- ""
+
+              # Make the rules more readable
+              if (nrow(acceptance_df) > 0 && !is.na(acceptance_rule_id)) {
+                # Query to get the acceptance method name from the acceptance_rules table
+                method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                             WHERE acceptance_rule_id =', acceptance_rule_id)
                 method_name <- dbGetQuery(linkage_metadata_db, method_query)$method_name
 
-                # Query to get the associated parameters for the comparison_rule_id
-                params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+                # Query to get the associated parameters for the acceptance_rule_id
+                params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
                 params_df <- dbGetQuery(linkage_metadata_db, params_query)
 
                 # Combine the parameters into a string
                 params_str <- paste(params_df$parameter, collapse = ", ")
 
                 # Create the final string "method_name (key1=value1, key2=value2)"
-                method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+                method_with_params <- paste0(method_name, " (", params_str, ")")
 
-                # Replace the comparison_rule_id with the method and parameters string
-                matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+                # Replace the acceptance_rule_id with the method and parameters string
+                acceptance_threshold <- method_with_params
               }
+
+              # Create a data frame for the current passes summary
+              temp_algo_summary <- data.frame(
+                pass = as.integer(curr_pass),
+                linkage_implementation = linkage_method,
+                blocking_variables = blocking_fields,
+                matching_variables = matching_fields,
+                acceptance_threshold = acceptance_threshold
+              )
+
+              # Bind this summary
+              considered_algo_summary <- rbind(considered_algo_summary, temp_algo_summary)
+
+              # Update the current pass
+              curr_pass <- curr_pass + 1
             }
 
-            matching_fields <- paste(matching_df$field_name, collapse = ", ")
+            # Label the considered algorithm summary
+            label(considered_algo_summary$pass)                   <- "Pass"
+            label(considered_algo_summary$linkage_implementation) <- "Linkage Technique"
+            label(considered_algo_summary$blocking_variables)     <- "Blocking Scheme"
+            label(considered_algo_summary$matching_variables)     <- "Matching Criteria"
+            label(considered_algo_summary$acceptance_threshold)   <- "Acceptance Threshold"
 
-            # Get the acceptance threshold
-            acceptance_query <- paste('SELECT * FROM linkage_iterations
-                               WHERE iteration_id =', tested_iteration_id,
-                                      'ORDER BY iteration_num ASC;')
-            acceptance_df <- dbGetQuery(linkage_metadata_db, acceptance_query)
-            acceptance_rule_id <- acceptance_df$acceptance_rule_id
-            acceptance_threshold <- ""
-
-            # Make the rules more readable
-            if (nrow(acceptance_df) > 0 && !is.na(acceptance_rule_id)) {
-              # Query to get the acceptance method name from the acceptance_rules table
-              method_query <- paste('SELECT method_name FROM acceptance_rules ar
-                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
-                             WHERE acceptance_rule_id =', acceptance_rule_id)
-              method_name <- dbGetQuery(linkage_metadata_db, method_query)$method_name
-
-              # Query to get the associated parameters for the acceptance_rule_id
-              params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
-              params_df <- dbGetQuery(linkage_metadata_db, params_query)
-
-              # Combine the parameters into a string
-              params_str <- paste(params_df$parameter, collapse = ", ")
-
-              # Create the final string "method_name (key1=value1, key2=value2)"
-              method_with_params <- paste0(method_name, " (", params_str, ")")
-
-              # Replace the acceptance_rule_id with the method and parameters string
-              acceptance_threshold <- method_with_params
-            }
-
-            # Create a data frame for the current passes summary
-            temp_algo_summary <- data.frame(
-              pass = as.integer(curr_pass),
-              linkage_implementation = linkage_method,
-              blocking_variables = blocking_fields,
-              matching_variables = matching_fields,
-              acceptance_threshold = acceptance_threshold
-            )
-
-            # Bind this summary
-            considered_algo_summary <- rbind(considered_algo_summary, temp_algo_summary)
-
-            # Update the current pass
-            curr_pass <- curr_pass + 1
+            # Once we finish this considered algorithm summary, save it to a list
+            considered_algo_summary_list[[length(considered_algo_summary_list)+1]] <- considered_algo_summary
+            considered_algo_summary_footnotes_list[[length(considered_algo_summary_footnotes_list)+1]] <- considered_algo_summary_footnotes
           }
-
-          # Label the considered algorithm summary
-          label(considered_algo_summary$pass)                   <- "Pass"
-          label(considered_algo_summary$linkage_implementation) <- "Linkage Technique"
-          label(considered_algo_summary$blocking_variables)     <- "Blocking Scheme"
-          label(considered_algo_summary$matching_variables)     <- "Matching Criteria"
-          label(considered_algo_summary$acceptance_threshold)   <- "Acceptance Threshold"
-
-          # Once we finish this considered algorithm summary, save it to a list
-          considered_algo_summary_list[[length(considered_algo_summary_list)+1]] <- considered_algo_summary
-          considered_algo_summary_footnotes_list[[length(considered_algo_summary_footnotes_list)+1]] <- considered_algo_summary_footnotes
         }
 
         # Finally, if we don't have any enabled algorithms, set the input values to NULL
@@ -2098,27 +2110,6 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                      considered_algorithm_summary_table_names = considered_algo_summary_table_names,
                                      R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
 
-        # # REPORT FOR REQUIRED DATA, PERFORMANCES MEASURES, AND NO PLOTS
-        # if(nrow(performance_measures_df) >= 0){
-        #   final_linkage_quality_report(output_df, algorithm_name, "", datasets$left_dataset_name,
-        #                          paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
-        #                          "link_indicator", strata_vars, strata_vars, save_linkage_rate = F, algorithm_summary_data = algo_summary,
-        #                          algorithm_summary_tbl_footnotes = algo_summary_footnotes,
-        #                          R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
-        # }
-        # # REPORT FOR REQUIRED DATA, NO PERFORMANCES MEASURES, AND NO PLOTS
-        # else{
-        #   performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
-        #   ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
-        #   ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
-        #   final_linkage_quality_report(output_df, algorithm_name, "", datasets$left_dataset_name,
-        #                          paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
-        #                          "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
-        #                          algorithm_summary_data = algo_summary, algorithm_summary_tbl_footnotes = algo_summary_footnotes,
-        #                          performance_measures_data = performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
-        #                          ground_truth = ground_truth_fields,
-        #                          R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
-        # }
         detach("package:linkrep", unload = TRUE)
       },
       error = function(e){
