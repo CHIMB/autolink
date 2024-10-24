@@ -11,8 +11,8 @@ linkage_ui <- page_navbar(
               right: 0;
               margin-left: auto;
               margin-right: auto;
-              width: 100%;
-              max-width: 450px;
+              width: 100% !important;
+              max-width: 750px !important;
               opacity: 1;
             }"
       ),
@@ -657,6 +657,9 @@ linkage_ui <- page_navbar(
           )
         )
       ),
+
+      #White space for the final button
+      HTML("<br><br>"),
     )
   ),
   #----
@@ -669,7 +672,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("linkage_audits_back", "Back", class = "btn-info"),
+          actionButton("linkage_audits_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -727,7 +730,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                               actionButton("view_linkage_iterations_back", "Back", class = "btn-info"),
+          actionButton("view_linkage_iterations_back",  "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -1242,7 +1245,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("modify_ground_truth_back", "Back", class = "btn-info"),
+          actionButton("modify_ground_truth_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -1323,7 +1326,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("linkage_algorithm_output_back", "Back", class = "btn-info"),
+          actionButton("linkage_algorithm_output_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -1404,7 +1407,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                               actionButton("acceptance_methods_back", "Back", class = "btn-info"),
+          actionButton("acceptance_methods_back", "Return to Modify Iterations Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -1730,7 +1733,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                               actionButton("comparison_methods_back", "Back", class = "btn-info"),
+          actionButton("comparison_methods_back", "Return to Modify Iterations Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -2056,7 +2059,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                               actionButton("linkage_rules_back", "Back", class = "btn-info"),
+          actionButton("linkage_rules_back", "Back", class = "btn-info"),
         ))
       ),
 
@@ -2146,7 +2149,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("regenerate_report_back", "Back", class = "btn-info"),
+          actionButton("regenerate_report_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -2213,7 +2216,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("run_algorithm_back", "Back", class = "btn-info"),
+          actionButton("run_algorithm_back", "Back", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -3118,10 +3121,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     #----#
     dataset_vers <- paste0("v", dataset_vers)
     update_query <- paste("UPDATE datasets
-                          SET dataset_code = ?, dataset_name = ?, version = ?
+                          SET dataset_code = ?, dataset_name = ?, version = ?, dataset_location = ?
                           WHERE dataset_id = ?")
     update <- dbSendStatement(linkage_metadata_conn, update_query)
-    dbBind(update, list(dataset_code, dataset_name, dataset_vers, selected_dataset_id))
+    dbBind(update, list(dataset_code, dataset_name, dataset_vers, dataset_file, selected_dataset_id))
     dbClearResult(update)
     #----#
 
@@ -3751,6 +3754,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     run_algorithm_right_dataset_id <<- right_dataset_id
     run_algorithm_return_page      <<- "linkage_algorithms_page"
 
+    # Update the return button'
+    updateActionButton(session, "run_algorithm_back", label = "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long"))
+
     # Show the iterations page
     nav_show('main_navbar', 'run_algorithm_page')
     updateNavbarPage(session, "main_navbar", selected = "run_algorithm_page")
@@ -3773,6 +3779,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     run_algorithm_left_dataset_id  <<- left_dataset_id
     run_algorithm_right_dataset_id <<- right_dataset_id
     run_algorithm_return_page      <<- "linkage_algorithms_page"
+
+    # Update the return button'
+    updateActionButton(session, "run_algorithm_back", label = "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long"))
 
     # Show the iterations page
     nav_show('main_navbar', 'run_algorithm_page')
@@ -8862,6 +8871,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     run_algorithm_right_dataset_id <<- add_linkage_iterations_right_dataset_id
     run_algorithm_return_page      <<- "view_linkage_iterations_page"
 
+    # Update the return button'
+    updateActionButton(session, "run_algorithm_back", label = "Return to View Iterations Page", icon = shiny::icon("arrow-left-long"))
+
     # Show the iterations page
     nav_show('main_navbar', 'run_algorithm_page')
     updateNavbarPage(session, "main_navbar", selected = "run_algorithm_page")
@@ -11047,84 +11059,105 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Disable this button
     disable("run_linkage_btn")
 
-    # Get the user toggle inputs
-    output_linked_iterations_pairs  <- input$output_linked_iterations_pairs
-    output_unlinked_iteration_pairs <- input$output_unlinked_iteration_pairs
-    linkage_report_type             <- as.numeric(input$linkage_report_type)
-    generate_algorithm_summary      <- input$generate_algorithm_summary
-    calculate_performance_measures  <- input$calculate_performance_measures
-    generate_threshold_plots        <- input$generate_threshold_plots
-    save_all_linkage_results        <- input$save_all_linkage_results
+    # Use `withProgress` to display and update the progress bar
+    successful <<- TRUE
+    withProgress(message = "Running Linkage Algorithms...", value = 0, {
 
-    # Get the folder and file inputs
-    output_dir <- parseDirPath(volumes, input$linkage_output_dir)
+      # Define progress callback function
+      progress_callback <- function(progress_value, message = NULL) {
+        incProgress(progress_value, message)
+      }
 
-    #-- Error Handling --#
-    # We need to make sure the user supplied an output folder
-    if(identical(output_dir, character(0))){
-      showNotification("Failed to Run Linkage - Missing Output Folder", type = "error", closeButton = FALSE)
-      enable("run_linkage_btn")
-      return()
-    }
-    #--------------------#
+      # Set the initial progress
+      incProgress(0)
 
-    # Get the parameters that will be passed to the linkage function
-    left_dataset   <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_left_dataset_id))$dataset_location
-    right_dataset  <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_right_dataset_id))$dataset_location
-    link_metadata  <- metadata_file_path
-    algorithm_ids  <- algorithms_to_run
-    extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, output_linkage_iterations = output_linked_iterations_pairs,
-                                                   output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, linkage_report_type = linkage_report_type,
-                                                   generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
-                                                   data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results)
+      # Get the user toggle inputs
+      output_linked_iterations_pairs  <- input$output_linked_iterations_pairs
+      output_unlinked_iteration_pairs <- input$output_unlinked_iteration_pairs
+      linkage_report_type             <- as.numeric(input$linkage_report_type)
+      generate_algorithm_summary      <- input$generate_algorithm_summary
+      calculate_performance_measures  <- input$calculate_performance_measures
+      generate_threshold_plots        <- input$generate_threshold_plots
+      save_all_linkage_results        <- input$save_all_linkage_results
 
-    # Run the algorithms
-    successful <- TRUE
-    tryCatch({
-      # Run the linkage algorithms
-      results <- run_main_linkage(left_dataset, right_dataset, link_metadata, algorithm_ids, extra_params)
+      # Get the folder and file inputs
+      output_dir <- parseDirPath(volumes, input$linkage_output_dir)
 
-      # If the user wanted to save this data then handle that
-      if(save_all_linkage_results == T){
-        # Get all the linkage results by themselves first
-        linked_data_list                     <- results[["linked_data"]]
-        algorithm_ids                        <- results[["linked_algorithm_ids"]]
-        linked_data_algorithm_names          <- results[["linked_algorithm_names"]]
-        linkage_algorithm_summary_list       <- results[["algorithm_summaries"]]
-        linkage_algorithm_footnote_list      <- results[["algorithm_footnotes"]]
-        intermediate_performance_measures_df <- results[["performance_measures"]]
+      #-- Error Handling --#
+      # We need to make sure the user supplied an output folder
+      if(identical(output_dir, character(0))){
+        successful <<- FALSE
+        showNotification("Failed to Run Linkage - Missing Output Folder", type = "error", closeButton = FALSE)
+        enable("run_linkage_btn")
+        return()
+      }
+      #--------------------#
 
-        # We will go through each of the algorithm IDs and save the data to an .Rdata file that can be used later
-        for(index in 1:length(algorithm_ids)){
-          # Get the current information for this algorithm
-          linked_data    <- linked_data_list[[index]]
-          algorithm_id   <- algorithm_ids[index]
-          algorithm_name <- linked_data_algorithm_names[index]
-          algorithm_summ <- linkage_algorithm_summary_list[[index]]
-          algorithm_foot <- linkage_algorithm_footnote_list[[index]]
-          performance_df <- as.data.frame(intermediate_performance_measures_df[intermediate_performance_measures_df$algorithm_name == algorithm_name, ])
+      # Get the parameters that will be passed to the linkage function
+      left_dataset   <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_left_dataset_id))$dataset_location
+      right_dataset  <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_right_dataset_id))$dataset_location
+      link_metadata  <- metadata_file_path
+      algorithm_ids  <- algorithms_to_run
+      extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, output_linkage_iterations = output_linked_iterations_pairs,
+                                                     output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, linkage_report_type = linkage_report_type,
+                                                     generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
+                                                     data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results)
 
-          # Obtain a file path
-          file_path <- file.path(system.file(package = "datalink", "data"), paste0("linkage_report_metadata_id_", algorithm_id, ".RData"))
+      # Run the algorithms
+      tryCatch({
+        # Run the linkage algorithms
+        results <- run_main_linkage(left_dataset, right_dataset, link_metadata, algorithm_ids, extra_params, progress_callback)
 
-          # Save the data for this algorithm
-          save(linked_data, algorithm_id, algorithm_name, algorithm_summ,
-               algorithm_foot, performance_df, file=file_path)
+        # If the user wanted to save this data then handle that
+        if(save_all_linkage_results == T){
+          # Get all the linkage results by themselves first
+          linked_data_list                     <- results[["linked_data"]]
+          algorithm_ids                        <- results[["linked_algorithm_ids"]]
+          linked_data_algorithm_names          <- results[["linked_algorithm_names"]]
+          linkage_algorithm_summary_list       <- results[["algorithm_summaries"]]
+          linkage_algorithm_footnote_list      <- results[["algorithm_footnotes"]]
+          intermediate_performance_measures_df <- results[["performance_measures"]]
+
+          # We will go through each of the algorithm IDs and save the data to an .Rdata file that can be used later
+          for(index in 1:length(algorithm_ids)){
+            # Get the current information for this algorithm
+            linked_data    <- linked_data_list[[index]]
+            algorithm_id   <- algorithm_ids[index]
+            algorithm_name <- linked_data_algorithm_names[index]
+            algorithm_summ <- linkage_algorithm_summary_list[[index]]
+            algorithm_foot <- linkage_algorithm_footnote_list[[index]]
+            performance_df <- as.data.frame(intermediate_performance_measures_df[intermediate_performance_measures_df$algorithm_name == algorithm_name, ])
+
+            # Obtain a file path
+            file_path <- file.path(system.file(package = "datalink", "data"), paste0("linkage_report_metadata_id_", algorithm_id, ".RData"))
+
+            # Save the data for this algorithm
+            save(linked_data, algorithm_id, algorithm_name, algorithm_summ,
+                 algorithm_foot, performance_df, file=file_path)
+          }
+
         }
+        else{
+          rm(results)
+          gc()
+        }
+      },
+      error = function(e){
+        # If we fail, let the user know why
+        showNotification(paste0("Linkage Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
+        enable("run_linkage_btn")
+        successful <<- FALSE
+        #print(successful)
+        return()
+      })
 
-      }
-      else{
-        rm(results)
-        gc()
-      }
-    },
-    error = function(e){
-      # If we fail, let the user know why
-      showNotification(paste0("Linkage Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
-      enable("run_linkage_btn")
-      successful <<- FALSE
-      return()
+      #print(successful)
+
+      # Finalize progress
+      incProgress(1, detail = "Linkage completed.")
     })
+
+    #print(successful)
 
     # If we failed, then return
     if(successful == FALSE) return()

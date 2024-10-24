@@ -1233,30 +1233,67 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
   )
 )
 
-run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_metadata_file, algorithm_ids, extra_parameters){
+#' Run Data Linkage Function
+#'
+#' The run_main_linkage() function will take in a left and right dataset, using the linkage metadata file
+#' to determine which linkage classes to use for each iteration of an algorithm, with extra parameters to
+#' define what kinds of outputs are wanted.
+#' @param left_dataset_file The left dataset file to be linked to the right dataset file.
+#' @param right_dataset_file The right dataset file that will be be linked with the left dataset file.
+#' @param linkage_metadata_file The .SQLITE file of metadata information used for data linkage.
+#' @param algorithm_ids A vector of integers which are the algorithm IDs that will be ran.
+#' @param extra_parameters A list of optional user defined parameters that affects output.
+#' @param progress_callback An optional parameter which is a SHINY UI object passed to provide UI users with a progress bar of how far along completion is.
+#'
+#' @return A list of linkage result data if the user specified in the extra parameters, otherwise NULL is returned
+#' @examples
+#' left_dataset_file   <- file.choose()
+#' right_dataset_file  <- file.choose()
+#' linkage_sqlite_file <- file.choose()
+#' algorithm_ids       <- c(1, 2, 3)
+#' extra_parameters    <- create_extra_parameters_list(linkage_output_folder = choose.dir(), linkage_report_type = 2)
+#' results             <- run_main_linkage(left_dataset_file, right_dataset_file, linkage_sqlite_file, algorithm_ids, extra_parameters)
+#' @export
+run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_metadata_file, algorithm_ids, extra_parameters, progress_callback = NULL){
   # Error handling to ensure inputs were provided
   #----#
   if(is.na(left_dataset_file) || is.na(right_dataset_file) || is.null(left_dataset_file) ||
      is.null(right_dataset_file) || !file.exists(left_dataset_file) || !file.exists(right_dataset_file)){
-    dbDisconnect(linkage_metadata_db)
+    #dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid Datasets were provided.")
   }
 
   if(anyNA(algorithm_ids) || is.null(algorithm_ids) || !is.numeric(algorithm_ids)){
-    dbDisconnect(linkage_metadata_db)
+    #dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid Algorithm ID was provided.")
   }
 
   if(!is.list(extra_parameters)){
-    dbDisconnect(linkage_metadata_db)
+    #dbDisconnect(linkage_metadata_db)
     stop("Error: Extra parameters should be provided as a list.")
   }
 
   if(is.na(linkage_metadata_file) || is.null(linkage_metadata_file) || !file.exists(linkage_metadata_file) || file_ext(linkage_metadata_file) != "sqlite"){
-    dbDisconnect(linkage_metadata_db)
+    #dbDisconnect(linkage_metadata_db)
     stop("Error: Invalid linkage metadata file provided.")
   }
   #----#
+
+  ### Create a variable for tracking the number of steps during this linkage and what step we're currently on
+  total_steps  <- length(algorithm_ids)
+  current_step <- 0
+  total_progress <- 0
+  if("linkage_report_type" %in% names(extra_parameters)){
+    # If we are generating final reports, then each algorithm gets its own
+    if(extra_parameters[["linkage_report_type"]] == 3){
+      total_steps <- total_steps * 2
+    }
+
+    # If we are generating an intermediate report, then all algorithms share a report
+    if(extra_parameters[["linkage_report_type"]] == 2){
+      total_steps <- total_steps + 1
+    }
+  }
 
   ### Step 1: Connect to the linkage metadata file
   #----
@@ -1288,12 +1325,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   label(intermediate_performance_measures_df$linkage_rate) <- "Linkage Rate"
   #----
 
-
   # For Steps 2-5, we'll run each of our algorithms
+  algorithm_num <- 0
   for(algorithm_id in algorithm_ids){
     # List of plots and captions
     algorithm_plots <- c()
     plot_captions   <- c()
+    algorithm_num   <- algorithm_num + 1
 
     ### Step 2: Get the iteration IDs using the selected algorithm ID
     #----
@@ -1373,6 +1411,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       stop("Error: Columns Do Not Match In Right Dataset.")
     }
     #----
+
+    # Call the progress for starting to run the algorithm
+    if (!is.null(progress_callback)) {
+      progress_value <- 1/(total_steps+1)
+      progress_callback(progress_value, paste0("Step [", current_step+1, "/", total_steps, "] ", "Running Algorithm ", algorithm_num, " of ", length(algorithm_ids)))
+      current_step <- current_step + 1
+    }
 
     ### Step 4: For each iteration ID loop through and perform data linkage
     #----
@@ -2034,6 +2079,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           considered_algo_summary_table_names <- NULL
         }
 
+        # Call the progress callback with progress value and optional message
+        if (!is.null(progress_callback)) {
+          progress_value <- 1/(total_steps+1)
+          progress_callback(progress_value, paste0("Step [", current_step+1, "/", total_steps, "] ", "Generating Final Report for Algorithm ", algorithm_num, " of ", length(algorithm_ids)))
+          current_step <- current_step + 1
+        }
+
         # Generate the linkage quality report
         final_linkage_quality_report(output_df, algorithm_name, "", datasets$left_dataset_name,
                                      paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
@@ -2174,7 +2226,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     linkage_algorithm_summary_list[[length(linkage_algorithm_summary_list)+1]] <- algo_summary
 
     # Save the performance measures information
-    if(nrow(performance_measures_df) > 0){
+    if(!is.null(performance_measures_df) && nrow(performance_measures_df) > 0){
       intermediate_performance_measures_df <- rbind(intermediate_performance_measures_df, performance_measures_df)
     }
 
@@ -2221,6 +2273,14 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # Load the 'linkrep' library and generate a linkage quality report
       library("linkrep")
+
+      # Call the progress callback
+      if (!is.null(progress_callback)) {
+        progress_value <- 1/(total_steps+1)
+        progress_callback(progress_value, paste0("Step [", current_step+1, "/", total_steps, "] ", "Generating Intermediate Report for All Algorithms"))
+        current_step <- current_step + 1
+      }
+
       # If we have performance measures, include them, otherwise generate a normal report
       if(nrow(intermediate_performance_measures_df) <= 0){
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
