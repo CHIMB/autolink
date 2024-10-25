@@ -6,17 +6,22 @@
 \usage{
 create_extra_parameters_list(
   linkage_output_folder = NULL,
+  include_unlinked_records = FALSE,
   output_linkage_iterations = FALSE,
   output_unlinked_iteration_pairs = FALSE,
   linkage_report_type = NULL,
   calculate_performance_measures = FALSE,
   data_linker = NULL,
   generate_algorithm_summary = FALSE,
-  generate_threshold_plots = FALSE
+  generate_threshold_plots = FALSE,
+  save_all_linkage_results = FALSE,
+  collect_missing_data_indicators = FALSE
 )
 }
 \arguments{
 \item{linkage_output_folder}{A directory for which linkage output files will be written to.}
+
+\item{include_unlinked_records}{A TRUE of FALSE value for whether you'd like the unlinked record pairs to appear in the output linked data.}
 
 \item{output_linkage_iterations}{A TRUE or FALSE value for whether you'd like each iteration to write the linked pairs (UNEDITED) to the output directory.}
 
@@ -31,11 +36,15 @@ create_extra_parameters_list(
 \item{generate_algorithm_summary}{A TRUE or FALSE value for whether you'd like to export a CSV summary of the algorithm that was run.}
 
 \item{generate_threshold_plots}{A TRUE or FALSE value for whether you'd like to export threshold plots for each pass.}
+
+\item{save_all_linkage_results}{A TRUE or FALSE value for whether you'd like a list of all report data returned after all algorithms have been ran.}
+
+\item{collect_missing_data_indicators}{A TRUE or FALSE value for whether you'd like to have missing data indicators appear of the variables you're keeping as output.}
 }
 \description{
 The create_extra_parameters_list() function will allow users to modify any of the default
 parameter values to allow for more specific linkage options.
 }
 \examples{
-extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, generate_linkage_report = TRUE)
+extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 }

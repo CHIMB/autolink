@@ -592,14 +592,14 @@ linkage_ui <- page_navbar(
               card_header("Run Algorithms", class = 'bg-dark'),
               card_body(
                 fluidRow(
-                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                      actionButton("run_default_algorithm", "Run Active Algorithm", class = "btn-warning", width = validateCssUnit(400)),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("run_default_algorithm", "Run Algorithm(s) Page", class = "btn-warning", width = validateCssUnit(400)),
                     )
                   ),
-                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                      actionButton("run_enabled_for_testing_algorithms", "Run Sensitivity Testing Algorithm(s)", class = "btn-warning", width = validateCssUnit(400)),
-                    )
-                  ),
+                  # column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                  #     actionButton("run_enabled_for_testing_algorithms", "Run Sensitivity Testing Algorithm(s)", class = "btn-warning", width = validateCssUnit(400)),
+                  #   )
+                  # ),
                 )
               )
             )
@@ -2224,7 +2224,29 @@ linkage_ui <- page_navbar(
       HTML("<br><br>"),
 
       ### STEP 1
-      h5(strong("Step 1: Provide the Output Folder")),
+      h5(strong("Step 1: Select the Algorithm(s) to Run")),
+      h6(p(strong("Note: "), paste("A minimum of one algorithm must be selected."))),
+      # Create a card for the output location
+      div(style = "display: flex; justify-content: center; align-items: center;",
+          card(
+            width = 1,
+            height = 600,
+            full_screen = FALSE,
+            card_header("Select Algorithms to Run", class = 'bg-dark'),
+            card_body(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  dataTableOutput("select_linkage_algorithms_to_run"),
+                )),
+              ),
+            )
+          )
+      ),
+
+      HTML("<br>"), # Spacing
+
+      ### STEP 2
+      h5(strong("Step 2: Provide the Output Folder")),
       # Create a card for the output location
       div(style = "display: flex; justify-content: center; align-items: center;",
         card(
@@ -2253,7 +2275,7 @@ linkage_ui <- page_navbar(
       HTML("<br>"), # Spacing
 
       ### STEP 2
-      h5(strong("Step 2: Select the Type of Linkage Quality Report")),
+      h5(strong("Step 3: Select the Type of Linkage Quality Report")),
       # Create a card for the linkage quality report type
       div(style = "display: flex; justify-content: center; align-items: center;",
         card(
@@ -2289,18 +2311,24 @@ linkage_ui <- page_navbar(
 
       HTML("<br>"), # Spacing
 
-      ### STEP 3
-      h5(strong("Step 3: Select Output Options")),
+      ### STEP 4
+      h5(strong("Step 4: Select Output Options")),
       # Create a card for editing/viewing algorithm output information
       column(width = 6, offset = 3,  # Control the card's width and center it
         div(style = "display: flex; justify-content: center; align-items: center;",
           card(
             width = NULL,  # Remove the width inside the card and control it from the column
-            height = 425,
+            height = 550,
             full_screen = FALSE,
             card_header("Select Output Options", class = 'bg-dark'),
             card_body(
-            fluidRow(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Includes the unlinked record pairs that appear in the linkage data OR linkage quality report.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("include_unlinked_records", "Unlinked Pairs in Final Output", FALSE)
+                )),
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                   helpText("Per Pass CSV output of the linked pairs that were selected.")
                 )),
@@ -2330,6 +2358,12 @@ linkage_ui <- page_navbar(
                 )),
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                   checkboxInput("generate_threshold_plots", "Threshold Plots", FALSE)
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Collects missing data indicators of the output fields to be placed in the linkage report.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("create_missing_data_indicators", "Missing Data Indicators", FALSE)
                 ))
               )
             )
@@ -2339,8 +2373,8 @@ linkage_ui <- page_navbar(
 
       HTML("<br>"), # Spacing
 
-      ### STEP 4
-      h5(strong("Step 4: Retain Record Linkage Data")),
+      ### STEP 5
+      h5(strong("Step 5: Retain Record Linkage Data")),
       # Create a card for saving the results obtained during record linkage
       column(width = 6, offset = 3,  # Control the card's width and center it
         div(style = "display: flex; justify-content: center; align-items: center;",
@@ -2366,13 +2400,13 @@ linkage_ui <- page_navbar(
 
       HTML("<br>"), # Spacing
 
-      ### STEP 5
-      h5(strong("Step 5: Run Record Linkage for the Selected Algorithm(s)")),
+      ### STEP 6
+      h5(strong("Step 6: Run Record Linkage for the Selected Algorithm(s)")),
       # Create a card for editing/viewing algorithm output information
       div(style = "display: flex; justify-content: center; align-items: center;",
         card(
           width = 1,
-          height = 125,
+          height = 150,
           full_screen = FALSE,
           card_header("Run Record Linkage", class = 'bg-dark'),
           card_body(
@@ -3741,44 +3775,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Get the selected row
     left_dataset_id  <- input$linkage_algorithm_left_dataset
     right_dataset_id <- input$linkage_algorithm_right_dataset
-    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
-                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id, 'AND enabled = 1',
-                                               'ORDER BY algorithm_id ASC'))
 
-    # Grab the algorithm id
-    algorithm_id <- df$algorithm_id
-
-    # Update the global variable for the acceptance method id and the return page
-    algorithms_to_run              <<- algorithm_id
+    # Update global variables
     run_algorithm_left_dataset_id  <<- left_dataset_id
     run_algorithm_right_dataset_id <<- right_dataset_id
     run_algorithm_return_page      <<- "linkage_algorithms_page"
 
-    # Update the return button'
-    updateActionButton(session, "run_algorithm_back", label = "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long"))
-
-    # Show the iterations page
-    nav_show('main_navbar', 'run_algorithm_page')
-    updateNavbarPage(session, "main_navbar", selected = "run_algorithm_page")
-  })
-
-  # Run the algorithms that are 'enabled for testing'
-  observeEvent(input$run_enabled_for_testing_algorithms, {
-    # Get the selected row
-    left_dataset_id  <- input$linkage_algorithm_left_dataset
-    right_dataset_id <- input$linkage_algorithm_right_dataset
-    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
-                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id, 'AND enabled_for_testing = 1',
-                                                  'ORDER BY algorithm_id ASC'))
-
-    # Grab the algorithm id
-    algorithm_ids <- df$algorithm_id
-
-    # Update the global variable for the acceptance method id and the return page
-    algorithms_to_run              <<- algorithm_ids
-    run_algorithm_left_dataset_id  <<- left_dataset_id
-    run_algorithm_right_dataset_id <<- right_dataset_id
-    run_algorithm_return_page      <<- "linkage_algorithms_page"
+    # Re-render data table
+    output$select_linkage_algorithms_to_run <- renderDataTable({
+      get_linkage_algorithms_to_run()
+    })
 
     # Update the return button'
     updateActionButton(session, "run_algorithm_back", label = "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long"))
@@ -8866,10 +8872,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     })
 
     # Update the global variable for the acceptance method id and the return page
-    algorithms_to_run              <<- add_linkage_iterations_algorithm_id
     run_algorithm_left_dataset_id  <<- add_linkage_iterations_left_dataset_id
     run_algorithm_right_dataset_id <<- add_linkage_iterations_right_dataset_id
     run_algorithm_return_page      <<- "view_linkage_iterations_page"
+
+    # Re-render the algorithms data table
+    output$select_linkage_algorithms_to_run <- renderDataTable({
+      get_linkage_algorithms_to_run()
+    })
 
     # Update the return button'
     updateActionButton(session, "run_algorithm_back", label = "Return to View Iterations Page", icon = shiny::icon("arrow-left-long"))
@@ -11013,6 +11023,53 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     "No Folder Has Been Chosen"
   })
 
+  # Query and output for getting the selected linkage algorithms
+  get_linkage_algorithms_to_run <- function(){
+    left_dataset_id  <- run_algorithm_left_dataset_id
+    right_dataset_id <- run_algorithm_right_dataset_id
+
+    # Convert the dataset IDs to numeric
+    left_dataset_id <- as.numeric(left_dataset_id)
+    right_dataset_id <- as.numeric(right_dataset_id)
+
+    # Make sure the dataset IDs aren't NA
+    if(is.na(left_dataset_id) || is.na(right_dataset_id)){
+      return()
+    }
+
+    # Query to get all linkage method information from the 'linkage_methods' table
+    query <- paste('SELECT * FROM linkage_algorithms
+                WHERE dataset_id_left =', left_dataset_id, ' AND dataset_id_right =', right_dataset_id,
+                   'ORDER BY algorithm_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'algorithm_name'] <- 'Algorithm Name'
+    names(df)[names(df) == 'modified_date'] <- 'Modified Date'
+    names(df)[names(df) == 'modified_by'] <- 'Modified By'
+
+    # With algorithms, we'll replace the enabled [0, 1] with [No, Yes]
+    df$enabled <- str_replace(df$enabled, "0", "No")
+    df$enabled <- str_replace(df$enabled, "1", "Yes")
+    df$enabled_for_testing <- str_replace(df$enabled_for_testing, "0", "No")
+    df$enabled_for_testing <- str_replace(df$enabled_for_testing, "1", "Yes")
+
+    # Rename the remaining columns
+    names(df)[names(df) == 'enabled'] <- 'Active Algorithm'
+    names(df)[names(df) == 'enabled_for_testing'] <- 'Enabled for Sensitivity Testing'
+
+    # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
+    df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right))
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'multiple', rownames = FALSE, options = list(lengthChange = FALSE))
+  }
+
+  # Render the data table for the linkage algorithms of the desired 2 datasets
+  output$select_linkage_algorithms_to_run <- renderDataTable({
+    get_linkage_algorithms_to_run()
+  })
+
   # Get the computer volumes
   volumes <- getVolumes()()
 
@@ -11115,9 +11172,19 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       calculate_performance_measures  <- input$calculate_performance_measures
       generate_threshold_plots        <- input$generate_threshold_plots
       save_all_linkage_results        <- input$save_all_linkage_results
+      save_missing_data_indicators    <- input$create_missing_data_indicators
+      include_unlinked_records        <- input$include_unlinked_records
 
       # Get the folder and file inputs
       output_dir <- parseDirPath(volumes, input$linkage_output_dir)
+
+      # Get the selected rows and the corresponding algorithm IDs
+      selected_rows <- input$select_linkage_algorithms_to_run_rows_selected
+      query <- paste('SELECT * FROM linkage_algorithms
+                WHERE dataset_id_left =', run_algorithm_left_dataset_id, ' AND dataset_id_right =', run_algorithm_right_dataset_id,
+                     'ORDER BY algorithm_id ASC;')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      algorithm_ids  <- df$algorithm_id[selected_rows]
 
       #-- Error Handling --#
       # We need to make sure the user supplied an output folder
@@ -11127,17 +11194,24 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         enable("run_linkage_btn")
         return()
       }
+      # Make sure at least one algorithm was selected
+      if(length(algorithm_ids) <= 0){
+        successful <<- FALSE
+        showNotification("Failed to Run Linkage - No Algorithms are Selected", type = "error", closeButton = FALSE)
+        enable("run_linkage_btn")
+        return()
+      }
       #--------------------#
 
       # Get the parameters that will be passed to the linkage function
       left_dataset   <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_left_dataset_id))$dataset_location
       right_dataset  <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_right_dataset_id))$dataset_location
       link_metadata  <- metadata_file_path
-      algorithm_ids  <- algorithms_to_run
       extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, output_linkage_iterations = output_linked_iterations_pairs,
                                                      output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, linkage_report_type = linkage_report_type,
                                                      generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
-                                                     data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results)
+                                                     data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results,
+                                                     collect_missing_data_indicators = save_missing_data_indicators, include_unlinked_records = include_unlinked_records)
 
       # Run the algorithms
       tryCatch({

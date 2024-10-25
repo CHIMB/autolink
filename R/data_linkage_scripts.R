@@ -1315,6 +1315,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     f1_score = numeric(),
     linkage_rate = numeric()
   )
+  intermediate_missing_indicators_df <- data.frame()
   # Apply labels to the performance measures data frame
   label(intermediate_performance_measures_df$algorithm_name) <- "Algorithm Name"
   label(intermediate_performance_measures_df$positive_predictive_value) <- "PPV"
@@ -1332,6 +1333,9 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     algorithm_plots <- c()
     plot_captions   <- c()
     algorithm_num   <- algorithm_num + 1
+
+    # Missing data indicators data frame
+    missing_data_indicators <- data.frame()
 
     ### Step 2: Get the iteration IDs using the selected algorithm ID
     #----
@@ -1409,6 +1413,53 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     if(length(right_dataset_column_diff) > 0 || length(right_dataset_column_diff_alt) > 0){
       dbDisconnect(linkage_metadata_db)
       stop("Error: Columns Do Not Match In Right Dataset.")
+    }
+
+    # If the user would like us to collect missing data indicators, then collect them
+    if("collect_missing_data_indicators" %in% names(extra_parameters) && extra_parameters[["collect_missing_data_indicators"]] == T){
+      # Obtain the output variables
+      output_fields_df <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+      output_fields    <- output_fields_df$field_name
+
+      # Establish the source missing data frame
+      source_missing <- subset(left_dataset, select = output_fields)
+
+      # For each of the output fields, replace missing values with 0 and existing values with 1
+      for(row in 1:nrow(output_fields_df)){
+        # Get the current row
+        output_fields_row <- output_fields_df[row,]
+
+        # Get the column name
+        col_name <- output_fields_row$field_name
+
+        # Replace blank, missing, NA, etc. values for the column with 0, otherwise replace with 1
+        source_missing[[col_name]] <- ifelse(is.na(source_missing[[col_name]]) | is.null(source_missing[[col_name]]) | trimws(source_missing[[col_name]]) == "",
+                                             1, 0)
+
+        # Rename the column to append "_missing"
+        names(source_missing)[names(source_missing) == col_name] <- paste0(col_name, "_missing")
+      }
+
+      # Save the sourced missing data
+      missing_data_indicators <- source_missing
+      rm(source_missing)
+      gc()
+
+      # Finally, apply labels to the missing data indicators
+      # Apply Labels to the output data frame
+      for(row_num in 1:nrow(output_fields_df)){
+        # Get the field to apply a label to
+        dataset_field <- paste0(output_fields_df$field_name[row_num], "_missing")
+
+        # Get the label to apply
+        dataset_label <- output_fields_df$dataset_label[row_num]
+
+        # Apply the label to the field
+        label(missing_data_indicators[[dataset_field]]) <- dataset_label
+      }
+
+      # Save intermediate missing indicators
+      intermediate_missing_indicators_df <- missing_data_indicators
     }
     #----
 
@@ -1748,11 +1799,19 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # Keep the output fields specified by the user
     left_dataset <- subset(left_dataset, select = fields_to_keep)
 
-    # Bind what's left of the left dataset to the output data frame
-    output_df <- rbind(output_df, left_dataset)
+    # Check if the user wants to include unlinked pairs
+    if(("include_unlinked_records" %in% names(extra_parameters) && extra_parameters[["include_unlinked_records"]] == T) ||
+       nrow(output_df) <= 0){
+      # Bind what's left of the left dataset to the output data frame
+      output_df <- rbind(output_df, left_dataset)
 
-    # Change the stage values to be the linkage indicator
-    output_df <- output_df %>% mutate(link_indicator = ifelse(stage == "UNLINKED",0,1))
+      # Change the stage values to be the linkage indicator
+      output_df <- output_df %>% mutate(link_indicator = ifelse(stage == "UNLINKED",0,1))
+    }
+    else{
+      # Change the stage values to be the linkage indicator
+      output_df <- output_df %>% mutate(link_indicator = ifelse(stage == "UNLINKED",0,1))
+    }
 
     # Apply Labels to the output data frame
     for(row_num in 1:nrow(output_fields)){
@@ -2091,6 +2150,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           considered_algo_summary_table_names <- NULL
         }
 
+        # Check to see if we have missing data indicators
+        display_missing_data_ind <- T
+        if(nrow(missing_data_indicators) <= 0){
+          missing_data_indicators  <- NULL
+          display_missing_data_ind <- F
+        }
+
         # Call the progress callback with progress value and optional message
         if (!is.null(progress_callback)) {
           progress_value <- 1/(total_steps+1)
@@ -2108,6 +2174,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                      threshold_plots = algorithm_plots, threshold_plot_captions = plot_captions,
                                      considered_algorithm_summary_data = considered_algo_summary_list, considered_algorithm_summary_tbl_footnotes = considered_algo_summary_footnotes_list,
                                      considered_algorithm_summary_table_names = considered_algo_summary_table_names,
+                                     missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
                                      R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
 
         detach("package:linkrep", unload = TRUE)
@@ -2265,6 +2332,14 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # Load the 'linkrep' library and generate a linkage quality report
       library("linkrep")
 
+      # Make sure the missing data indicators were provided
+      missing_data_indicators  <- intermediate_missing_indicators_df
+      display_missing_data_ind <- T
+      if(nrow(missing_data_indicators) <= 0){
+        missing_data_indicators  <- NULL
+        display_missing_data_ind <- F
+      }
+
       # Call the progress callback
       if (!is.null(progress_callback)) {
         progress_value <- 1/(total_steps+1)
@@ -2278,6 +2353,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                             report_title, "", datasets$left_dataset_name, paste0("the ", datasets$right_dataset_name),
                                             output_dir, username, "datalink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
+                                            missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
       }
       else{
@@ -2290,6 +2366,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
                                             performance_measures_data = intermediate_performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
                                             ground_truth = ground_truth_fields,
+                                            missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
       }
       detach("package:linkrep", unload = TRUE)
@@ -2331,15 +2408,16 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
   # If the user wanted linkage results of all ran algorithms to be returned, check that
   # the parameter was specified
-  if("save_all_linkage_results" %in% names(extra_parameters)){
+  if("save_all_linkage_results" %in% names(extra_parameters) && extra_parameters[["save_all_linkage_results"]] == T){
     # Create a result list of all the data we collected
     result_list <- list()
-    result_list[["linked_data"]]            <- linked_data_list
-    result_list[["linked_algorithm_ids"]]   <- algorithm_ids
-    result_list[["linked_algorithm_names"]] <- linked_data_algorithm_names
-    result_list[["algorithm_summaries"]]    <- linkage_algorithm_summary_list
-    result_list[["algorithm_footnotes"]]    <- linkage_algorithm_footnote_list
-    result_list[["performance_measures"]]   <- intermediate_performance_measures_df
+    result_list[["linked_data"]]             <- linked_data_list
+    result_list[["linked_algorithm_ids"]]    <- algorithm_ids
+    result_list[["linked_algorithm_names"]]  <- linked_data_algorithm_names
+    result_list[["algorithm_summaries"]]     <- linkage_algorithm_summary_list
+    result_list[["algorithm_footnotes"]]     <- linkage_algorithm_footnote_list
+    result_list[["performance_measures"]]    <- intermediate_performance_measures_df
+    result_list[["missing_data_indicators"]] <- intermediate_missing_indicators_df
 
     # Return the result list
     return(result_list)

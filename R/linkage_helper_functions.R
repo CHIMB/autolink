@@ -646,6 +646,7 @@ load_linkage_file <- function(dataset_file){
 #' The create_extra_parameters_list() function will allow users to modify any of the default
 #' parameter values to allow for more specific linkage options.
 #' @param linkage_output_folder A directory for which linkage output files will be written to.
+#' @param include_unlinked_records A TRUE of FALSE value for whether you'd like the unlinked record pairs to appear in the output linked data.
 #' @param output_linkage_iterations A TRUE or FALSE value for whether you'd like each iteration to write the linked pairs (UNEDITED) to the output directory.
 #' @param output_unlinked_iteration_pairs A TRUE or FALSE value for whether you'd like each iteration to write the unlinked pairs (UNEDITED) to the output directory
 #' @param linkage_report_type 1 = No Report, 2 = Intermediate Report, 3 = Final Report.
@@ -654,10 +655,12 @@ load_linkage_file <- function(dataset_file){
 #' @param generate_algorithm_summary A TRUE or FALSE value for whether you'd like to export a CSV summary of the algorithm that was run.
 #' @param generate_threshold_plots A TRUE or FALSE value for whether you'd like to export threshold plots for each pass.
 #' @param save_all_linkage_results A TRUE or FALSE value for whether you'd like a list of all report data returned after all algorithms have been ran.
+#' @param collect_missing_data_indicators A TRUE or FALSE value for whether you'd like to have missing data indicators appear of the variables you're keeping as output.
 #' @examples
-#' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, generate_linkage_report = TRUE)
+#' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
 create_extra_parameters_list <- function(linkage_output_folder = NULL,
+                                         include_unlinked_records = FALSE,
                                          output_linkage_iterations = FALSE,
                                          output_unlinked_iteration_pairs = FALSE,
                                          linkage_report_type = NULL,
@@ -665,7 +668,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          data_linker = NULL,
                                          generate_algorithm_summary = FALSE,
                                          generate_threshold_plots = FALSE,
-                                         save_all_linkage_results = FALSE){
+                                         save_all_linkage_results = FALSE,
+                                         collect_missing_data_indicators = FALSE){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -678,6 +682,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
     if(!is.na(linkage_output_folder) && dir.exists(linkage_output_folder)){
       extra_params_list[["linkage_output_folder"]] <- linkage_output_folder
     }
+  }
+
+  ### Include Unlinked Records in Output
+  if(!isFALSE(include_unlinked_records) && !is.na(include_unlinked_records) && !is.null(include_unlinked_records) &&
+     (isTRUE(include_unlinked_records) || include_unlinked_records == "TRUE")){
+    extra_params_list[["include_unlinked_records"]] <- TRUE
   }
 
   ### Output/Extract Linked Iterations
@@ -728,6 +738,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!isFALSE(save_all_linkage_results) && !is.na(save_all_linkage_results) && !is.null(save_all_linkage_results) &&
      (isTRUE(save_all_linkage_results) || save_all_linkage_results == "TRUE")){
     extra_params_list[["save_all_linkage_results"]] <- TRUE
+  }
+
+  ### Save Missing Data Indicators
+  if(!isFALSE(collect_missing_data_indicators) && !is.na(collect_missing_data_indicators) && !is.null(collect_missing_data_indicators) &&
+     (isTRUE(collect_missing_data_indicators) || collect_missing_data_indicators == "TRUE")){
+    extra_params_list[["collect_missing_data_indicators"]] <- TRUE
   }
   #----------------------------------------------------------------------------#
 
