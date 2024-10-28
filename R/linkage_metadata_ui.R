@@ -2610,6 +2610,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                              },
                              stop("Unsupported file format")  # Error if unsupported file type
       )
+
+      # Extract the first element of each variable
+      column_types <- sapply(column_types,"[[",1)
     },
     error = function(e){
       column_types <<- NULL
@@ -2746,6 +2749,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
       # Make sure the col_names and types are valid
       if(is.null(col_names) || is.null(col_types)) return()
+
+      # Make Sure the length of column names and types are the same
+      if(length(col_names) != length(col_types)) return()
 
       # Construct a data frame
       df <- data.frame(
@@ -4621,6 +4627,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     output$linkage_algorithm_output_field_input <- renderUI({
       get_algorithm_output_fields_input()
     })
+    updateTextAreaInput(session, "linkage_algorithm_output_field_label", value = "")
     #----#
 
     # Show success notification
@@ -4795,7 +4802,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         linkage_method_id = numeric(),
         acceptance_rule_id = numeric(),
         blocking_left_fields = character(),
-        matching_left_fields = character()
+        matching_left_fields = character(),
+        standardization_file_id = numeric()
       )
     }
 
@@ -5422,7 +5430,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     nav_show('main_navbar', 'add_linkage_iterations_page')
     updateNavbarPage(session, "main_navbar", selected = "add_linkage_iterations_page")
   })
-
   #----
   #-----------------------------------------#
 
@@ -8292,7 +8299,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Create a new iteration
         #----#
         new_entry_query <- paste("INSERT INTO linkage_iterations (algorithm_id, iteration_name, iteration_num, linkage_method_id, acceptance_rule_id, modified_date, modified_by, enabled, standardization_file_id)",
-                                 "VALUES(?, ?, ?, ?, ?, ?, ?, ?);")
+                                 "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);")
         new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
         dbBind(new_entry, list(algorithm_id, iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, 1, standardization_dataset_to_add))
         dbClearResult(new_entry)
@@ -8640,7 +8647,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Create a new iteration
         #----#
         new_entry_query <- paste("INSERT INTO linkage_iterations (algorithm_id, iteration_name, iteration_num, linkage_method_id, acceptance_rule_id, modified_date, modified_by, enabled, standardization_file_id)",
-                                 "VALUES(?, ?, ?, ?, ?, ?, ?, ?);")
+                                 "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);")
         new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
         dbBind(new_entry, list(algorithm_id, iteration_name, iteration_priority, linkage_method_id, acceptance_rule_id, modified_date, modified_by, 1, standardization_dataset_to_add))
         dbClearResult(new_entry)

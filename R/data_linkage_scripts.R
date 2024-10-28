@@ -647,7 +647,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
 
         # Create a vector of field names with '.x' suffix to retain
-        fields_to_keep <- paste0(output_fields$field_name, ".x")
+        fields_to_keep <- ifelse(output_fields$field_name %in% colnames(linked_dataset), paste0(output_fields$field_name), paste0(output_fields$field_name, ".x"))
 
         # Append the stage to keep
         fields_to_keep <- append(fields_to_keep, "stage")
@@ -1208,7 +1208,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
 
         # Create a vector of field names with '.x' suffix to retain
-        fields_to_keep <- paste0(output_fields$field_name, ".x")
+        fields_to_keep <- ifelse(output_fields$field_name %in% colnames(linked_dataset), paste0(output_fields$field_name), paste0(output_fields$field_name, ".x"))
 
         # Create a vector of fields names with '.x' that will be renamed
         fields_to_rename <- fields_to_keep
