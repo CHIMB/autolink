@@ -395,11 +395,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               threshold <- comparison_rules[["jw_score"]]
 
               # Keep track of this comparison rule
-              # (NOT SURE IF THIS WORKS YET, IF NOT, TRY SOMETHING SIMILAR TO as.formula()?)
               comparison_rules_list[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
             }
             else if ("numeric_tolerance" %in% names(comparison_rules)){
-              # custom "error tolerance" function
+              # custom "numeric error tolerance" function
               numeric_error_tolerance <- function(tolerance){
                 function(x , y){
                   if(!missing(x) && !missing(y)){
@@ -416,6 +415,33 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
               # Keep track of this comparison rule
               comparison_rules_list[[dataset_field]] <- numeric_error_tolerance(tolerance)
+            }
+            else if ("date_tolerance" %in% names(comparison_rules)){
+              # Custom "date error tolerance" function
+              date_error_tolerance <- function(tolerance){
+                function(x , y){
+                  if(!missing(x) && !missing(y)){
+                    # Convert values to dates
+                    x = as.Date(x)
+                    y = as.Date(y)
+
+                    # Determine if the date is within error tolerance
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               abs(x - y) <= tolerance)
+                    return(within_tolerance)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the tolerance value
+              tolerance <- comparison_rules[["date_tolerance"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- date_error_tolerance(tolerance)
             }
           }
         }
@@ -639,6 +665,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Store the results vector
           return_list[["performance_measure_variables"]] <- results_vector
         }
+
+        ### Keep only the linked indices
+        linked_dataset <- linked_dataset[!duplicated(linked_dataset$.x)]
 
         ### Return the unmodified linked dataset
         return_list[["linked_dataset"]] <- linked_dataset
@@ -1134,7 +1163,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               threshold <- comparison_rules[["jw_score"]]
 
               # Keep track of this comparison rule
-              # (NOT SURE IF THIS WORKS YET, IF NOT, TRY SOMETHING SIMILAR TO as.formula()?)
               comparison_rules_list[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
             }
             else if ("numeric_tolerance" %in% names(comparison_rules)){
@@ -1155,6 +1183,33 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
               # Keep track of this comparison rule
               comparison_rules_list[[dataset_field]] <- numeric_error_tolerance(tolerance)
+            }
+            else if ("date_tolerance" %in% names(comparison_rules)){
+              # Custom "date error tolerance" function
+              date_error_tolerance <- function(tolerance){
+                function(x , y){
+                  if(!missing(x) && !missing(y)){
+                    # Convert values to dates
+                    x = as.Date(x)
+                    y = as.Date(y)
+
+                    # Determine if the date is within error tolerance
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               abs(x - y) <= tolerance)
+                    return(within_tolerance)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the tolerance value
+              tolerance <- comparison_rules[["date_tolerance"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- date_error_tolerance(tolerance)
             }
           }
         }
@@ -1200,6 +1255,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         ### Get the linked indicies
         linked_indices <- linked_dataset$.x
         return_list[["linked_indices"]] <- linked_indices
+
+        ### Keep non duplicate rows
+        linked_dataset <- linked_dataset[!duplicated(linked_dataset$.x)]
 
         ### Return the unmodified linked dataset
         return_list[["linked_dataset"]] <- linked_dataset
@@ -1561,14 +1619,21 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       algo_summary_footnotes <- unique(algo_summary_footnotes)
 
       # Get the blocking variables
-      blocking_fields_df <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
-      blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
+      blocking_fields_df      <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
+      cleaned_blocking_fields <- str_replace_all(blocking_fields_df$left_dataset_field, "[[:punct:]]", " ") # Remove punctuation
+      cleaned_blocking_fields <- str_to_title(cleaned_blocking_fields) # Set to title-case
+      blocking_fields         <- paste(cleaned_blocking_fields, collapse = ", ")
 
       # Get the matching variables
       matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
                               JOIN dataset_fields on field_id = left_dataset_field_id
                               WHERE iteration_id =', curr_iteration_id)
       matching_df <- dbGetQuery(linkage_metadata_db, matching_query)
+
+      # Clean the matching variable name
+      cleaned_name <- str_replace_all(matching_df$field_name, "[[:punct:]]", " ") # Remove punctuation
+      cleaned_name <- str_to_title(cleaned_name) # Set to title-case
+      matching_df$field_name <- cleaned_name
 
       # Loop through each matching variable to get its comparison methods
       for(j in 1:nrow(matching_df)){

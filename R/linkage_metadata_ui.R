@@ -1365,7 +1365,9 @@ linkage_ui <- page_navbar(
                                    "Name Length" = 5,
                                    "Age (Birth Year)" = 6,
                                    "Age (Birth Month)" = 7,
-                                   "Age (Birth Day)" = 8),
+                                   "Age (Birth Day)" = 8,
+                                   "Age (Birth Date)" = 9,
+                                   "Number of Names" = 10),
                     selected = 1,
                     width = validateCssUnit(300)),
                   )
@@ -4531,14 +4533,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df <- dbGetQuery(linkage_metadata_conn, query)
 
     # Change the field type by replacing it with values
-    df$field_type[df$field_type == 1] <- 'General'
-    df$field_type[df$field_type == 2] <- 'Date'
-    df$field_type[df$field_type == 3] <- 'Age'
-    df$field_type[df$field_type == 4] <- 'Postal Code'
-    df$field_type[df$field_type == 5] <- 'Name Length'
-    df$field_type[df$field_type == 6] <- 'Age (Birth Year)'
-    df$field_type[df$field_type == 7] <- 'Age (Birth Month)'
-    df$field_type[df$field_type == 8] <- 'Age (Birth Day)'
+    df$field_type[df$field_type == 1]  <- 'General'
+    df$field_type[df$field_type == 2]  <- 'Date'
+    df$field_type[df$field_type == 3]  <- 'Age'
+    df$field_type[df$field_type == 4]  <- 'Postal Code'
+    df$field_type[df$field_type == 5]  <- 'Name Length'
+    df$field_type[df$field_type == 6]  <- 'Age (Birth Year)'
+    df$field_type[df$field_type == 7]  <- 'Age (Birth Month)'
+    df$field_type[df$field_type == 8]  <- 'Age (Birth Day)'
+    df$field_type[df$field_type == 9]  <- 'Age (Birth Date)'
+    df$field_type[df$field_type == 10] <- 'Number of Names'
 
     # With our data frame, we'll rename some of the columns to look better
     names(df)[names(df) == 'field_name'] <- 'Field Source Name'

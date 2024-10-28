@@ -500,28 +500,44 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df){
     if(!identical(field_type, integer(0))){
       # DATE
       if(field_type == 2){
+        # Create Cutoffs for the years
         output_df[[col_name]] <- cut(output_df[[col_name]],
                                      breaks = c(-Inf, 1975, 1985, 1995, 2005, 2015, Inf),
                                      labels = c("<1975", "1975-1984", "1985-1994", "1995-2004", "2005-2014", "2015-2024"),
                                      right = FALSE)
+
+        # Apply the column label
+        label(output_df[[col_name]]) <- dataset_label
       }
       # AGE
       else if(field_type == 3){
+        # Create cutoffs for the age
         output_df[[col_name]] <- cut(output_df[[col_name]],
                                      breaks = c(-Inf, 18, 35, 65, Inf),
                                      labels = c("<18", "18-34", "35-64", "65+"),
                                      right = F)
+
+        # Apply the column label
+        label(output_df[[col_name]]) <- dataset_label
       }
       # POSTAL CODE
       else if(field_type == 4){
+        # Substring the postal code to contain the first 3 digits
         output_df[[col_name]] <- substr(output_df[[col_name]], 1, 3)
+
+        # Apply the column label
+        label(output_df[[col_name]]) <- dataset_label
       }
       # NAME LENGTH
       else if(field_type == 5){
+        # Create cutoffs for the length of the name
         output_df[[col_name]] <- cut(nchar(output_df[[col_name]]),
                                      breaks = c(-Inf, 5, 6, 7, 8, Inf),
                                      labels = c("<5", "5", "6", "7", "8+"),
                                      right = F)
+
+        # Apply the column label
+        label(output_df[[col_name]]) <- dataset_label
       }
       # AGE (BIRTH YEAR)
       else if(field_type == 6){
@@ -535,8 +551,34 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df){
       else if(field_type == 8){
 
       }
-      # REAPPLY THE DATASET LABEL
-      label(output_df[[col_name]]) <- dataset_label
+      # AGE (DATE)
+      else if(field_type == 9){
+        # Calculate the age
+        age <- as.numeric(floor(difftime(as.Date(Sys.Date()), output_df[[col_name]], unit="weeks")/52.25))
+
+        # Apply cutoffs
+        output_df[[col_name]] <- cut(age,
+                                     breaks = c(-Inf, 18, 35, 65, Inf),
+                                     labels = c("<18", "18-34", "35-64", "65+"),
+                                     right = F)
+
+        # Apply the column label
+        label(output_df[[col_name]]) <- dataset_label
+      }
+      # NAME COUNT
+      else if(field_type == 10){
+        # Calculate the number of names per record
+        name_count = lengths(strsplit(trimws(output_df[[col_name]]), " "))
+
+        # Apply the cutoffs
+        output_df[[col_name]] <- cut(name_count,
+                                     breaks = c(-Inf, 2, 3, Inf),
+                                     labels = c("1", "2", "3+"),
+                                     right = F)
+
+        # Apply the column label
+        label(output_df[[col_name]]) <- dataset_label
+      }
     }
   }
 
