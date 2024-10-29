@@ -1343,33 +1343,41 @@ linkage_ui <- page_navbar(
         condition = "input.currently_added_algorithm_output_fields_rows_selected <= 0",
 
         # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
-        div(style = "display: flex; justify-content: center; align-items: center;",
-          card(width = 1, height = 350, full_screen = FALSE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+        layout_column_wrap(
+          width = 1/2,
+          height = 550,
+          # CARD FOR SELECTING THE FIELD TYPE
+          card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
             fluidPage(
               fluidRow(
-                column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
-                    uiOutput("linkage_algorithm_output_field_input"),
-                  )
-                ),
-                column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                    textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-                  )
-                ),
-                column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                     selectInput("linkage_algorithm_output_field_type", label = "Field Type:",
-                    choices = list("Generic" = 1,
+                    choices = list("Generic/Pass-Through" = 1,
                                    "Date" = 2,
                                    "Age" = 3,
                                    "Postal Code" = 4,
                                    "Name Length" = 5,
-                                   "Age (Birth Year)" = 6,
-                                   "Age (Birth Month)" = 7,
-                                   "Age (Birth Day)" = 8,
-                                   "Age (Birth Date)" = 9,
-                                   "Number of Names" = 10),
+                                   "Number of Names" = 6,
+                                   "Derived Age" = 7,
+                                   "Standardized Values" = 8),
                     selected = 1,
-                    width = validateCssUnit(300)),
+                    width = validateCssUnit(500)),
+                  )
+                ),
+              )
+            )
+          ),
+          # CARD FOR THE INPUT UI
+          card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+            fluidPage(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
+                                  width = validateCssUnit(500), resize = "none"),
+                  )
+                ),
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    uiOutput("linkage_algorithm_output_field_input"),
                   )
                 ),
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -1378,7 +1386,7 @@ linkage_ui <- page_navbar(
                 )
               )
             )
-          )
+          ),
         )
       ),
       # If a row is selected, the user can drop the selected pair of ground truth variables
@@ -3769,9 +3777,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     output$currently_added_algorithm_output_fields <- renderDataTable({
       get_algorithm_output_fields()
     })
-    output$linkage_algorithm_output_field_input <- renderUI({
-      get_algorithm_output_fields_input()
-    })
+    updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
+    updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
 
     # Show the iterations page
     nav_show('main_navbar', 'linkage_algorithm_output_page')
@@ -4511,6 +4518,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   #-- LINKAGE ALGORITHM OUTPUT FIELDS PAGE EVENTS --#
   #----
+  # Reactive value for the standardization file path (ADD)
+  standardization_file_path_algorithm_output <- reactiveValues(
+    path=NULL
+  )
+
+  # Global variables
   algorithm_output_fields_algorithm_id <- 1
   algorithm_output_fields_dataset_id   <- 1
   algorithm_output_fields_return_page  <- "linkage_algorithms_page"
@@ -4523,31 +4536,67 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   # Function for creating the table of the currently selected algorithms iterations
   get_algorithm_output_fields <- function(){
-    algorithm_id <- modify_ground_truth_algorithm_id
+    algorithm_id <- algorithm_output_fields_algorithm_id
 
     # Query to get blocking variables with left and right dataset field names
-    query <- paste('SELECT field_name, dataset_label, la.field_type FROM linkage_algorithms_output_fields la
-                   JOIN dataset_fields df on la.dataset_field_id = df.field_id
-                   WHERE algorithm_id =', algorithm_output_fields_algorithm_id,
-                   'ORDER BY parameter_id ASC')
-    df <- dbGetQuery(linkage_metadata_conn, query)
+    df <- dbGetQuery(linkage_metadata_conn, "
+                    SELECT of.output_field_id, of.dataset_label, of.field_type, df.field_name, standardization_lookup_id
+                    FROM output_fields of
+                    JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+                    JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+                    WHERE of.algorithm_id = ?
+                    ORDER BY ofp.output_field_id ASC, ofp.parameter_id ASC", params = list(algorithm_id))
+
+    # Group the data frame
+    df <- df %>%
+      group_by(output_field_id) %>%
+      summarise(
+        dataset_label = paste(unique(dataset_label), collapse = ", "),
+        field_type = paste(unique(field_type), collapse = ", "),
+        field_name = paste(unique(field_name), collapse = ", "),
+        standardization_lookup_id = paste(unique(standardization_lookup_id), collapse = ", ")
+      ) %>%
+      ungroup()
+
+    # Get the standardization file for each output field (if there is one)
+    if(nrow(df) > 0){
+      for(row_num in 1:nrow(df)){
+        # Get the standardizing ID for this row
+        standardizing_id <- df$standardization_lookup_id[row_num]
+
+        # If the ID is not NA, then get the label
+        if(!is.na(standardizing_id) && !is.na(standardizing_id) && is.numeric(standardizing_id)){
+          # Get the file label
+          file_label <- dbGetQuery(linkage_metadata_conn, "SELECT * FROM name_standardization_files where standardization_file_id = ?",
+                                   params = list(standardizing_id))$standardization_file_label
+
+          # Put the label back into the data frame
+          df$standardization_lookup_id[row_num] <- file_label
+        }
+        else{
+          df$standardization_lookup_id[row_num] <- ""
+        }
+      }
+    }
 
     # Change the field type by replacing it with values
-    df$field_type[df$field_type == 1]  <- 'General'
+    df$field_type[df$field_type == 1]  <- 'General/Pass-Through'
     df$field_type[df$field_type == 2]  <- 'Date'
     df$field_type[df$field_type == 3]  <- 'Age'
     df$field_type[df$field_type == 4]  <- 'Postal Code'
     df$field_type[df$field_type == 5]  <- 'Name Length'
-    df$field_type[df$field_type == 6]  <- 'Age (Birth Year)'
-    df$field_type[df$field_type == 7]  <- 'Age (Birth Month)'
-    df$field_type[df$field_type == 8]  <- 'Age (Birth Day)'
-    df$field_type[df$field_type == 9]  <- 'Age (Birth Date)'
-    df$field_type[df$field_type == 10] <- 'Number of Names'
+    df$field_type[df$field_type == 6] <- 'Number of Names'
+    df$field_type[df$field_type == 7]  <- 'Derived Age'
+    df$field_type[df$field_type == 8] <- 'Standardized Values'
 
     # With our data frame, we'll rename some of the columns to look better
-    names(df)[names(df) == 'field_name'] <- 'Field Source Name'
+    names(df)[names(df) == 'field_name'] <- 'Field Source Name(s)'
     names(df)[names(df) == 'dataset_label'] <- 'Field Output Label'
     names(df)[names(df) == 'field_type'] <- 'Field Type'
+    names(df)[names(df) == 'standardization_lookup_id'] <- 'Standardization File'
+
+    # Drop the output field if
+    df <- select(df, -output_field_id)
 
     # Put it into a data table now
     dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
@@ -4558,118 +4607,458 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     get_algorithm_output_fields()
   })
 
-  # Creates the select input UI for available left fields
-  get_algorithm_output_fields_input <- function(){
-
-    # Perform query using linkage_metadata_conn
-    query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", algorithm_output_fields_dataset_id))
-
-    # Extract columns from query result
-    choices <- setNames(query_result$field_id, query_result$field_name)
-
-    # Create select input with dynamic choices
-    span(selectizeInput("algorithm_output_field", label = "Output Dataset Field:",
-                        choices = choices, multiple = FALSE, width = validateCssUnit(300),
-                        options = list(
-                          placeholder = 'Select an Output Field',
-                          onInitialize = I('function() { this.setValue(""); }')
-                        )))
-  }
-
   # Renders the UI for the left ground truth field add select input
   output$linkage_algorithm_output_field_input <- renderUI({
     get_algorithm_output_fields_input()
+  })
+
+  # Checks which field type the user selected and changes the UI input
+  observeEvent(input$linkage_algorithm_output_field_type, {
+    # Get the field type
+    field_type <- input$linkage_algorithm_output_field_type
+
+    # Render the UI based on the field type
+    # FIELD TYPE == 7 (Derived Age)
+    if(field_type == 7){
+      # Derived age requires 2 inputs
+      output$linkage_algorithm_output_field_input <- renderUI({
+        # Perform query using linkage_metadata_conn
+        query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", algorithm_output_fields_dataset_id))
+
+        # Extract columns from query result
+        choices <- setNames(query_result$field_id, query_result$field_name)
+
+        # Create a fluid page
+        fluidPage(
+          # Fluid row to have both select inputs in the same row
+          fluidRow(
+            column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                # Create select input with dynamic choices
+                span(selectizeInput("algorithm_output_field_bdate", label = "Birth Date Field:",
+                                    choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                                    options = list(
+                                      placeholder = 'Select the Birth Date Field',
+                                      onInitialize = I('function() { this.setValue(""); }')
+                                    )))
+              )
+            ),
+            column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                # Create select input with dynamic choices
+                span(selectizeInput("algorithm_output_field_cdate", label = "Capture Date Field:",
+                                    choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                                    options = list(
+                                      placeholder = 'Select the Date of Capture Field',
+                                      onInitialize = I('function() { this.setValue(""); }')
+                                    )))
+              )
+            ),
+          )
+        )
+      })
+    }
+    # FIELD TYPE == 8 (Standardize Values)
+    else if (field_type == 8){
+      # Standardize Inputs requires a select input & file select
+      output$linkage_algorithm_output_field_input <- renderUI({
+        # Perform query using linkage_metadata_conn
+        query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", algorithm_output_fields_dataset_id))
+
+        # Extract columns from query result
+        choices <- setNames(query_result$field_id, query_result$field_name)
+
+        # Create a fluid page for the input
+        fluidPage(
+          # Create a fluid row for organizing the inputs
+          fluidRow(
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Create select input with dynamic choices
+                span(selectizeInput("algorithm_output_field_standardize", label = "Standardizing Field:",
+                                    choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                                    options = list(
+                                      placeholder = 'Select the Field to Be Standardized',
+                                      onInitialize = I('function() { this.setValue(""); }')
+                                    )))
+              )
+            ),
+            column(width = 6, offset = 3, div(style = "display: flex; justify-content: left; align-items: left;",
+              # Label for the uploaded file name
+              div(style = "margin-right: 10px;", "Uploaded File:"),
+            )),
+            column(width = 6, offset = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+              # Boxed text output for showing the uploaded file name
+              div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                textOutput("uploaded_standardization_file_algorithm_output")
+              ),
+              # Upload button
+              actionButton("upload_standardization_file_algorithm_output", label = "", shiny::icon("upload")), #or use 'upload'
+            )),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              helpText(paste0(
+                "The uploaded file should contain the two following columns, 'common' which are the values that can appear ",
+                "in the dataset being used, along with the 'unique' column which is what the common dataset values will map ",
+                "to when standardization takes place during output."
+              ), style = "width: 350px;")
+            )),
+          )
+        )
+      })
+    }
+    # FIELD TYPE == 1, 2, 3, 4, 5, 6 (Only requires one input)
+    else{
+      # All other field types require just the input field
+      output$linkage_algorithm_output_field_input <- renderUI({
+        # Perform query using linkage_metadata_conn
+        query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from dataset_fields WHERE dataset_id =", algorithm_output_fields_dataset_id))
+
+        # Extract columns from query result
+        choices <- setNames(query_result$field_id, query_result$field_name)
+
+        # Create select input with dynamic choices
+        span(selectizeInput("algorithm_output_field", label = "Output Dataset Field:",
+                            choices = choices, multiple = FALSE, width = validateCssUnit(300),
+                            options = list(
+                              placeholder = 'Select an Output Field',
+                              onInitialize = I('function() { this.setValue(""); }')
+                            )))
+      })
+    }
+  })
+
+  # Allows user to upload a file for grabbing column names and storing path
+  observeEvent(input$upload_standardization_file_algorithm_output,{
+    tryCatch({
+      standardization_file_path_algorithm_output$path <- file.choose()
+    },
+    error = function(e){
+      standardization_file_path_algorithm_output$path <- NULL
+    })
+  })
+
+  # Render the uploaded file
+  observe({
+    uploaded_file_add <- standardization_file_path_algorithm_output$path
+
+    # Uploaded dataset file (ADD)
+    if(is.null(uploaded_file_add)){
+      output$uploaded_standardization_file_algorithm_output <- renderText({
+        "No File Uploaded"
+      })
+    }
+    else{
+      output$uploaded_standardization_file_algorithm_output <- renderText({
+        basename(uploaded_file_add)
+      })
+    }
   })
 
   # Adds the provided output field, label, and type into the database
   observeEvent(input$add_linkage_algorithm_output_field, {
     # Get the input values
     algorithm_id      <- algorithm_output_fields_algorithm_id
-    dataset_field_id  <- input$algorithm_output_field
     dataset_label     <- trimws(input$linkage_algorithm_output_field_label)
     field_type        <- input$linkage_algorithm_output_field_type
 
-    # Error handling
-    #----#
     # Make sure valid inputs were passed
-    if(dataset_field_id == '' || dataset_label == ''){
-      showNotification("Failed to Add Linkage Algorithm Output Field - Missing Input(s)", type = "error", closeButton = FALSE)
+    if(dataset_label == ''){
+      showNotification("Failed to Add Linkage Algorithm Output Field - Missing Output Label", type = "error", closeButton = FALSE)
       return()
     }
 
     # Convert dataset id and field type to integers
-    dataset_field_id <- as.numeric(dataset_field_id)
     field_type <- as.numeric(field_type)
 
-    # Make sure this ground truth variable isn't already being used
-    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms_output_fields
-                                                  WHERE algorithm_id = ? AND dataset_field_id = ? AND field_type = ?;')
-    dbBind(get_query, list(algorithm_id, dataset_field_id, field_type))
-    output_df <- dbFetch(get_query)
-    num_of_rows <- nrow(output_df)
-    dbClearResult(get_query)
-    if(num_of_rows != 0){
-      showNotification("Failed to Add Linkage Algorithm Output Field - Field and Field Type Already in Use", type = "error", closeButton = FALSE)
+    # Start a transaction for adding the fields
+    tryCatch({
+      # Start the transaction
+      dbBegin(linkage_metadata_conn)
+
+      # DERIVED AGE INSERTIONS
+      if(field_type == 7){
+        # Get the inputs
+        bdate_field <- as.numeric(input$algorithm_output_field_bdate)
+        cdate_field <- as.numeric(input$algorithm_output_field_cdate)
+
+        # Validate inputs
+        if(is.na(bdate_field) || is.na(cdate_field)){
+          showNotification("Failed to Add Linkage Algorithm Output Field - Missing Output Field(s)", type = "error", closeButton = FALSE)
+          stop()
+        }
+
+        # Create a new entry query for entering into the database
+        new_entry_query <- paste("INSERT INTO output_fields (algorithm_id, dataset_label, field_type, standardization_lookup_id)",
+                                 "VALUES(?, ?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(algorithm_id, dataset_label, field_type, NA))
+        dbClearResult(new_entry)
+
+        # Get the most recently created output_field_id
+        output_field_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS output_field_id;")$output_field_id
+
+        # Add the parameters to our output_field_parameters table
+        new_entry_query <- paste("INSERT INTO output_field_parameters (output_field_id, parameter_id, dataset_field_id)",
+                                 "VALUES(?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(output_field_id, 1, bdate_field))
+        dbClearResult(new_entry)
+
+        new_entry_query <- paste("INSERT INTO output_field_parameters (output_field_id, parameter_id, dataset_field_id)",
+                                 "VALUES(?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(output_field_id, 2, cdate_field))
+        dbClearResult(new_entry)
+
+        ## Reset Data Tables, UI Renders, and global variables
+        #----#
+        output$currently_added_algorithm_output_fields <- renderDataTable({
+          get_algorithm_output_fields()
+        })
+        updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
+        updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
+        updateTextAreaInput(session, "linkage_algorithm_output_field_label", value = "")
+        standardization_file_path_algorithm_output$path <- NULL
+        #----#
+
+        # Show success notification
+        #----#
+        showNotification("Linkage Algorithm Output Field Successfully Added", type = "message", closeButton = FALSE)
+        #----#
+      }
+      # STANDARDIZING FIELD INSERTIONS
+      else if(field_type == 8){
+        # Get the inputs
+        standardize_field    <- as.numeric(input$algorithm_output_field_standardize)
+        standardization_file <- standardization_file_path_algorithm_output$path
+
+        # Validate inputs
+        if(is.na(standardize_field)){
+          showNotification("Failed to Add Linkage Algorithm Output Field - Missing Output Field", type = "error", closeButton = FALSE)
+          stop()
+        }
+
+        # Verify that the uploaded file exists (still), and that it is a valid dataset
+        if(is.null(standardization_file) || !file.exists(standardization_file) || file_ext(standardization_file) != "csv"){
+          showNotification("Failed to Add Linkage Algorithm Output Field - Standardizing File is not a CSV File", type = "error", closeButton = FALSE)
+          stop()
+        }
+
+        # Check if the database has this dataset, if it does, don't upload it and select it instead, otherwise save it
+        file_name <- paste0(file_path_sans_ext(basename(standardization_file)), ".rds")
+        name_standardization_label <- str_replace_all(file_name, "[[:punct:]]", " ") # Remove punctuation
+        name_standardization_label <- paste0(trimws(str_to_title(name_standardization_label)), " Standardizing Dataset") # Set to title-case
+
+        # Query to determine if the standardization file already exists
+        query <- 'SELECT * from name_standardization_files
+              WHERE standardization_file_name = ?'
+        df <- dbGetQuery(linkage_metadata_conn, query, params = file_name)
+        standardization_id <- 0
+        if(nrow(df) > 0){
+          # Read in the CSV
+          standardization_dataset <- fread(standardization_file)
+
+          # Verify that it has the columns "unique" and "common"
+          dataset_col_names <- colnames(standardization_dataset)
+          if(!("unique" %in% dataset_col_names) || !("common" %in% dataset_col_names)){
+            showNotification("Failed to Add Linkage Algorithm Output Field - Standardizing File is Missing the Necessary Columns", type = "error", closeButton = FALSE)
+            rm(standardization_dataset)
+            gc()
+            stop()
+          }
+
+          # Get the ID
+          standardization_id <- df$standardization_file_id
+
+          # Save as .rds in package data folder
+          saveRDS(standardization_dataset, file.path(system.file(package = "datalink", "data"), file_name))
+        }
+        else{
+          # Read in the CSV
+          standardization_dataset <- fread(standardization_file)
+
+          # Verify that it has the columns "unique" and "common"
+          dataset_col_names <- colnames(standardization_dataset)
+          if(!("unique" %in% dataset_col_names) || !("common" %in% dataset_col_names)){
+            showNotification("Failed to Save Standardization Dataset - Dataset is Missing Columns", type = "error", closeButton = FALSE)
+            rm(standardization_dataset)
+            gc()
+            return()
+          }
+
+          # Extract the file name without the extension and apply a ".rds" extension for the output
+          standardization_file <- paste0(file_path_sans_ext(basename(standardization_file)), ".rds")
+
+          # Query to add a new row to the database for storing the dataset
+          new_entry_query <- paste("INSERT INTO name_standardization_files (standardization_file_label, standardization_file_name)",
+                                   "VALUES(?, ?);")
+          new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+          dbBind(new_entry, list(name_standardization_label, standardization_file))
+          dbClearResult(new_entry)
+
+          # Get the ID
+          standardization_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS standardization_file_id;")$standardization_file_id
+
+          # Save as .rds in package data folder
+          saveRDS(standardization_dataset, file.path(system.file(package = "datalink", "data"), standardization_file))
+        }
+
+        # Create a new entry query for entering into the database
+        new_entry_query <- paste("INSERT INTO output_fields (algorithm_id, dataset_label, field_type, standardization_lookup_id)",
+                                 "VALUES(?, ?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(algorithm_id, dataset_label, field_type, standardization_id))
+        dbClearResult(new_entry)
+
+        # Get the most recently created output_field_id
+        output_field_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS output_field_id;")$output_field_id
+
+        # Add the parameter to our output_field_parameters table
+        new_entry_query <- paste("INSERT INTO output_field_parameters (output_field_id, parameter_id, dataset_field_id)",
+                                 "VALUES(?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(output_field_id, 1, standardize_field))
+        dbClearResult(new_entry)
+
+        ## Reset Data Tables, UI Renders, and global variables
+        #----#
+        output$currently_added_algorithm_output_fields <- renderDataTable({
+          get_algorithm_output_fields()
+        })
+        updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
+        updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
+        updateTextAreaInput(session, "linkage_algorithm_output_field_label", value = "")
+        standardization_file_path_algorithm_output$path <- NULL
+        #----#
+
+        # Show success notification
+        #----#
+        showNotification("Linkage Algorithm Output Field Successfully Added", type = "message", closeButton = FALSE)
+        #----#
+      }
+      # ALL OTHER TYPES
+      else{
+        # Get the inputs
+        output_field <- as.numeric(input$algorithm_output_field)
+
+        # Validate inputs
+        if(is.na(output_field)){
+          showNotification("Failed to Add Linkage Algorithm Output Field - Missing Output Field", type = "error", closeButton = FALSE)
+          stop()
+        }
+
+        # Create a new entry query for entering into the database
+        new_entry_query <- paste("INSERT INTO output_fields (algorithm_id, dataset_label, field_type, standardization_lookup_id)",
+                                 "VALUES(?, ?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(algorithm_id, dataset_label, field_type, NA))
+        dbClearResult(new_entry)
+
+        # Get the most recently created output_field_id
+        output_field_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS output_field_id;")$output_field_id
+
+        # Add the parameters to our output_field_parameters table
+        new_entry_query <- paste("INSERT INTO output_field_parameters (output_field_id, parameter_id, dataset_field_id)",
+                                 "VALUES(?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(output_field_id, 1, output_field))
+        dbClearResult(new_entry)
+
+        ## Reset Data Tables, UI Renders, and global variables
+        #----#
+        output$currently_added_algorithm_output_fields <- renderDataTable({
+          get_algorithm_output_fields()
+        })
+        updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
+        updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
+        updateTextAreaInput(session, "linkage_algorithm_output_field_label", value = "")
+        standardization_file_path_algorithm_output$path <- NULL
+        #----#
+
+        # Show success notification
+        #----#
+        showNotification("Linkage Algorithm Output Field Successfully Added", type = "message", closeButton = FALSE)
+        #----#
+      }
+
+      # Commit the transaction
+      dbCommit(linkage_metadata_conn)
+    },
+    error = function(e){
+      # Rollback if an error occurs
+      dbRollback(linkage_metadata_conn)
       return()
-    }
-    #----#
-
-    # Create a new entry query for entering into the database
-    #----#
-    new_entry_query <- paste("INSERT INTO linkage_algorithms_output_fields (algorithm_id, dataset_field_id, dataset_label, field_type)",
-                             "VALUES(?, ?, ?, ?);")
-    new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-    dbBind(new_entry, list(algorithm_id, dataset_field_id, dataset_label, field_type))
-    dbClearResult(new_entry)
-    #----#
-
-    ## Reset Data Tables, UI Renders, and global variables
-    #----#
-    output$currently_added_algorithm_output_fields <- renderDataTable({
-      get_algorithm_output_fields()
     })
-    output$linkage_algorithm_output_field_input <- renderUI({
-      get_algorithm_output_fields_input()
-    })
-    updateTextAreaInput(session, "linkage_algorithm_output_field_label", value = "")
-    #----#
-
-    # Show success notification
-    #----#
-    showNotification("Linkage Algorithm Output Field Successfully Added", type = "message", closeButton = FALSE)
-    #----#
   })
 
   # Drops the selected pair of ground truth fields
   observeEvent(input$drop_linkage_algorithm_output_field, {
+    # Get the algorithm ID and selected row
     algorithm_id <- algorithm_output_fields_algorithm_id
     selected_row <- input$currently_added_algorithm_output_fields_rows_selected
-    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms_output_fields
-                                                WHERE algorithm_id =', algorithm_id,
-                                                  'ORDER BY parameter_id ASC'))
+
+    # Query to get the output fields per field id
+    df <- dbGetQuery(linkage_metadata_conn, "
+                    SELECT of.output_field_id, of.dataset_label, of.field_type, df.field_name, standardization_lookup_id
+                    FROM output_fields of
+                    JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+                    JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+                    WHERE of.algorithm_id = ?
+                    ORDER BY ofp.output_field_id ASC, ofp.parameter_id ASC", params = list(algorithm_id))
+
+    # Group the data frame
+    df <- df %>%
+      group_by(output_field_id) %>%
+      summarise(
+        dataset_label = paste(unique(dataset_label), collapse = ", "),
+        field_type = paste(unique(field_type), collapse = ", "),
+        field_name = paste(unique(field_name), collapse = ", "),
+        standardization_lookup_id = paste(unique(standardization_lookup_id), collapse = ", ")
+      ) %>%
+      ungroup()
+
     # Get the fields to delete
-    parameter_id  <- df$parameter_id[selected_row]
+    output_field_id  <- df$output_field_id[selected_row]
 
     # Create a new entry query for deleting the blocking variable
     #----#
-    delete_query <- paste("DELETE FROM linkage_algorithms_output_fields
-                          WHERE parameter_id = ?")
-    delete <- dbSendStatement(linkage_metadata_conn, delete_query)
-    dbBind(delete, list(parameter_id))
-    dbClearResult(delete)
-    #----#
+    tryCatch({
+      # Start a transaction
+      dbBegin(linkage_metadata_conn)
 
-    # Update Data Tables and UI Renders
-    #----#
-    output$currently_added_algorithm_output_fields <- renderDataTable({
-      get_algorithm_output_fields()
+      # Delete the fields in both tables using a transaction
+      #----#
+      delete_query <- paste("DELETE FROM output_field_parameters
+                          WHERE output_field_id = ?")
+      delete <- dbSendStatement(linkage_metadata_conn, delete_query)
+      dbBind(delete, list(output_field_id))
+      dbClearResult(delete)
+
+      delete_query <- paste("DELETE FROM output_fields
+                          WHERE output_field_id = ?")
+      delete <- dbSendStatement(linkage_metadata_conn, delete_query)
+      dbBind(delete, list(output_field_id))
+      dbClearResult(delete)
+      #----#
+
+      # Update Data Tables and UI Renders
+      #----#
+      output$currently_added_algorithm_output_fields <- renderDataTable({
+        get_algorithm_output_fields()
+      })
+      #----#
+
+      # Show success notification
+      #----#
+      showNotification("Linkage Algorithm Output Field Successfully Deleted", type = "message", closeButton = FALSE)
+      #----#
+
+      # Finish a transaction
+      dbCommit(linkage_metadata_conn)
+    },
+    error = function(e){
+      #Roll back and provide an error message if deletion failed
+      dbRollback(linkage_metadata_conn)
+      showNotification("Failed to Delete Algorithm Output Field - Try Again", type = "error", closeButton = FALSE)
+      return()
     })
-    #----#
-
-    # Show success notification
-    #----#
-    showNotification("Linkage Algorithm Output Field Successfully Deleted", type = "message", closeButton = FALSE)
-    #----#
   })
   #----
   #-------------------------------------------------#
@@ -11333,7 +11722,7 @@ start_linkage_metadata_ui <- function(metadata_file_path, username){
     "acceptance_rules", "acceptance_rules_parameters", "linkage_rules", "comparison_methods",
     "comparison_method_parameters", "comparison_rules", "comparison_rules_parameters", "linkage_methods",
     "linkage_algorithms", "linkage_iterations", "ground_truth_variables", "blocking_variables",
-    "matching_variables"
+    "matching_variables", "name_standardization_files", "output_fields", "output_field_parameters"
   )
 
   # Get the existing tables by calling dbListTables()

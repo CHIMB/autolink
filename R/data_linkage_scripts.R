@@ -2247,6 +2247,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       error = function(e){
         detach("package:linkrep", unload = TRUE)
         print(geterrmessage())
+        print(e)
         # If we failed to generate a linkage report, write to a csv file instead
         print("Error: Unable to generate linkage report, saving output data frame to specified output folder.")
 

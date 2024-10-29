@@ -453,17 +453,33 @@ get_ground_truth_fields <- function(linkage_db, algorithm_id){
 #' get_linkage_output_fields(linkage_db, algorithm_id)
 #' @export
 get_linkage_output_fields <- function(linkage_db, algorithm_id){
-  # Get the output fields
-  stored_fields_with_names <- dbGetQuery(linkage_db, "SELECT lao.algorithm_id, lao.dataset_label, lao.field_type, df.field_name
-                                                 FROM linkage_algorithms_output_fields lao
-                                                 JOIN dataset_fields df
-                                                 ON lao.dataset_field_id = df.field_id
-                                                 WHERE lao.algorithm_id = ?
-                                                 ORDER BY parameter_id", params = list(algorithm_id))
+  # Get output fields
+  stored_fields_with_names <- dbGetQuery(linkage_db, "
+    SELECT of.dataset_label, df.field_name
+    FROM output_fields of
+    JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+    JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+    WHERE of.algorithm_id = ?
+    ORDER BY ofp.parameter_id", params = list(algorithm_id))
 
-  # Return the output fields
+  # Return the fields
   return(stored_fields_with_names)
 }
+### V1
+#----
+# get_linkage_output_fields <- function(linkage_db, algorithm_id){
+#   # Get the output fields
+#   stored_fields_with_names <- dbGetQuery(linkage_db, "SELECT lao.algorithm_id, lao.dataset_label, lao.field_type, df.field_name
+#                                                  FROM linkage_algorithms_output_fields lao
+#                                                  JOIN dataset_fields df
+#                                                  ON lao.dataset_field_id = df.field_id
+#                                                  WHERE lao.algorithm_id = ?
+#                                                  ORDER BY parameter_id", params = list(algorithm_id))
+#
+#   # Return the output fields
+#   return(stored_fields_with_names)
+# }
+#----
 #------------------------------------------------------------#
 
 #-- HELPER FUNCTIONS FOR REPORT OUTPUT --#
@@ -481,110 +497,305 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
 #' algorithm_id <- 1
 #' apply_output_cutoffs(linkage_db, algorithm_id, output_df)
 #' @export
-apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df){
-  # Get the output fields
-  stored_fields_with_names <- dbGetQuery(linkage_db, "SELECT lao.algorithm_id, lao.dataset_label, lao.field_type, df.field_name
-                                                 FROM linkage_algorithms_output_fields lao
-                                                 JOIN dataset_fields df
-                                                 ON lao.dataset_field_id = df.field_id
-                                                 WHERE lao.algorithm_id = ?
-                                                 ORDER BY parameter_id", params = list(algorithm_id))
+apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
+  # Get output fields with necessary details
+  stored_fields_with_names <- dbGetQuery(linkage_db, "
+    SELECT of.output_field_id, parameter_id, of.algorithm_id, of.dataset_label, of.field_type, df.field_name, standardization_lookup_id
+    FROM output_fields of
+    JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+    JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+    WHERE of.algorithm_id = ?
+    ORDER BY ofp.output_field_id ASC, ofp.parameter_id ASC", params = list(algorithm_id))
 
-  # Loop through the columns of our output data frame, and obtain the field type
-  for(col_name in colnames(output_df)){
-    # Get the corresponding field type for each column
-    field_type <- stored_fields_with_names$field_type[stored_fields_with_names$field_name == col_name]
-    dataset_label <- stored_fields_with_names$dataset_label[stored_fields_with_names$field_name == col_name]
+  # Loop through each of the output field ids, apply cutoffs and labels
+  cols_to_drop <- c()
+  for(output_field_id in unique(stored_fields_with_names$output_field_id)){
+    # Get the field information
+    field_info <- stored_fields_with_names[stored_fields_with_names$output_field_id == output_field_id, ]
 
-    # Make sure a field type exists for this field, otherwise skip it
-    if(!identical(field_type, integer(0))){
-      # DATE
-      if(field_type == 2){
-        # Create Cutoffs for the years
-        output_df[[col_name]] <- cut(output_df[[col_name]],
-                                     breaks = c(-Inf, 1975, 1985, 1995, 2005, 2015, Inf),
-                                     labels = c("<1975", "1975-1984", "1985-1994", "1995-2004", "2005-2014", "2015-2024"),
-                                     right = FALSE)
+    # Get the unique field type and label for this field_id
+    field_type  <- unique(field_info$field_type)
+    field_label <- unique(field_info$dataset_label)
 
-        # Apply the column label
-        label(output_df[[col_name]]) <- dataset_label
+    # GENERIC/PASS THROUGH FIELD
+    if(field_type == 1){
+      # Get the field name
+      old_field_name <- field_info$field_name
+      new_field_name <- paste0(old_field_name, "_untouched_categ")
+
+      # Get the column, and apply the column label
+      output_df[[new_field_name]] <- output_df[[old_field_name]]
+      label(output_df[[new_field_name]]) <- field_label
+
+      # Add this column as one we will be keeping
+      cols_to_drop <- append(cols_to_drop, old_field_name)
+    }
+    # YEAR (DATE FIELD)
+    else if(field_type == 2){
+      # Get the field name (appending an identifiable suffix to the column)
+      old_field_name <- field_info$field_name
+      new_field_name <- paste0(old_field_name, "_categ")
+
+      # Apply Ranges for date cutoffs
+      output_df[[new_field_name]] <- cut(output_df[[old_field_name]],
+                                         breaks = c(-Inf, 1975, 1985, 1995, 2005, 2015, Inf),
+                                         labels = c("<1975", "1975-1984", "1985-1994", "1995-2004", "2005-2014", "2015-2024"),
+                                         right = FALSE)
+
+      # Apply the column label
+      label(output_df[[new_field_name]]) <- field_label
+
+      # Add this column as one we will be removing
+      cols_to_drop <- append(cols_to_drop, old_field_name)
+    }
+    # AGE (SEPARATE AGE FIELD)
+    else if(field_type == 3){
+      # Get the field name (appending an identifiable suffix to the column)
+      old_field_name <- field_info$field_name
+      new_field_name <- paste0(old_field_name, "_age_categ")
+
+      # Apply Ranges for age cutoffs
+      output_df[[new_field_name]] <- cut(output_df[[old_field_name]],
+                                         breaks = c(-Inf, 18, 35, 65, 81, Inf),
+                                         labels = c("<18", "18-34", "35-64", "65-80", "81+"),
+                                         right = FALSE)
+
+      # Apply the column label
+      label(output_df[[new_field_name]]) <- field_label
+
+      # Add this column as one we will be removing
+      cols_to_drop <- append(cols_to_drop, old_field_name)
+    }
+    # POSTAL CODE (TAKE FIRST CHARACTER)
+    else if(field_type == 4){
+      # Get the field name (appending an identifiable suffix to the column)
+      old_field_name <- field_info$field_name
+      new_field_name <- paste0(old_field_name, "_initial_categ")
+
+      # Apply the substring function to the postal code field
+      output_df[[new_field_name]] <- substr(output_df[[old_field_name]], 1, 3)
+
+      # Apply the column label
+      label(output_df[[new_field_name]]) <- field_label
+
+      # Add this column as one we will be removing
+      cols_to_drop <- append(cols_to_drop, old_field_name)
+    }
+    # NAME LENGTH
+    else if(field_type == 5){
+      # Get the field name (appending an identifiable suffix to the column)
+      old_field_name <- field_info$field_name
+      new_field_name <- paste0(old_field_name, "_len_categ")
+
+      # Apply cutoffs for the name length
+      output_df[[new_field_name]] <- cut(nchar(output_df[[old_field_name]]),
+                                         breaks = c(-Inf, 5, 6, 7, 8, Inf),
+                                         labels = c("<5", "5", "6", "7", "8+"),
+                                         right = FALSE)
+
+      # Apply the column label
+      label(output_df[[new_field_name]]) <- field_label
+
+      # Add this column as one we will be removing
+      cols_to_drop <- append(cols_to_drop, old_field_name)
+    }
+    # NAME COUNT
+    else if(field_type == 6){
+      # Get the field name (appending an identifiable suffix to the column)
+      old_field_name <- field_info$field_name
+      new_field_name <- paste0(old_field_name, "_num_categ")
+
+      # Apply cutoffs for the count of names
+      name_count <- lengths(strsplit(trimws(output_df[[old_field_name]]), " "))
+      output_df[[new_field_name]] <- cut(name_count,
+                                         breaks = c(-Inf, 2, 3, Inf),
+                                         labels = c("1", "2", "3+"),
+                                         right = FALSE)
+
+      # Apply the column label
+      label(output_df[[new_field_name]]) <- field_label
+
+      # Add this column as one we will be removing
+      cols_to_drop <- append(cols_to_drop, old_field_name)
+    }
+    # DERIVED AGE (FROM BIRTH DATE AND CAPTURE DATE)
+    else if (field_type == 7){
+      # Get the field name (appending an identifiable suffix to the column)
+      old_field_name_bdate <- field_info$field_name[1]
+      old_field_name_cdate <- field_info$field_name[2]
+      new_field_name <- paste0(old_field_name_bdate, "_derived_age_categ")
+
+      # Calculate the age by taking the difference of [1: CAPTURE DATE] & [2: DATE OF BIRTH] and then apply cutoffs
+      age <- as.numeric(floor(difftime(as.Date(output_df[[old_field_name_cdate]]), as.Date(output_df[[old_field_name_bdate]]), unit="weeks") / 52.25))
+      output_df[[new_field_name]] <- cut(age,
+                                         breaks = c(-Inf, 18, 35, 65, 81, Inf),
+                                         labels = c("<18", "18-34", "35-64", "65-80", "81+"),
+                                         right = FALSE)
+
+      # Apply the column label
+      label(output_df[[new_field_name]]) <- field_label
+
+      # Add both columns as ones we will be removing
+      cols_to_drop <- append(cols_to_drop, c(old_field_name_bdate, old_field_name_cdate))
+    }
+    # STANDARDIZATION/LOOKUP FILE
+    else if (field_type == 8){
+      # Get the field name (appending an identifiable suffix to the column)
+      old_field_name <- field_info$field_name
+      new_field_name <- paste0(old_field_name, "_standardized_categ")
+      standardize_id <- field_info$standardization_lookup_id
+
+      # Query to get the file name
+      file_name <- dbGetQuery(linkage_db, 'SELECT * FROM name_standardization_files WHERE standardization_file_id = ?',
+                              params = list(standardize_id))$standardization_file_name
+
+      # Get the file name and see if its available to be loaded
+      file_path <- file.path(system.file(package = "datalink", "data"), file_name)
+
+      # Read in the standardization data frame
+      standardization_df <- data.frame()
+      if(!is.null(file_path) && !is.na(file_path) && file.exists(file_path)){
+        standardization_df <- readRDS(file_path)
       }
-      # AGE
-      else if(field_type == 3){
-        # Create cutoffs for the age
-        output_df[[col_name]] <- cut(output_df[[col_name]],
-                                     breaks = c(-Inf, 18, 35, 65, Inf),
-                                     labels = c("<18", "18-34", "35-64", "65+"),
-                                     right = F)
-
-        # Apply the column label
-        label(output_df[[col_name]]) <- dataset_label
+      else{
+        next
       }
-      # POSTAL CODE
-      else if(field_type == 4){
-        # Substring the postal code to contain the first 3 digits
-        output_df[[col_name]] <- substr(output_df[[col_name]], 1, 3)
 
-        # Apply the column label
-        label(output_df[[col_name]]) <- dataset_label
+      # Create a function for standardizing the field
+      standardize_field <- function(standardization_df, output_df, old_field_name){
+        # Get the possible values that the field could be
+        common_standardized_values <- standardization_df$common
+
+        # Determine which values they map to
+        names(common_standardized_values) <- tolower(standardization_df$unique)
+        standardized_values <- unname(lookupvector[output_df[[old_field_name]]])
       }
-      # NAME LENGTH
-      else if(field_type == 5){
-        # Create cutoffs for the length of the name
-        output_df[[col_name]] <- cut(nchar(output_df[[col_name]]),
-                                     breaks = c(-Inf, 5, 6, 7, 8, Inf),
-                                     labels = c("<5", "5", "6", "7", "8+"),
-                                     right = F)
 
-        # Apply the column label
-        label(output_df[[col_name]]) <- dataset_label
-      }
-      # AGE (BIRTH YEAR)
-      else if(field_type == 6){
+      # Use the function to standardize the names
+      output_df[[new_field_name]] <- ifelse(!is.na(standardize_field(standardization_df, output_df, old_field_name)),
+                                            standardize_field(standardization_df, output_df, old_field_name), output_df[[old_field_name]])
 
-      }
-      # AGE (BIRTH MONTH)
-      else if(field_type == 7){
+      # Apply the column label
+      label(output_df[[new_field_name]]) <- field_label
 
-      }
-      # AGE (BIRTH DAY)
-      else if(field_type == 8){
-
-      }
-      # AGE (DATE)
-      else if(field_type == 9){
-        # Calculate the age
-        age <- as.numeric(floor(difftime(as.Date(Sys.Date()), output_df[[col_name]], unit="weeks")/52.25))
-
-        # Apply cutoffs
-        output_df[[col_name]] <- cut(age,
-                                     breaks = c(-Inf, 18, 35, 65, Inf),
-                                     labels = c("<18", "18-34", "35-64", "65+"),
-                                     right = F)
-
-        # Apply the column label
-        label(output_df[[col_name]]) <- dataset_label
-      }
-      # NAME COUNT
-      else if(field_type == 10){
-        # Calculate the number of names per record
-        name_count = lengths(strsplit(trimws(output_df[[col_name]]), " "))
-
-        # Apply the cutoffs
-        output_df[[col_name]] <- cut(name_count,
-                                     breaks = c(-Inf, 2, 3, Inf),
-                                     labels = c("1", "2", "3+"),
-                                     right = F)
-
-        # Apply the column label
-        label(output_df[[col_name]]) <- dataset_label
-      }
+      # Add this column as one we will be removing
+      cols_to_drop <- append(cols_to_drop, old_field_name)
     }
   }
 
-  # Return the output fields
+  # After we finish looping through each output field id, drop the unnecessary columns
+  output_df <- select(output_df, -unique(cols_to_drop))
+
+  # Return the output dataframe
   return(output_df)
 }
+### V1
+#----
+# apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df){
+#   # Get the output fields
+#   stored_fields_with_names <- dbGetQuery(linkage_db, "SELECT lao.algorithm_id, lao.dataset_label, lao.field_type, df.field_name
+#                                                  FROM linkage_algorithms_output_fields lao
+#                                                  JOIN dataset_fields df
+#                                                  ON lao.dataset_field_id = df.field_id
+#                                                  WHERE lao.algorithm_id = ?
+#                                                  ORDER BY parameter_id", params = list(algorithm_id))
+#
+#   # Loop through the columns of our output data frame, and obtain the field type
+#   for(col_name in colnames(output_df)){
+#     # Get the corresponding field type for each column
+#     field_type <- stored_fields_with_names$field_type[stored_fields_with_names$field_name == col_name]
+#     dataset_label <- stored_fields_with_names$dataset_label[stored_fields_with_names$field_name == col_name]
+#
+#     # Make sure a field type exists for this field, otherwise skip it
+#     if(!identical(field_type, integer(0))){
+#       # DATE
+#       if(field_type == 2){
+#         # Create Cutoffs for the years
+#         output_df[[col_name]] <- cut(output_df[[col_name]],
+#                                      breaks = c(-Inf, 1975, 1985, 1995, 2005, 2015, Inf),
+#                                      labels = c("<1975", "1975-1984", "1985-1994", "1995-2004", "2005-2014", "2015-2024"),
+#                                      right = FALSE)
+#
+#         # Apply the column label
+#         label(output_df[[col_name]]) <- dataset_label
+#       }
+#       # AGE
+#       else if(field_type == 3){
+#         # Create cutoffs for the age
+#         output_df[[col_name]] <- cut(output_df[[col_name]],
+#                                      breaks = c(-Inf, 18, 35, 65, Inf),
+#                                      labels = c("<18", "18-34", "35-64", "65+"),
+#                                      right = F)
+#
+#         # Apply the column label
+#         label(output_df[[col_name]]) <- dataset_label
+#       }
+#       # POSTAL CODE
+#       else if(field_type == 4){
+#         # Substring the postal code to contain the first 3 digits
+#         output_df[[col_name]] <- substr(output_df[[col_name]], 1, 3)
+#
+#         # Apply the column label
+#         label(output_df[[col_name]]) <- dataset_label
+#       }
+#       # NAME LENGTH
+#       else if(field_type == 5){
+#         # Create cutoffs for the length of the name
+#         output_df[[col_name]] <- cut(nchar(output_df[[col_name]]),
+#                                      breaks = c(-Inf, 5, 6, 7, 8, Inf),
+#                                      labels = c("<5", "5", "6", "7", "8+"),
+#                                      right = F)
+#
+#         # Apply the column label
+#         label(output_df[[col_name]]) <- dataset_label
+#       }
+#       # AGE (BIRTH YEAR)
+#       else if(field_type == 6){
+#
+#       }
+#       # AGE (BIRTH MONTH)
+#       else if(field_type == 7){
+#
+#       }
+#       # AGE (BIRTH DAY)
+#       else if(field_type == 8){
+#
+#       }
+#       # AGE (DATE)
+#       else if(field_type == 9){
+#         # Calculate the age
+#         age <- as.numeric(floor(difftime(as.Date(Sys.Date()), output_df[[col_name]], unit="weeks")/52.25))
+#
+#         # Apply cutoffs
+#         output_df[[col_name]] <- cut(age,
+#                                      breaks = c(-Inf, 18, 35, 65, Inf),
+#                                      labels = c("<18", "18-34", "35-64", "65+"),
+#                                      right = F)
+#
+#         # Apply the column label
+#         label(output_df[[col_name]]) <- dataset_label
+#       }
+#       # NAME COUNT
+#       else if(field_type == 10){
+#         # Calculate the number of names per record
+#         name_count = lengths(strsplit(trimws(output_df[[col_name]]), " "))
+#
+#         # Apply the cutoffs
+#         output_df[[col_name]] <- cut(name_count,
+#                                      breaks = c(-Inf, 2, 3, Inf),
+#                                      labels = c("1", "2", "3+"),
+#                                      right = F)
+#
+#         # Apply the column label
+#         label(output_df[[col_name]]) <- dataset_label
+#       }
+#     }
+#   }
+#
+#   # Return the output fields
+#   return(output_df)
+# }
+#----
 #----------------------------------------#
 
 #-- HELPER FUNCTIONS FOR LINKAGE RULES --#

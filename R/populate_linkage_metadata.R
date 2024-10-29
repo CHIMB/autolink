@@ -50,6 +50,16 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     );
   ")
 
+  ### NAME STANDARDIZATION FILES/DATASETS
+  dbExecute(my_db, "
+    CREATE TABLE name_standardization_files (
+      standardization_file_id INTEGER PRIMARY KEY,
+      standardization_file_label VARCHAR(255),
+      standardization_file_name VARCHAR(255)
+    );
+  ")
+  # If Barret and Jess don't like this idea, just replace the file name with the actual file path and grab it from there instead
+
   ### ACCEPTANCE METHODS
   dbExecute(my_db, "
     CREATE TABLE acceptance_methods (
@@ -178,13 +188,34 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     );
   ")
 
+  ### V1
+  # dbExecute(my_db, "
+  #   CREATE TABLE linkage_algorithms_output_fields (
+  #     algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
+  #     parameter_id INTEGER PRIMARY KEY,
+  #     dataset_field_id REFERENCES dataset_fields(field_id),
+  #     dataset_label VARCHAR(255),
+  #     field_type INTEGER
+  #   );
+  # ")
+
+  ### V2
   dbExecute(my_db, "
-    CREATE TABLE linkage_algorithms_output_fields (
+    CREATE TABLE output_fields (
       algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
-      parameter_id INTEGER PRIMARY KEY,
-      dataset_field_id REFERENCES dataset_fields(field_id),
+      output_field_id INTEGER PRIMARY KEY,
       dataset_label VARCHAR(255),
-      field_type INTEGER
+      field_type INTEGER,
+      standardization_lookup_id REFERENCES name_standardization_files(standardization_file_id)
+    );
+  ")
+
+  dbExecute(my_db, "
+    CREATE TABLE output_field_parameters (
+      output_field_id INTEGER REFERENCES output_fields(output_field_id),
+      parameter_id INTEGER,
+      dataset_field_id REFERENCES dataset_fields(field_id),
+      PRIMARY KEY (output_field_id, parameter_id)
     );
   ")
 
@@ -259,16 +290,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       PRIMARY KEY (iteration_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id, comparison_rule_id)
     );
   ")
-
-  ### NAME STANDARDIZATION FILES/DATASETS
-  dbExecute(my_db, "
-    CREATE TABLE name_standardization_files (
-      standardization_file_id INTEGER PRIMARY KEY,
-      standardization_file_label VARCHAR(255),
-      standardization_file_name VARCHAR(255)
-    );
-  ")
-  # If Barret and Jess don't like this idea, just replace the file name with the actual file path and grab it from there instead
   #----
 
   # Run insert queries to pre-populate the metadata with some starting linkage, acceptance, and
