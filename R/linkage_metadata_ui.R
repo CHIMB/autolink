@@ -4562,12 +4562,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     if(nrow(df) > 0){
       for(row_num in 1:nrow(df)){
         # Get the standardizing ID for this row
-        standardizing_id <- df$standardization_lookup_id[row_num]
+        standardizing_id <- suppressWarnings(as.numeric(df$standardization_lookup_id[row_num]))
 
         # If the ID is not NA, then get the label
         if(!is.na(standardizing_id) && !is.na(standardizing_id) && is.numeric(standardizing_id)){
           # Get the file label
-          file_label <- dbGetQuery(linkage_metadata_conn, "SELECT * FROM name_standardization_files where standardization_file_id = ?",
+          file_label <- dbGetQuery(linkage_metadata_conn, "SELECT * FROM name_standardization_files WHERE standardization_file_id = ?",
                                    params = list(standardizing_id))$standardization_file_label
 
           # Put the label back into the data frame

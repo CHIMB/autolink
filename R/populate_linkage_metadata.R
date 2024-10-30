@@ -839,12 +839,27 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
-                             'VALUES(3, "RecordLinkage-Levenshtein", "Levenshtein character distance");')
+                             'VALUES(3, "Levenshtein", "Levenshtein character distance");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
                              'VALUES(4, "Soundex", "String Soundex from Phonics");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
+                             'VALUES(5, "Numeric Error Tolerance", "Error Tolerance for Numerical & Percentage Values");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
+                             'VALUES(6, "Damerau–Levenshtein", "Damerau-Levenshtein character distance");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
+                             'VALUES(7, "Date Error Tolerance", "Error Tolerance For Date Fields");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
@@ -870,7 +885,22 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
-                             'VALUES(4, 4, "to_soundex", "Convert a name to soundex formatting.");')
+                             'VALUES(4, 4, "to_soundex", "Convert a name to soundex formatting and compare.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(5, 5, "numeric_tolerance", "Compare two numerical fields and see whether they are within a certain tolerance range.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(6, 6, "damerau_levenshtein_string_cost", "The maximum number of characters that a comparison can differ before being rejected (X >= 1). While also allowing for swapping adjacent letters.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(7, 7, "date_tolerance", "The maximum number of days that date fields can vary from each-other.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }

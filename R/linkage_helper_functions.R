@@ -653,9 +653,9 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       file_path <- file.path(system.file(package = "datalink", "data"), file_name)
 
       # Read in the standardization data frame
-      standardization_df <- data.frame()
+      standardization_df_input <- data.frame()
       if(!is.null(file_path) && !is.na(file_path) && file.exists(file_path)){
-        standardization_df <- readRDS(file_path)
+        standardization_df_input <- readRDS(file_path)
       }
       else{
         next
@@ -668,12 +668,16 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
 
         # Determine which values they map to
         names(common_standardized_values) <- tolower(standardization_df$unique)
-        standardized_values <- unname(lookupvector[output_df[[old_field_name]]])
+        standardized_values <- standardization_df$common[match(unlist(output_df[[old_field_name]]), standardization_df$unique)]
+
+        # Return the values
+        return(standardized_values)
       }
 
       # Use the function to standardize the names
-      output_df[[new_field_name]] <- ifelse(!is.na(standardize_field(standardization_df, output_df, old_field_name)),
-                                            standardize_field(standardization_df, output_df, old_field_name), output_df[[old_field_name]])
+      standardized_field_values <- ifelse(!is.na(standardize_field(standardization_df_input, output_df, old_field_name)),
+                                            standardize_field(standardization_df_input, output_df, old_field_name), output_df[[old_field_name]])
+      output_df[[new_field_name]] <- standardized_field_values
 
       # Apply the column label
       label(output_df[[new_field_name]]) <- field_label

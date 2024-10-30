@@ -443,6 +443,60 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               # Keep track of this comparison rule
               comparison_rules_list[[dataset_field]] <- date_error_tolerance(tolerance)
             }
+            else if ("levenshtein_string_cost" %in% names(comparison_rules)){
+              # Custom "levenshtein distance" function
+              levenshtein_string_dist <- function(dist){
+                function(x, y){
+                  if(!missing(x) && !missing(y)){
+                    return(stringdist::stringdist(x, y, method = "lv") <= dist)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the levenshtein distance value
+              dist <- comparison_rules[["levenshtein_string_cost"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- levenshtein_string_dist(dist)
+            }
+            else if ("damerau_levenshtein_string_cost" %in% names(comparison_rules)){
+              # Custom "levenshtein distance" function
+              damerau_levenshtein_string_dist <- function(dist){
+                function(x, y){
+                  if(!missing(x) && !missing(y)){
+                    return(stringdist::stringdist(x, y, method = "dl") <= dist)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the levenshtein distance value
+              dist <- comparison_rules[["damerau_levenshtein_string_cost"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- damerau_levenshtein_string_dist(dist)
+            }
+            else if ("to_soundex" %in% names(comparison_rules)){
+              # Custom "levenshtein distance" function
+              soundex_dist <- function(){
+                function(x, y){
+                  if(!missing(x) && !missing(y)){
+                    return(stringdist::stringdist(x, y, method = "soundex") == 0)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- soundex_dist()
+            }
           }
         }
 
@@ -1211,6 +1265,60 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               # Keep track of this comparison rule
               comparison_rules_list[[dataset_field]] <- date_error_tolerance(tolerance)
             }
+            else if ("levenshtein_string_cost" %in% names(comparison_rules)){
+              # Custom "levenshtein distance" function
+              levenshtein_string_dist <- function(dist){
+                function(x, y){
+                  if(!missing(x) && !missing(y)){
+                    return(stringdist::stringdist(x, y, method = "lv") <= dist)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the levenshtein distance value
+              dist <- comparison_rules[["levenshtein_string_cost"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- levenshtein_string_dist(dist)
+            }
+            else if ("damerau_levenshtein_string_cost" %in% names(comparison_rules)){
+              # Custom "levenshtein distance" function
+              damerau_levenshtein_string_dist <- function(dist){
+                function(x, y){
+                  if(!missing(x) && !missing(y)){
+                    return(stringdist::stringdist(x, y, method = "dl") <= dist)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the levenshtein distance value
+              dist <- comparison_rules[["damerau_levenshtein_string_cost"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- damerau_levenshtein_string_dist(dist)
+            }
+            else if ("to_soundex" %in% names(comparison_rules)){
+              # Custom "levenshtein distance" function
+              soundex_dist <- function(){
+                function(x, y){
+                  if(!missing(x) && !missing(y)){
+                    return(stringdist::stringdist(x, y, method = "soundex") == 0)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- soundex_dist()
+            }
           }
         }
 
@@ -1387,6 +1495,9 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   # For Steps 2-5, we'll run each of our algorithms
   algorithm_num <- 0
   for(algorithm_id in algorithm_ids){
+    # Garbage collect before each algorithm
+    gc()
+
     # List of plots and captions
     algorithm_plots <- c()
     plot_captions   <- c()
@@ -1505,12 +1616,23 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # Finally, apply labels to the missing data indicators
       # Apply Labels to the output data frame
+      # Find duplicate labels
+      label_counts <- table(output_fields_df$dataset_label)
+      duplicate_labels <- names(label_counts[label_counts > 1])
+
       for(row_num in 1:nrow(output_fields_df)){
         # Get the field to apply a label to
         dataset_field <- paste0(output_fields_df$field_name[row_num], "_missing")
 
         # Get the label to apply
         dataset_label <- output_fields_df$dataset_label[row_num]
+
+        # If the label is a duplicate, append the formatted field name
+        if (dataset_label %in% duplicate_labels) {
+          field_name <- output_fields_df$field_name[row_num]
+          formatted_field_name <- str_to_title(gsub("[[:punct:]]", " ", field_name))
+          dataset_label <- paste0(dataset_label, " (", formatted_field_name, ")")
+        }
 
         # Apply the label to the field
         label(missing_data_indicators[[dataset_field]]) <- dataset_label
@@ -2485,10 +2607,26 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     result_list[["performance_measures"]]    <- intermediate_performance_measures_df
     result_list[["missing_data_indicators"]] <- intermediate_missing_indicators_df
 
+    # Remove the values
+    rm(linked_data_list, linked_data_algorithm_names, linkage_algorithm_summary_list,
+       linkage_algorithm_footnote_list, intermediate_performance_measures_df,
+       intermediate_missing_indicators_df, )
+
+    # Garbage collection
+    gc()
+
     # Return the result list
     return(result_list)
   }
   else{
+    # Remove the values we didnt use
+    rm(linked_data_list, linked_data_algorithm_names, linkage_algorithm_summary_list,
+       linkage_algorithm_footnote_list, intermediate_performance_measures_df,
+       intermediate_missing_indicators_df)
+
+    # Garbage collection
+    gc()
+
     # Return NULL if the user doesn't want to save all the linkage results
     return(NULL)
   }
