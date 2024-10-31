@@ -676,7 +676,7 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
 
       # Use the function to standardize the names
       standardized_field_values <- ifelse(!is.na(standardize_field(standardization_df_input, output_df, old_field_name)),
-                                            standardize_field(standardization_df_input, output_df, old_field_name), output_df[[old_field_name]])
+                                            standardize_field(standardization_df_input, output_df, old_field_name), "Other")
       output_df[[new_field_name]] <- standardized_field_values
 
       # Apply the column label

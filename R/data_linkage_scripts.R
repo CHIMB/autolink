@@ -402,7 +402,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               numeric_error_tolerance <- function(tolerance){
                 function(x , y){
                   if(!missing(x) && !missing(y)){
-                    return(abs(x - y) <= tolerance)
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               abs(x - y) <= tolerance)
+                    return(within_tolerance)
                   }
                   else{
                     return(FALSE)
@@ -448,7 +451,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               levenshtein_string_dist <- function(dist){
                 function(x, y){
                   if(!missing(x) && !missing(y)){
-                    return(stringdist::stringdist(x, y, method = "lv") <= dist)
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               stringdist::stringdist(x, y, method = "lv") <= dist)
+                    return(within_tolerance)
                   }
                   else{
                     return(FALSE)
@@ -463,11 +469,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               comparison_rules_list[[dataset_field]] <- levenshtein_string_dist(dist)
             }
             else if ("damerau_levenshtein_string_cost" %in% names(comparison_rules)){
-              # Custom "levenshtein distance" function
+              # Custom "damerau levenshtein distance" function
               damerau_levenshtein_string_dist <- function(dist){
                 function(x, y){
                   if(!missing(x) && !missing(y)){
-                    return(stringdist::stringdist(x, y, method = "dl") <= dist)
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               stringdist::stringdist(x, y, method = "dl") <= dist)
+                    return(within_tolerance)
                   }
                   else{
                     return(FALSE)
@@ -482,11 +491,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               comparison_rules_list[[dataset_field]] <- damerau_levenshtein_string_dist(dist)
             }
             else if ("to_soundex" %in% names(comparison_rules)){
-              # Custom "levenshtein distance" function
+              # Custom "soundex match" function
               soundex_dist <- function(){
                 function(x, y){
                   if(!missing(x) && !missing(y)){
-                    return(stringdist::stringdist(x, y, method = "soundex") == 0)
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               stringdist::stringdist(x, y, method = "soundex") == 0)
+                    return(within_tolerance)
                   }
                   else{
                     return(FALSE)
@@ -1220,11 +1232,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               comparison_rules_list[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
             }
             else if ("numeric_tolerance" %in% names(comparison_rules)){
-              # custom "error tolerance" function
+              # custom "numeric error tolerance" function
               numeric_error_tolerance <- function(tolerance){
                 function(x , y){
                   if(!missing(x) && !missing(y)){
-                    return(abs(x - y) <= tolerance)
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               abs(x - y) <= tolerance)
+                    return(within_tolerance)
                   }
                   else{
                     return(FALSE)
@@ -1270,7 +1285,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               levenshtein_string_dist <- function(dist){
                 function(x, y){
                   if(!missing(x) && !missing(y)){
-                    return(stringdist::stringdist(x, y, method = "lv") <= dist)
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               stringdist::stringdist(x, y, method = "lv") <= dist)
+                    return(within_tolerance)
                   }
                   else{
                     return(FALSE)
@@ -1285,11 +1303,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               comparison_rules_list[[dataset_field]] <- levenshtein_string_dist(dist)
             }
             else if ("damerau_levenshtein_string_cost" %in% names(comparison_rules)){
-              # Custom "levenshtein distance" function
+              # Custom "damerau levenshtein distance" function
               damerau_levenshtein_string_dist <- function(dist){
                 function(x, y){
                   if(!missing(x) && !missing(y)){
-                    return(stringdist::stringdist(x, y, method = "dl") <= dist)
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               stringdist::stringdist(x, y, method = "dl") <= dist)
+                    return(within_tolerance)
                   }
                   else{
                     return(FALSE)
@@ -1304,11 +1325,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               comparison_rules_list[[dataset_field]] <- damerau_levenshtein_string_dist(dist)
             }
             else if ("to_soundex" %in% names(comparison_rules)){
-              # Custom "levenshtein distance" function
+              # Custom "soundex matching" function
               soundex_dist <- function(){
                 function(x, y){
                   if(!missing(x) && !missing(y)){
-                    return(stringdist::stringdist(x, y, method = "soundex") == 0)
+                    within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                               FALSE,
+                                               stringdist::stringdist(x, y, method = "soundex") == 0)
+                    return(within_tolerance)
                   }
                   else{
                     return(FALSE)
@@ -1524,6 +1548,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
     ### Step 3: Load in and verify both datasets
     #----
+    # Verify that output fields were provided
+    output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+    if(nrow(output_fields) <= 0){
+      dbDisconnect(linkage_metadata_db)
+      stop("Error: No Output Fields Were Provided, Select Fields on the Linkage Algorithms Page of the GUI.")
+    }
+
     # For the left data set, read the dataset code, grab its fields
     left_file_name <- basename(left_dataset_file)
     left_split_file_name <- unlist(strsplit(left_file_name, "[[:punct:]]"))
@@ -2610,7 +2641,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # Remove the values
     rm(linked_data_list, linked_data_algorithm_names, linkage_algorithm_summary_list,
        linkage_algorithm_footnote_list, intermediate_performance_measures_df,
-       intermediate_missing_indicators_df, )
+       intermediate_missing_indicators_df)
 
     # Garbage collection
     gc()
