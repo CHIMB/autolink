@@ -184,7 +184,9 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       modified_date TEXT,
       modified_by VARCHAR(255),
       enabled INTEGER,
-      enabled_for_testing INTEGER
+      enabled_for_testing INTEGER,
+      published INTEGER,
+      archived INTEGER
     );
   ")
 
