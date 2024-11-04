@@ -1943,7 +1943,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # If the output_df is NA, then no pass has been completed, otherwise, bind the rows
       if(nrow(output_df) <= 0 && !anyNA(linked_indices)){
         output_df <- results[["output_linkage_df"]]
-      }else if(!anyNA(linked_indices)){
+      }
+      else if(!anyNA(linked_indices)){
         output_df <- rbind(output_df, results[["output_linkage_df"]])
       }
 
@@ -2154,6 +2155,68 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # Print a success message
       print(paste0("Performance measures have been exported to: ", full_filename))
+    }
+    else{
+      # Grab the performance measure variables
+      TP <- performance_measures[[1]]
+      TN <- performance_measures[[2]]
+      FP <- performance_measures[[3]]
+      FN <- performance_measures[[4]]
+
+      # Calculate the PPV
+      PPV <- (TP/(TP + FP)) * 100
+
+      # Calculate the NPV
+      NPV <- (TN/(TN + FN)) * 100
+
+      # Sensitivity
+      SENS <- (TP/(TP + FN)) * 100
+
+      # Specificity
+      SPEC <- (TN/(TN + FP)) * 100
+
+      # F1-Score
+      F1_SCORE <- (TP/(TP + (0.5 * (FP + FN)))) * 100
+
+      # FDR (False Discover Rate) WE CAN CHOOSE TO ADD IT LATER
+      #FDR <- (FP/(FP + TP)) * 100
+
+      # FOR (False Omission Rate) WE CAN CHOOSE TO ADD IT LATER
+      #FOR <- (FN/(FN + TN)) * 100
+
+      # Calculate the linkage rate
+      linkage_rate <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
+
+      # Get the algorithm name
+      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+      algorithm_name <- df$algorithm_name
+
+      # Make sure all the values are good, otherwise replace them with invalid numbers
+      PPV <- ifelse(is.na(PPV), 0, PPV)
+      NPV <- ifelse(is.na(NPV), 0, NPV)
+      SENS <- ifelse(is.na(SENS), 0, SENS)
+      SPEC <- ifelse(is.na(SPEC), 0, SPEC)
+      F1_SCORE <- ifelse(is.na(F1_SCORE), 0, F1_SCORE)
+
+      # Create a performance measures data frame to store all the information
+      performance_measures_df <- data.frame(
+        algorithm_name = algorithm_name,
+        positive_predictive_value = PPV,
+        negative_predictive_value = NPV,
+        sensitivity = SENS,
+        specificity = SPEC,
+        f1_score = F1_SCORE,
+        linkage_rate = linkage_rate
+      )
+
+      # Apply labels to the performance measures data frame
+      label(performance_measures_df$algorithm_name) <- "Algorithm Name"
+      label(performance_measures_df$positive_predictive_value) <- "PPV"
+      label(performance_measures_df$negative_predictive_value) <- "NPV"
+      label(performance_measures_df$sensitivity) <- "Sensitivity"
+      label(performance_measures_df$specificity) <- "Specificity"
+      label(performance_measures_df$f1_score) <- "F1-Score"
+      label(performance_measures_df$linkage_rate) <- "Linkage Rate"
     }
 
     # Try to create report using the output data frame if the user wanted to

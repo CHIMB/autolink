@@ -61,7 +61,7 @@ linkage_ui <- page_navbar(
       ),
       HTML("
         .modal-sm {
-          width: 45vw !important;  /* Set modal width to 90% of the viewport width */
+          width: 50vw !important;  /* Set modal width to 50% of the viewport width */
           max-width: none !important; /* Disable the default max-width */
         }
         .modal-lg {
@@ -879,7 +879,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("archived_linkage_algorithms_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
+          actionButton("archived_linkage_algorithms_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -888,7 +888,7 @@ linkage_ui <- page_navbar(
 
       # Generate the table
       h5(strong("Select an Archived Algorithm to Restore")),
-      h6(p(strong("Note: "), paste("An algorithms can't be restored if there is one enabled for testing that uses the same name/descriptor"))),
+      h6(p(strong("Note: "), paste("An algorithm can't be restored if there is one enabled for testing that uses the same name/descriptor"))),
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
           dataTableOutput("archived_linkage_algorithms"),
@@ -915,17 +915,95 @@ linkage_ui <- page_navbar(
   #--------------------------------------#
 
   #-- PUBLISHED LINKAGE ALGORITHMS PAGE --#
+  #----
+  nav_panel(title = "Published Linkage Algorithms", value = "published_linkage_algorithms_page",
+    fluidPage(
+      shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
 
+      # Put the back button on this page in the top left corner
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+          actionButton("published_linkage_algorithms_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
+        ))
+      ),
+
+      # Line break
+      HTML("<br>"),
+
+      # Generate the table
+      h5(strong("Select a published algorithm to unpublish")),
+      h6(p(strong("Note: "), paste("An algorithm can't be unpublished if there is one enabled for testing that uses the same name/descriptor"))),
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+          dataTableOutput("published_linkage_algorithms"),
+        )),
+      ),
+
+      # Line break
+      HTML("<br>"),
+
+      # Conditional panel for if a row WAS selected
+      conditionalPanel(
+        condition = "input.published_linkage_algorithms_rows_selected > 0",
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("unpublish_linkage_algorithm", "Unpublish Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+          ))
+        )
+      ),
+
+      # Conditional panel for if a row WASN'T selected
+      conditionalPanel(
+        condition = "input.published_linkage_algorithms_rows_selected <= 0",
+
+        # Title and subtitle for running & saving the published algorithms
+        h5(strong("Or, run all published algorithms and save linkage data to the output folder defined below")),
+        h6(p(strong("Note: "), paste("An algorithm can't be unpublished if there is one enabled for testing that uses the same name/descriptor"))),
+
+        # Create a fluid row for the output folder input & "RUN" button
+        div(style = "display: flex; justify-content: center; align-items: center;",
+          card(card_header("Add Linkage Output Fields", class = 'bg-dark'),
+            fluidRow(
+              # Choose output folder here (MAYBE SAVE THE USERS LAST USED FOLDER AND IF THEY WANT TO CHANGE IT THEY CAN DO IT HERE)
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                # Boxed text output for showing the uploaded folder name
+                div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                    textOutput("selected_published_algorithms_output_dir")
+                ),
+                # Upload Button
+                shinyDirButton("published_algorithms_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                helpText(HTML(paste0("Select a folder where all output will be saved.<br><br>Data will be saved as a singular <b>.RData</b> file ",
+                                     "containing a variety of linkage information, including the linked and unlinked records pairs, algorithm summary, ",
+                                     "performance measures, and missing data indicators.<br><br>")),
+                         style = "width: 400px;")
+              )),
+
+              # Run Button
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("run_published_linkage_algorithms", "Run & Save All Published Algorithms", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("circle-play")),
+              ))
+            )
+          )
+        )
+      ),
+
+      #White space for the final button
+      HTML("<br><br>")
+    )
+  ),
+  #----
   #---------------------------------------#
 
-  #-- LINKAGE AUDITS --#
+  #-- LINKAGE AUDITS PAGE --#
   #----
   nav_panel(title = "Linkage Audits", value = "audits_page",
     fluidPage(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("linkage_audits_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
+          actionButton("linkage_audits_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -973,7 +1051,7 @@ linkage_ui <- page_navbar(
     )
   ),
   #----
-  #--------------------#
+  #-------------------------#
 
   #-- VIEW LINKAGE ITERATIONS PAGE --#
   #----
@@ -982,7 +1060,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("view_linkage_iterations_back",  "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
+          actionButton("view_linkage_iterations_back",  "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -1478,7 +1556,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("modify_ground_truth_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
+          actionButton("modify_ground_truth_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -1561,7 +1639,7 @@ linkage_ui <- page_navbar(
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("linkage_algorithm_output_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
+          actionButton("linkage_algorithm_output_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
@@ -1643,7 +1721,7 @@ linkage_ui <- page_navbar(
     )
   ),
   #----
-  #---------------------------------------------#
+  #------------------------------------------#
 
   #-- ACCEPTANCE METHODS PAGE --#
   #----
@@ -2295,18 +2373,43 @@ linkage_ui <- page_navbar(
   #----
   nav_panel(title = "Regenerate Report", value = "regenerate_report_page",
     fluidPage(
+      shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
+
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("regenerate_report_back", "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long")),
+          actionButton("regenerate_report_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
         ))
       ),
 
-      # Line break to give the back button some breathing room
-      HTML("<br><br>"),
+      # Line break
+      HTML("<br>"),
 
       ### STEP 1
-      h5(strong("Step 1: Provide the Output Folder")),
+      h5(strong("Step 1: Select the Saved Data Date(s) to Regenerate")),
+      h6(p(strong("Note: "), paste("A minimum of one saved linkage data dates must be selected."))),
+      # Create a card for the output location
+      div(style = "display: flex; justify-content: center; align-items: center;",
+        card(
+          width = 1,
+          height = 400,
+          full_screen = FALSE,
+          card_header("Select Saved Data to Regenerate", class = 'bg-dark'),
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                dataTableOutput("select_saved_data_to_regenerate"),
+              )),
+            ),
+          )
+        )
+      ),
+
+      # Line break
+      HTML("<br><br>"),
+
+      ### STEP 2
+      h5(strong("Step 2: Provide the Output Folder")),
       # Create a card for the output location
       div(style = "display: flex; justify-content: center; align-items: center;",
           card(
@@ -2334,8 +2437,8 @@ linkage_ui <- page_navbar(
 
       HTML("<br>"), # Spacing
 
-      ### STEP 2
-      h5(strong("Step 2: Regenerate Linkage Report")),
+      ### STEP 3
+      h5(strong("Step 3: Regenerate Linkage Report")),
       # Create a card for editing/viewing algorithm output information
       div(style = "display: flex; justify-content: center; align-items: center;",
           card(
@@ -2362,6 +2465,8 @@ linkage_ui <- page_navbar(
   #----
   nav_panel(title = "Run Algorithm", value = "run_algorithm_page",
     fluidPage(
+      shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
+
       # Put the back button on this page in the top left corner
       fluidRow(
         column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
@@ -2377,19 +2482,19 @@ linkage_ui <- page_navbar(
       h6(p(strong("Note: "), paste("A minimum of one algorithm must be selected."))),
       # Create a card for the output location
       div(style = "display: flex; justify-content: center; align-items: center;",
-          card(
-            width = 1,
-            height = 600,
-            full_screen = FALSE,
-            card_header("Select Algorithms to Run", class = 'bg-dark'),
-            card_body(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  dataTableOutput("select_linkage_algorithms_to_run"),
-                )),
-              ),
-            )
+        card(
+          width = 1,
+          height = 600,
+          full_screen = FALSE,
+          card_header("Select Algorithms to Run", class = 'bg-dark'),
+          card_body(
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                dataTableOutput("select_linkage_algorithms_to_run"),
+              )),
+            ),
           )
+        )
       ),
 
       HTML("<br>"), # Spacing
@@ -2600,6 +2705,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   nav_hide('main_navbar', 'run_algorithm_page')
   nav_hide('main_navbar', 'regenerate_report_page')
   nav_hide('main_navbar', 'archived_linkage_algorithms_page')
+  nav_hide('main_navbar', 'published_linkage_algorithms_page')
 
   # If the user goes off of an inner tab, hide it
   observeEvent(input$main_navbar, {
@@ -2608,7 +2714,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                       "view_linkage_iterations_page", "add_linkage_iterations_page", "update_linkage_iterations_page",
                       "acceptance_methods_page", "comparison_methods_page", "ground_truth_variables_page", "audits_page",
                       "linkage_algorithm_output_page", "run_algorithm_page", "regenerate_report_page",
-                      "archived_linkage_algorithms_page")
+                      "archived_linkage_algorithms_page", "published_linkage_algorithms_page")
     selected_panel <- input$main_navbar
 
     # Hide the page if its not the one you're currently on
@@ -3445,7 +3551,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     selected_row     <- input$currently_added_linkage_algorithms_rows_selected
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
                                                 WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
-                                                  'ORDER BY algorithm_id ASC'))
+                                               'AND archived = 0 AND published = 0',
+                                               'ORDER BY algorithm_id ASC;'))
 
     # Grab the algorithm id
     algorithm_id <- df[selected_row, "algorithm_id"]
@@ -3849,7 +3956,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     selected_row     <- input$currently_added_linkage_algorithms_rows_selected
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
                                                 WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
-                                                  'ORDER BY algorithm_id ASC'))
+                                               'AND archived = 0 AND published = 0',
+                                               'ORDER BY algorithm_id ASC;'))
 
     # Grab the algorithm id
     algorithm_id <- df[selected_row, "algorithm_id"]
@@ -3884,7 +3992,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     selected_row     <- input$currently_added_linkage_algorithms_rows_selected
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
                                                 WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
-                                                  'ORDER BY algorithm_id ASC'))
+                                               'AND archived = 0 AND published = 0',
+                                               'ORDER BY algorithm_id ASC;'))
 
     # Grab the algorithm id
     algorithm_id <- df[selected_row, "algorithm_id"]
@@ -3912,7 +4021,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     selected_row     <- input$currently_added_linkage_algorithms_rows_selected
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
                                                 WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
-                                                  'ORDER BY algorithm_id ASC'))
+                                               'AND archived = 0 AND published = 0',
+                                               'ORDER BY algorithm_id ASC;'))
 
     # Grab the algorithm id
     algorithm_id <- df[selected_row, "algorithm_id"]
@@ -3967,7 +4077,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     selected_row     <- input$currently_added_linkage_algorithms_rows_selected
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
                                                 WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
-                                                  'ORDER BY algorithm_id ASC'))
+                                               'AND archived = 0 AND published = 0',
+                                               'ORDER BY algorithm_id ASC;'))
 
     algorithm_id <- df$algorithm_id[selected_row]
     #----#
@@ -3978,6 +4089,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     regenerate_report_left_dataset_id  <<- left_dataset_id
     regenerate_report_right_dataset_id <<- right_dataset_id
     regenerate_report_return_page      <<- "linkage_algorithms_page"
+    #----#
+
+    # Re-render some tables
+    #----#
+    output$select_saved_data_to_regenerate <- renderDataTable({
+      get_data_to_regenerate()
+    })
     #----#
 
     # Switch pages
@@ -4031,7 +4149,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df <- dbGetQuery(linkage_metadata_conn, query)
 
     algorithm_id <- df[selected_row, "algorithm_id"]
-    algorithm_name <- df[selected_row, "algorithm_name"]
     #----#
 
     # Create a query for updating the enabled value of the record
@@ -4066,7 +4183,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       fluidPage(
         fluidRow(
           column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-              actionButton("publish_algorithm_confirm", "Yes", class = "btn-danger", width = validateCssUnit(200), icon = shiny::icon("check")),
+              actionButton("publish_algorithm_confirm", "Yes", class = "btn-success", width = validateCssUnit(200), icon = shiny::icon("check")),
             )
           ),
           column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
@@ -4101,7 +4218,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df <- dbGetQuery(linkage_metadata_conn, query)
 
     algorithm_id <- df[selected_row, "algorithm_id"]
-    algorithm_name <- df[selected_row, "algorithm_name"]
     #----#
 
     # Create a query for updating the enabled value of the record
@@ -4169,6 +4285,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     published_algorithms_left_dataset_id  <<- left_dataset_id
     published_algorithms_right_dataset_id <<- right_dataset_id
     published_algorithms_return_page      <<- "linkage_algorithms_page"
+    #----#
+
+    # Render tables
+    #----#
+    output$published_linkage_algorithms <- renderDataTable({
+      get_published_linkage_algorithms()
+    })
     #----#
 
     # Switch pages
@@ -4251,7 +4374,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Error handling - don't allow user to have two algorithms enabled with the same name
     #----#
-    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND archived = 0;')
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND archived = 0 AND published = 0;')
     dbBind(get_query, list(algorithm_name))
     output_df <- dbFetch(get_query)
     enabled_databases <- nrow(output_df)
@@ -4296,10 +4419,253 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   published_algorithms_right_dataset_id <- 0
   published_algorithms_return_page      <- "linkage_algorithms_page"
 
+  # Get the computer volumes
+  volumes <- getVolumes()()
+
+  # Linkage Output Directory Chooser
+  shinyDirChoose(input, 'published_algorithms_output_dir', roots=volumes, filetypes=c('', 'txt'), allowDirCreate = F)
+
+  # Output text box for the selected output directory
+  output$selected_published_algorithms_output_dir <- renderText({
+    "No Folder Has Been Chosen"
+  })
+
+  # Observes which published linkage output directory was chosen
+  observeEvent(input$published_algorithms_output_dir, {
+    # Get the output linkage directory
+    output_dir <- parseDirPath(volumes, input$published_algorithms_output_dir)
+
+    # Render the output text
+    if(identical(output_dir, character(0))){
+      output$selected_published_algorithms_output_dir <- renderText({
+        "No Folder Has Been Chosen"
+      })
+    }
+    else{
+      output$selected_published_algorithms_output_dir <- renderText({
+        output_dir
+      })
+    }
+  })
+
   # Back button will bring you back to whichever page you came from
-  observeEvent(input$archived_linkage_algorithms_back, {
+  observeEvent(input$published_linkage_algorithms_back, {
     # Show return to the page you came from
     updateNavbarPage(session, "main_navbar", selected = published_algorithms_return_page)
+  })
+
+  # Query and output for getting the selected linkage algorithms
+  get_published_linkage_algorithms <- function(){
+    left_dataset_id  <- published_algorithms_left_dataset_id
+    right_dataset_id <- published_algorithms_right_dataset_id
+
+    # Convert the dataset IDs to numeric
+    left_dataset_id <- as.numeric(left_dataset_id)
+    right_dataset_id <- as.numeric(right_dataset_id)
+
+    # Make sure the dataset IDs aren't NA
+    if(is.na(left_dataset_id) || is.na(right_dataset_id)){
+      return()
+    }
+
+    # Query to get all linkage method information from the 'linkage_methods' table
+    query <- paste('SELECT * FROM linkage_algorithms
+                    WHERE dataset_id_left =', left_dataset_id, ' AND dataset_id_right =', right_dataset_id,
+                   'AND archived = 0 AND published = 1',
+                   'ORDER BY algorithm_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(df)[names(df) == 'algorithm_name'] <- 'Algorithm Name'
+    names(df)[names(df) == 'modified_date'] <- 'Modified Date'
+    names(df)[names(df) == 'modified_by'] <- 'Modified By'
+
+    # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
+    df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right, published,
+                                 archived, enabled, enabled_for_testing))
+
+    # Put it into a data table now
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+  }
+
+  # Render the data table for all published linkage algorithms of the desired 2 datasets
+  output$published_linkage_algorithms <- renderDataTable({
+    get_published_linkage_algorithms()
+  })
+
+  # Allow for un-publishing the selected algorithm
+  observeEvent(input$unpublish_linkage_algorithm, {
+    # Get the row that we're supposed to be toggling
+    #----#
+    left_dataset_id  <- published_algorithms_left_dataset_id
+    right_dataset_id <- published_algorithms_right_dataset_id
+    selected_row     <- input$published_linkage_algorithms_rows_selected
+    query <- paste('SELECT * FROM linkage_algorithms
+                    WHERE dataset_id_left =', left_dataset_id, ' AND dataset_id_right =', right_dataset_id,
+                   'AND archived = 0 AND published = 1',
+                   'ORDER BY algorithm_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    algorithm_id <- df[selected_row, "algorithm_id"]
+    algorithm_name <- df[selected_row, "algorithm_name"]
+    #----#
+
+    # Error handling - don't allow user to have two algorithms enabled with the same name
+    #----#
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND archived = 0 AND published = 0;')
+    dbBind(get_query, list(algorithm_name))
+    output_df <- dbFetch(get_query)
+    enabled_databases <- nrow(output_df)
+    dbClearResult(get_query)
+
+    if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
+      showNotification("Failed to Unpublish Algorithm - Algorithm Name is Being Used by a Testing Algorithm", type = "error", closeButton = FALSE)
+      return()
+    }
+    #----#
+
+    # Set the selected algorithm ID to be enabled
+    update_query <- paste("UPDATE linkage_algorithms
+                        SET published = 0
+                        WHERE algorithm_id = ?")
+    update <- dbSendStatement(linkage_metadata_conn, update_query)
+    dbBind(update, list(algorithm_id))
+    dbClearResult(update)
+    #----#
+
+    # Re-render data tables and reset UI
+    #----#
+    output$published_linkage_algorithms <- renderDataTable({
+      get_published_linkage_algorithms()
+    })
+    output$currently_added_linkage_algorithms <- renderDataTable({
+      get_linkage_algorithms()
+    })
+    #----#
+
+    # Send a success notification
+    #----#
+    showNotification("Algorithm Successfully Unpublished", type = "message", closeButton = FALSE)
+    #----#
+  })
+
+  # Run and save all published algorithms
+  observeEvent(input$run_published_linkage_algorithms, {
+    # Disable this button
+    disable("run_published_linkage_algorithms")
+
+    # Use `withProgress` to display and update the progress bar
+    successful <- withProgress(message = "Running Published Linkage Algorithms...", value = 0, {
+
+      # Define progress callback function
+      progress_callback <- function(progress_value, message = NULL) {
+        incProgress(progress_value, message)
+      }
+
+      # Set the initial progress
+      incProgress(0)
+
+      # Get the folder and file inputs
+      output_dir <- parseDirPath(volumes, input$published_algorithms_output_dir)
+
+      # Get the algorithm IDs of all published algorithms
+      query <- paste('SELECT * FROM linkage_algorithms
+                      WHERE dataset_id_left =', published_algorithms_left_dataset_id, ' AND dataset_id_right =', published_algorithms_right_dataset_id,
+                     'AND published = 1',
+                     'ORDER BY algorithm_id ASC;')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      algorithm_ids  <- df$algorithm_id
+
+      #-- Error Handling --#
+      # We need to make sure the user supplied an output folder
+      if(identical(output_dir, character(0))){
+        showNotification("Failed to Run Published Algorithms - Missing Output Folder", type = "error", closeButton = FALSE)
+        return(FALSE)
+      }
+      # Make sure at least one algorithm was selected
+      if(length(algorithm_ids) <= 0){
+        showNotification("Failed to Run Published Algorithms - No Algorithms are Currently Published", type = "error", closeButton = FALSE)
+        return(FALSE)
+      }
+      #--------------------#
+
+      # Get the parameters that will be passed to the linkage function
+      left_dataset   <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', published_algorithms_left_dataset_id))$dataset_location
+      right_dataset  <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', published_algorithms_right_dataset_id))$dataset_location
+      link_metadata  <- metadata_file_path
+      extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, include_unlinked_records = T, data_linker = username,
+                                                     save_all_linkage_results = T, collect_missing_data_indicators = T)
+
+      # Run the algorithms
+      try_catch_success <- TRUE
+      tryCatch({
+        # Run the linkage algorithms
+        results <- run_main_linkage(left_dataset, right_dataset, link_metadata, algorithm_ids, extra_params, progress_callback)
+
+        # Save the data from the results
+        linked_data_list                     <- results[["linked_data"]]
+        algorithm_ids                        <- results[["linked_algorithm_ids"]]
+        linked_data_algorithm_names          <- results[["linked_algorithm_names"]]
+        linkage_algorithm_summary_list       <- results[["algorithm_summaries"]]
+        linkage_algorithm_footnote_list      <- results[["algorithm_footnotes"]]
+        intermediate_performance_measures_df <- results[["performance_measures"]]
+        intermediate_missing_indicators_df   <- results[["missing_data_indicators"]]
+
+        # We will go through each of the algorithm IDs and save the data to an .Rdata file that can be used later
+        for(index in 1:length(algorithm_ids)){
+          # Get the current information for this algorithm
+          linked_data    <- linked_data_list[[index]]
+          algorithm_id   <- algorithm_ids[index]
+          algorithm_name <- linked_data_algorithm_names[index]
+          algorithm_summ <- linkage_algorithm_summary_list[[index]]
+          algorithm_foot <- linkage_algorithm_footnote_list[[index]]
+          performance_df <- as.data.frame(intermediate_performance_measures_df[intermediate_performance_measures_df$algorithm_name == algorithm_name, ])
+
+          # Format the timestamp to avoid invalid characters
+          timestamp <- format(Sys.time(), "%Y-%m-%d %Hh-%Mm-%Ss")
+
+          # Construct the file name and path
+          file_name <- paste0(algorithm_name, " [", algorithm_id, "] (", timestamp, ").RData")
+          file_path <- file.path(output_dir, file_name)
+
+          # Save the data for this algorithm
+          save(linked_data, algorithm_id, algorithm_name, algorithm_summ,
+               algorithm_foot, performance_df, intermediate_missing_indicators_df, file=file_path)
+        }
+      },
+      error = function(e){
+        # If we fail, let the user know why
+        try_catch_success <<- FALSE
+        showNotification(paste0("Linkage Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
+        return()
+      })
+
+      # If we failed the try catch, then let the user know
+      if(try_catch_success != TRUE) return(FALSE)
+
+      # Finalize progress
+      incProgress(1, detail = "Linkage completed.")
+
+      # Return true
+      return(TRUE)
+    })
+
+    # Check if we were successful, otherwise return
+    if(successful != TRUE){
+      Sys.sleep(2)
+      enable("run_published_linkage_algorithms")
+      return()
+    }
+
+    # If we succeed, let the user know where they can find their information
+    showNotification(paste0("Published Linkage Succeeded - Check the Output Folder for RData Files"), type = "message", closeButton = FALSE)
+
+    # Call garbage collector after we finish processing
+    gc()
+    Sys.sleep(2)
+
+    enable("run_published_linkage_algorithms")
+    return()
   })
   #----
   #----------------------------------------------#
@@ -11554,6 +11920,79 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   regenerate_report_right_dataset_id <- 1
   regenerate_report_return_page  <- "linkage_algorithms_page"
 
+  # Helper function to help generate the table of dates and timestamps
+  generate_saved_data_df <- function(){
+    # Get the algorithm ID
+    algorithm_id_to_regenerate <- algorithm_ids_to_regenerate[1]
+
+    # Get the saved data
+    all_data_files <- list.files(system.file(package = "datalink", "data"))
+
+    # Keep only data files that have our Algorithm ID in brackets
+    for(index in 1:length(all_data_files)){
+      # Get the current data file
+      curr_data_file <- all_data_files[index]
+
+      # Extract the algorithm ID
+      result <- sub('.*\\[(.*)\\].*', '\\1', curr_data_file)
+
+      # Try to convert this value to numeric and compare it
+      result_algo_id <- suppressWarnings(as.numeric(result))
+
+      # If the pulled algorithm ID matches, then keep it and put it in a data frame
+      if(is.na(result_algo_id) || result_algo_id != algorithm_id_to_regenerate){
+        all_data_files[index] <- NA
+      }
+    }
+
+    # Get the non-NA values, and split them into two columns, "Dates" and "Timestamps"
+    saved_data_files <- all_data_files[!is.na(all_data_files)]
+
+    # If we have at least one file, then do all this extra work
+    saved_data_split <- strsplit(sub('.*\\((.*)\\).*', '\\1', saved_data_files), " ")
+    dates      <- sapply(saved_data_split,"[[",1)
+    timestamps <- sapply(saved_data_split,"[[",2)
+
+    # For the Non-NA files, create a data frame of the "Date" and "Time"
+    saved_data_df <- data.frame(
+      date = dates,
+      time = timestamps
+    )
+
+    # Re-order the saved data by date and then timestamp
+    if(nrow(saved_data_df) > 0){
+      saved_data_df <- saved_data_df[order(saved_data_df$date),]
+      saved_data_df <- saved_data_df[order(saved_data_df$time),]
+    }
+    else{
+      saved_data_df <- data.frame(
+        date = character(),
+        time = character()
+      )
+    }
+
+    # Return the data frame
+    return(saved_data_df)
+  }
+
+  # Query and output for getting the selected linkage algorithms
+  get_data_to_regenerate <- function(){
+    # Get the saved data
+    saved_data_df <- generate_saved_data_df()
+
+    # With our data frame, we'll rename some of the columns to look better
+    names(saved_data_df)[names(saved_data_df) == 'date'] <- 'Saved Date'
+    names(saved_data_df)[names(saved_data_df) == 'time'] <- 'Saved Timestamp'
+
+    # Put it into a data table now
+    dt <- datatable(saved_data_df, selection = 'multiple', rownames = FALSE, options = list(lengthChange = FALSE))
+  }
+
+  # Render the data table for the linkage algorithms of the desired 2 datasets
+  output$select_saved_data_to_regenerate <- renderDataTable({
+    get_data_to_regenerate()
+  })
+
   # Initialize the selected file and folder to be empty
   output$uploaded_regenerated_report_output_dir <- renderText({
     "No Folder Has Been Chosen"
@@ -11597,6 +12036,40 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Disable this button
     disable("regenerate_report_btn")
 
+    # Get the saved data to obtain the algorithms being re-generated
+    saved_data_df <- generate_saved_data_df()
+
+    # Get the selected rows
+    selected_rows <- input$select_saved_data_to_regenerate_rows_selected
+
+    # If no rows were selected, return
+    # Make sure a output folder was provided
+    if(length(selected_rows) <= 0){
+      showNotification("Failed to Regenerate Reports - No Rows are Selected", type = "error", closeButton = FALSE)
+      Sys.sleep(2)
+      enable("regenerate_report_btn")
+      return()
+    }
+
+    # Get the date and timestamp values
+    dates <- saved_data_df$date[selected_rows]
+    times <- saved_data_df$time[selected_rows]
+
+    # Get the algorithm name
+    algorithm_id_to_regenerate <- algorithm_ids_to_regenerate[1]
+    algo_name <- get_algorithm_name(linkage_metadata_conn, algorithm_id_to_regenerate)
+
+    # Create a vector of the files to regenerate, and construct their full names
+    files_to_regenerate <- c()
+    for(index in 1:length(selected_rows)){
+      # Create the full file name
+      file_name <- paste0(algo_name, " [", algorithm_id_to_regenerate, "] (", dates[index], " ", times[index], ").RData")
+
+      # Append the file name
+      files_to_regenerate <- append(file_name, files_to_regenerate)
+    }
+    print(files_to_regenerate)
+
     # Create variables for the number of steps
     total_steps  <- length(algorithm_ids_to_regenerate)*2
     current_step <- 1
@@ -11610,6 +12083,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       # Make sure a output folder was provided
       if(identical(output_dir, character(0))){
         showNotification("Failed to Regenerate Reports - Missing Output Folder", type = "error", closeButton = FALSE)
+        Sys.sleep(2)
         enable("regenerate_report_btn")
         return()
       }
@@ -11639,12 +12113,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           load(saved_file_path)
 
           ### Get the data individually
-          linked_data          <- get("linked_data")
-          algorithm_name       <- get("algorithm_name")
-          algorithm_summary    <- get("algorithm_summ")
-          algorithm_footers    <- get("algorithm_foot")
-          performance_measures <- get("performance_df")
+          linked_data             <- get("linked_data")
+          algorithm_name          <- get("algorithm_name")
+          algorithm_summary       <- get("algorithm_summ")
+          algorithm_footers       <- get("algorithm_foot")
+          performance_measures    <- get("performance_df")
           performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
+          missing_data_indicators <- get("intermediate_missing_indicators_df")
 
           ### Get the dataset names
           left_dataset_name <- dbGetQuery(linkage_metadata_conn,
@@ -11664,6 +12139,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
             ground_truth_fields <- NULL
           }
 
+          # If we have no missing data indicators, ignore them
+          display_missing_data_ind <- T
+          if(nrow(missing_data_indicators) <= 0){
+            missing_data_indicators  <- NULL
+            display_missing_data_ind <- F
+          }
+
           ### If we considered other algorithms, add them to the report appendix
           considered_algo_summary_list           <- list()
           considered_algo_summary_footnotes_list <- list()
@@ -11681,8 +12163,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
             # Get the algorithms enabled for testing
             enabled_algorithms <- dbGetQuery(linkage_metadata_conn, paste0('SELECT algorithm_id FROM linkage_algorithms
-                                                                 WHERE enabled_for_testing = 1 AND enabled = 0
-                                                                   AND dataset_id_left = ', left_dataset_id, ' AND dataset_id_right = ', right_dataset_id,
+                                                                 WHERE enabled_for_testing = 1 AND enabled = 0 AND archived = 0 AND published = 0
+                                                                 AND dataset_id_left = ', left_dataset_id, ' AND dataset_id_right = ', right_dataset_id,
                                                                 ' ORDER BY algorithm_id ASC'))$algorithm_id
 
             # Loop through each algorithm and create a table for its iterations
@@ -11840,6 +12322,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                          ground_truth = ground_truth_fields,
                                          considered_algorithm_summary_data = considered_algo_summary_list, considered_algorithm_summary_tbl_footnotes = considered_algo_summary_footnotes_list,
                                          considered_algorithm_summary_table_names = considered_algo_summary_table_names,
+                                         missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
                                          R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
 
 
@@ -11924,7 +12407,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     names(df)[names(df) == 'enabled_for_testing'] <- 'Enabled for Sensitivity Testing'
 
     # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
-    df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right))
+    df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right, published, archived))
 
     # Put it into a data table now
     dt <- datatable(df, selection = 'multiple', rownames = FALSE, options = list(lengthChange = FALSE))
@@ -12018,8 +12501,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     disable("run_linkage_btn")
 
     # Use `withProgress` to display and update the progress bar
-    successful <- TRUE
-    withProgress(message = "Running Linkage Algorithms...", value = 0, {
+    successful <- withProgress(message = "Running Linkage Algorithms...", value = 0, {
 
       # Define progress callback function
       progress_callback <- function(progress_value, message = NULL) {
@@ -12047,25 +12529,21 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       selected_rows <- input$select_linkage_algorithms_to_run_rows_selected
       query <- paste('SELECT * FROM linkage_algorithms
                     WHERE dataset_id_left =', run_algorithm_left_dataset_id, ' AND dataset_id_right =', run_algorithm_right_dataset_id,
-                     'AND archived = 0 AND published = 0',
-                     'ORDER BY algorithm_id ASC;')
+                   'AND archived = 0 AND published = 0',
+                   'ORDER BY algorithm_id ASC;')
       df <- dbGetQuery(linkage_metadata_conn, query)
       algorithm_ids  <- df$algorithm_id[selected_rows]
 
       #-- Error Handling --#
       # We need to make sure the user supplied an output folder
       if(identical(output_dir, character(0))){
-        successful <<- FALSE
         showNotification("Failed to Run Linkage - Missing Output Folder", type = "error", closeButton = FALSE)
-        enable("run_linkage_btn")
-        return()
+        return(FALSE)
       }
       # Make sure at least one algorithm was selected
       if(length(algorithm_ids) <= 0){
-        successful <<- FALSE
         showNotification("Failed to Run Linkage - No Algorithms are Selected", type = "error", closeButton = FALSE)
-        enable("run_linkage_btn")
-        return()
+        return(FALSE)
       }
       #--------------------#
 
@@ -12080,6 +12558,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                      collect_missing_data_indicators = save_missing_data_indicators, include_unlinked_records = include_unlinked_records)
 
       # Run the algorithms
+      try_catch_success <- TRUE
       tryCatch({
         # Run the linkage algorithms
         results <- run_main_linkage(left_dataset, right_dataset, link_metadata, algorithm_ids, extra_params, progress_callback)
@@ -12093,6 +12572,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           linkage_algorithm_summary_list       <- results[["algorithm_summaries"]]
           linkage_algorithm_footnote_list      <- results[["algorithm_footnotes"]]
           intermediate_performance_measures_df <- results[["performance_measures"]]
+          intermediate_missing_indicators_df   <- results[["missing_data_indicators"]]
 
           # We will go through each of the algorithm IDs and save the data to an .Rdata file that can be used later
           for(index in 1:length(algorithm_ids)){
@@ -12104,14 +12584,17 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
             algorithm_foot <- linkage_algorithm_footnote_list[[index]]
             performance_df <- as.data.frame(intermediate_performance_measures_df[intermediate_performance_measures_df$algorithm_name == algorithm_name, ])
 
-            # Obtain a file path
-            file_path <- file.path(system.file(package = "datalink", "data"), paste0("linkage_report_metadata_id_", algorithm_id, ".RData"))
+            # Format the timestamp to avoid invalid characters
+            timestamp <- format(Sys.time(), "%Y-%m-%d %Hh-%Mm-%Ss")
+
+            # Construct the file name and path
+            file_name <- paste0(algorithm_name, " [", algorithm_id, "] (", timestamp, ").RData")
+            file_path <- file.path(system.file(package = "datalink", "data"), file_name)
 
             # Save the data for this algorithm
             save(linked_data, algorithm_id, algorithm_name, algorithm_summ,
-                 algorithm_foot, performance_df, file=file_path)
+                 algorithm_foot, performance_df, intermediate_missing_indicators_df, file=file_path)
           }
-
         }
         else{
           rm(results)
@@ -12120,30 +12603,34 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       },
       error = function(e){
         # If we fail, let the user know why
+        try_catch_success <<- FALSE
         showNotification(paste0("Linkage Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
-        enable("run_linkage_btn")
-        successful <<- FALSE
-        #print(successful)
         return()
       })
 
-      #print(successful)
+      # If we failed the try catch, then let the user know
+      if(try_catch_success != TRUE) return(FALSE)
 
       # Finalize progress
       incProgress(1, detail = "Linkage completed.")
+
+      # Return true
+      return(TRUE)
     })
 
-    #print(successful)
-
     # If we failed, then return
-    if(successful == FALSE) return()
+    if(successful == FALSE){
+      Sys.sleep(2)
+      enable("run_linkage_btn")
+      return()
+    }
 
     # If we succeed, let the user know where they can find their information
     showNotification(paste0("Linkage Succeeded - Check the Output Folder for Data [", output_dir, "]"), type = "message", closeButton = FALSE)
 
     # Call garbage collector after we finish processing
     gc()
-    Sys.sleep(3)
+    Sys.sleep(2)
 
     enable("run_linkage_btn")
     return()
@@ -12218,6 +12705,9 @@ start_linkage_metadata_ui <- function(metadata_file_path, username){
 
   # Ensure that our foreign keys are enabled to prevent adding invalid records
   dbExecute(linkage_metadata_conn, "PRAGMA foreign_keys = ON;")
+
+  # Calling useShinyjs here so that we can disable and enable buttons during data linkage
+  shinyjs::useShinyjs()
 
   # Start the Shiny Application
   shinyApp(ui = linkage_ui,
