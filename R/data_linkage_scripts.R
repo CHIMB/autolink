@@ -550,7 +550,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           linkage_pairs <- linkage_pairs[!is.na(linkage_pairs$mpost), ]
           select_greedy(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE)
           #select_threshold(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE) #IF WE WANT DUPES
-        }else if ("match_weight" %in% names(acceptance_threshold)){
+        }
+        else if ("match_weight" %in% names(acceptance_threshold)){
           linkage_weight <- acceptance_threshold[["match_weight"]]
           select_greedy(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE)
           #select_threshold(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE) #IF WE WANT DUPES
@@ -1493,6 +1494,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   # Create lists and data frames for storing ALL algorithm summaries, performance measures, and table data
   #----
   linked_data_list                <- list()
+  linked_data_generation_times    <- c()
   linked_data_algorithm_names     <- c()
   linkage_algorithm_summary_list  <- list()
   linkage_algorithm_footnote_list <- list()
@@ -1519,6 +1521,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   # For Steps 2-5, we'll run each of our algorithms
   algorithm_num <- 0
   for(algorithm_id in algorithm_ids){
+    # Generate the timestamp this was executed at
+    algorithm_timestamp <- format(Sys.time(), "%Y-%m-%d %Hh-%Mm-%Ss")
+
+    # Create a list that will track auditing information and save it (if user defined so)
+    audit_measures_list <- list()
+
     # Garbage collect before each algorithm
     gc()
 
@@ -1711,6 +1719,9 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # Keep a vector of performance measure values
     performance_measures <- c(TP = 0, TN = 0, FP = 0, FN = 0)
 
+    # Track start time so that we may make note of how long all passes take
+    total_start_time = proc.time()
+
     # Keep a data frame of all passes for final output
     output_df <- data.frame()
     for(row_num in 1:nrow(iterations_df)){
@@ -1886,9 +1897,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         # Get the algorithm name
         df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
         algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+        algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
 
         # Define base file name
-        base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_unlinked_pairs')
+        base_filename <- paste0(algorithm_name, ' [', curr_iteration_name, '] - Unlinked Pairs')
 
         # Start with the base file name
         full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
@@ -1917,9 +1929,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         # Get the algorithm name
         df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
         algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+        algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
 
         # Define base file name
-        base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_linkage_results')
+        base_filename <- paste0(algorithm_name, ' [', curr_iteration_name, '] - Linkage Results')
 
         # Start with the base file name
         full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
@@ -1974,9 +1987,14 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           # Get the algorithm name
           df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
           algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+          algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
+
+          # Clean up the plot name
+          cleaned_plot_name <- str_replace_all(plot_name, "[[:punct:]]", " ") # Remove punctuation
+          cleaned_plot_name <- str_to_title(cleaned_plot_name)
 
           # Define base file name
-          base_filename <- paste0(algorithm_name, '_', curr_iteration_name, '_', plot_name)
+          base_filename <- paste0(algorithm_name, ' (', curr_iteration_name, ') - ', cleaned_plot_name)
 
           # Start with the base file name
           full_filename <- file.path(output_dir, paste0(base_filename, ".png"))
@@ -2003,6 +2021,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         plot_captions <- append(plot_captions, captions)
       }
     }
+
+    # Track the end time time and get the difference
+    total_end_time = proc.time()
+
+    # Format the time difference to two decimal places
+    total_formatted_time <- format(round((total_end_time - total_start_time)[3], 3), nsmall = 3)
     #----
 
     ### Step 5: Add unlinked data to the output data frame
@@ -2109,6 +2133,15 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       SPEC <- ifelse(is.na(SPEC), 0, SPEC)
       F1_SCORE <- ifelse(is.na(F1_SCORE), 0, F1_SCORE)
 
+      # Save the performance measure data to our audit list
+      audit_measures_list[["Linkage Rate"]] <- linkage_rate
+      audit_measures_list[["Time to Completion (s)"]] <- total_formatted_time
+      audit_measures_list[["PPV"]] <- PPV
+      audit_measures_list[["NPV"]] <- NPV
+      audit_measures_list[["Sensitivity"]] <- SENS
+      audit_measures_list[["Specificity"]] <- SPEC
+      audit_measures_list[["F1 Score"]] <- F1_SCORE
+
       # Create a performance measures data frame to store all the information
       performance_measures_df <- data.frame(
         algorithm_name = algorithm_name,
@@ -2135,9 +2168,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # Get the algorithm name
       df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
       algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+      algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
 
       # Define base file name
-      base_filename <- paste0(algorithm_name, '_linkage_performance_measures')
+      base_filename <- paste0(algorithm_name, ' (', algorithm_timestamp,') - Performance Measures')
 
       # Start with the base file name
       full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
@@ -2197,6 +2231,15 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       SENS <- ifelse(is.na(SENS), 0, SENS)
       SPEC <- ifelse(is.na(SPEC), 0, SPEC)
       F1_SCORE <- ifelse(is.na(F1_SCORE), 0, F1_SCORE)
+
+      # Save the performance measure data to our audit list
+      audit_measures_list[["Linkage Rate"]] <- linkage_rate
+      audit_measures_list[["Time to Completion (s)"]] <- total_formatted_time
+      audit_measures_list[["PPV"]] <- PPV
+      audit_measures_list[["NPV"]] <- NPV
+      audit_measures_list[["Sensitivity"]] <- SENS
+      audit_measures_list[["Specificity"]] <- SPEC
+      audit_measures_list[["F1 Score"]] <- F1_SCORE
 
       # Create a performance measures data frame to store all the information
       performance_measures_df <- data.frame(
@@ -2445,6 +2488,9 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           current_step <- current_step + 1
         }
 
+        # Generate the report file name
+        report_file_name <- paste0(algorithm_name, ' (', algorithm_timestamp, ')')
+
         # Generate the linkage quality report
         final_linkage_quality_report(output_df, algorithm_name, "", datasets$left_dataset_name,
                                      paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
@@ -2456,7 +2502,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                      considered_algorithm_summary_data = considered_algo_summary_list, considered_algorithm_summary_tbl_footnotes = considered_algo_summary_footnotes_list,
                                      considered_algorithm_summary_table_names = considered_algo_summary_table_names,
                                      missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
-                                     R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
+                                     R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
+                                     report_file_name = report_file_name)
 
         detach("package:linkrep", unload = TRUE)
       },
@@ -2468,11 +2515,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         print("Error: Unable to generate linkage report, saving output data frame to specified output folder.")
 
         # Get the algorithm name
-        df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
-        algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+        algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
 
         # Define base file name
-        base_filename <- paste0(algorithm_name, '_complete_linkage_results')
+        base_filename <- paste0(algorithm_name, ' Complete Linkage Results (', algorithm_timestamp, ')')
 
         # Start with the base file name
         full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
@@ -2497,11 +2543,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       output_dir <- extra_parameters[["linkage_output_folder"]]
 
       # Get the algorithm name
-      df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
-      algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+      algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
 
       # Define base file name
-      base_filename <- paste0(algorithm_name, '_complete_linkage_results')
+      base_filename <- paste0(algorithm_name, ' Complete Linkage Results (', algorithm_timestamp, ')')
 
       # Start with the base file name
       full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
@@ -2530,9 +2575,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # Get the algorithm name
       df <- dbGetQuery(linkage_metadata_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
       algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+      algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
 
       # Define base file name
-      base_filename <- paste0(algorithm_name, '_linkage_summary')
+      base_filename <- paste0(algorithm_name, ' (', algorithm_timestamp,') - Linkage Algorithm Summary')
 
       # Start with the base file name
       full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
@@ -2572,6 +2618,32 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
     # Save the algorithm footnotes
     linkage_algorithm_footnote_list[[length(linkage_algorithm_footnote_list)+1]] <- algo_summary_footnotes
+
+    # Save the algorithm run timestamp
+    linked_data_generation_times <- append(linked_data_generation_times, algorithm_timestamp)
+    #----
+
+    ### Step 8: Save Auditing Information
+    #----
+    if("save_audit_performance" %in% names(extra_parameters) && extra_parameters[["save_audit_performance"]] == T &&
+       "data_linker" %in% names(extra_parameters)){
+      # Convert the list of auditing performance measures to json
+      audit_json <- jsonlite::toJSON(audit_measures_list)
+
+      # Get the audit author
+      audit_author <- extra_parameters[["data_linker"]]
+
+      # Get the audit date and time
+      audit_date <- strsplit(algorithm_timestamp, " ")[[1]][1]
+      audit_time <- strsplit(algorithm_timestamp, " ")[[1]][2]
+
+      # Run a insertion query to add this into our auditing database
+      new_entry_query <- paste("INSERT INTO performance_measures_audit (algorithm_id, audit_by, audit_date, audit_time, performance_measures_json)",
+                               "VALUES(?, ?, ?, ?, ?);")
+      new_entry <- dbSendStatement(linkage_metadata_db, new_entry_query)
+      dbBind(new_entry, list(algorithm_id, audit_author, audit_date, audit_time, audit_json))
+      dbClearResult(new_entry)
+    }
     #----
   }
 
@@ -2700,11 +2772,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     result_list[["algorithm_footnotes"]]     <- linkage_algorithm_footnote_list
     result_list[["performance_measures"]]    <- intermediate_performance_measures_df
     result_list[["missing_data_indicators"]] <- intermediate_missing_indicators_df
+    result_list[["generated_timestamps"]]    <- linked_data_generation_times
 
     # Remove the values
     rm(linked_data_list, linked_data_algorithm_names, linkage_algorithm_summary_list,
        linkage_algorithm_footnote_list, intermediate_performance_measures_df,
-       intermediate_missing_indicators_df)
+       intermediate_missing_indicators_df, linked_data_generation_times)
 
     # Garbage collection
     gc()
@@ -2716,7 +2789,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # Remove the values we didnt use
     rm(linked_data_list, linked_data_algorithm_names, linkage_algorithm_summary_list,
        linkage_algorithm_footnote_list, intermediate_performance_measures_df,
-       intermediate_missing_indicators_df)
+       intermediate_missing_indicators_df, linked_data_generation_times)
 
     # Garbage collection
     gc()

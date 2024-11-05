@@ -15,7 +15,8 @@ create_extra_parameters_list(
   generate_algorithm_summary = FALSE,
   generate_threshold_plots = FALSE,
   save_all_linkage_results = FALSE,
-  collect_missing_data_indicators = FALSE
+  collect_missing_data_indicators = FALSE,
+  save_audit_performance = FALSE
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ create_extra_parameters_list(
 \item{save_all_linkage_results}{A TRUE or FALSE value for whether you'd like a list of all report data returned after all algorithms have been ran.}
 
 \item{collect_missing_data_indicators}{A TRUE or FALSE value for whether you'd like to have missing data indicators appear of the variables you're keeping as output.}
+
+\item{save_audit_performance}{A TRUE or FALSE value for whether you'd like to save the performance of each algorithm being ran for later auditing purposes.}
 }
 \description{
 The create_extra_parameters_list() function will allow users to modify any of the default

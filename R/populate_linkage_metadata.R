@@ -256,6 +256,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
       audit_by VARCHAR(255),
       audit_date TEXT,
+      audit_time TEXT,
       performance_measures_json TEXT
     );
   ")

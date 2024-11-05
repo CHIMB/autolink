@@ -1011,7 +1011,7 @@ linkage_ui <- page_navbar(
       HTML("<br>"),
 
       # Render the data table of currently available iterations
-      h5(strong("View The List of Performance Measures, or Select A Row to Export:")),
+      h5(strong("Select A Saved Performance Entry to View & Export:")),
 
       # Card for the data table
       div(style = "display: flex; justify-content: center; align-items: center; width: 75%; margin: 0 auto;",
@@ -1028,6 +1028,9 @@ linkage_ui <- page_navbar(
       conditionalPanel(
         condition = "input.algorithm_specific_audits_rows_selected <= 0",
 
+        # Header for selecting a new date range
+        h5(strong("Or, limit the performance selection by changing the date range:")),
+
         # UI date range input
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -1040,6 +1043,17 @@ linkage_ui <- page_navbar(
       # If A ROW IS SELECTED, the user can export the results by clicking the button
       conditionalPanel(
         condition = "input.algorithm_specific_audits_rows_selected > 0",
+        # View selected/saved algorithm performance
+        div(style = "display: flex; justify-content: center; align-items: center; width: 75%; margin: 0 auto;",
+          card(
+            full_screen = TRUE,
+            height = 500,
+            fluidPage(
+              uiOutput("selected_algorithm_performances_measures")
+            )
+          )
+        ),
+
         # Export Audit Button
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -1047,7 +1061,10 @@ linkage_ui <- page_navbar(
             )
           ),
         )
-      )
+      ),
+
+      # Line break at the bottom
+      HTML("<br><br>")
     )
   ),
   #----
@@ -2572,7 +2589,7 @@ linkage_ui <- page_navbar(
         div(style = "display: flex; justify-content: center; align-items: center;",
           card(
             width = NULL,  # Remove the width inside the card and control it from the column
-            height = 600,
+            height = 650,
             full_screen = FALSE,
             card_header("Select Output Options", class = 'bg-dark'),
             card_body(
@@ -2618,6 +2635,12 @@ linkage_ui <- page_navbar(
                 )),
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                   checkboxInput("create_missing_data_indicators", "Missing Data Indicators", FALSE)
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Collects and saves the linkage performance of the algorithms being ran, to be used for future auditing purposes.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("save_audit_performance", "Save Algorithm Performance", FALSE)
                 ))
               )
             )
@@ -4766,8 +4789,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # With our data frame, we'll rename some of the columns to look better
     names(audit_df)[names(audit_df) == 'audit_by']                  <- 'Audited By'
-    names(audit_df)[names(audit_df) == 'audit_date']                <- 'Date Audited'
+    names(audit_df)[names(audit_df) == 'audit_date']                <- 'Audit Date'
     names(audit_df)[names(audit_df) == 'performance_measures_json'] <- 'Performance Measures'
+    names(audit_df)[names(audit_df) == 'audit_time']                <- 'Audit Time'
+
+    # Reorder the columns
+    audit_df <- audit_df[, c(1, 2, 4, 3)]
 
     # Put it into a data table now
     dt <- datatable(audit_df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
@@ -4788,6 +4815,107 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Re-render the audit table
     output$algorithm_specific_audits <- renderDataTable({
       get_audit_information()
+    })
+  })
+
+  # Observe whenever the user selects a row, so we can populate the UI with easier to read performance values
+  observeEvent(input$algorithm_specific_audits_rows_selected, {
+    # Get the selected row
+    selected_row <- input$algorithm_specific_audits_rows_selected
+    algorithm_id <- linkage_audits_algorithm_id
+
+    # Make sure the selected row is valid
+    if(is.null(selected_row)) return()
+
+    # Get the date inputs
+    lower_date   <- input$audit_date_range[1]
+    upper_date   <- input$audit_date_range[2]
+
+    # Format the dates
+    lower_date <- as.character(as.Date(lower_date, "%Y-%m-%d"))
+    upper_date <- as.character(as.Date(upper_date, "%Y-%m-%d"))
+
+    # Keep a data frame variable to obtain the table the user selected from
+    audit_df <- data.frame()
+
+    # QUERY 1 (Both date ranges were provided)
+    if(!is.na(lower_date) && !is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date >= ? AND audit_date <= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, upper_date, algorithm_id))
+
+      # Return the queried data frame to our audit_df variable
+      audit_df <- df
+    }
+
+    # QUERY 2 (Only lower date range was provided)
+    if(!is.na(lower_date) && is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date >= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, algorithm_id))
+
+      # Return the queried data frame to our audit_df variable
+      audit_df <- df
+    }
+
+    # QUERY 3 (Only upper date range was provided)
+    if(is.na(lower_date) && !is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date <= ? AND algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(upper_date, algorithm_id))
+
+      # Return the queried data frame to our audit_df variable
+      audit_df <- df
+    }
+
+    # QUERY 4 (No date range was provided)
+    if(is.na(lower_date) && is.na(upper_date)){
+      # Query for obtaining the performance measures
+      query <- 'SELECT * FROM performance_measures_audit WHERE algorithm_id = ? ORDER BY audit_id'
+
+      # Execute the query and bind parameters
+      df <- dbGetQuery(linkage_metadata_conn, query, params = list(algorithm_id))
+
+      # Return the queried data frame to our audit_df variable
+      audit_df <- df
+    }
+
+    # Get the selected rows performance measure JSON
+    performance_measures_json <- audit_df$performance_measures_json[selected_row]
+
+    # Convert the JSON to a data frame for manipulation
+    performance_measures_df <- jsonlite::fromJSON(performance_measures_json, simplifyDataFrame = TRUE)
+
+    print(performance_measures_df)
+    # LOOK AT DATASTAN TO GET THE CODE FOR CREATING UI FROM A FOR LOOP
+
+    output$selected_algorithm_performances_measures <- renderUI({
+      print("hi :)")
+      # num_fields <- input$number_of_record_priority_fields
+      #
+      # if(is.nan(num_fields) || is.na(num_fields) || num_fields <= 0){
+      #   showNotification("Error - Invalid Number of Record Priority Fields", type = "error", closeButton = FALSE)
+      #   return()
+      # }
+      #
+      # separator_inputs_list <- lapply(1:(num_fields), function(i) {
+      #   query_result <- dbGetQuery(metadata_connection, "SELECT * FROM categorical_values")
+      #
+      #   fluidRow(
+      #     column(width = 6, textInput(inputId = paste0("record_priority_input_value_", i),
+      #                                 label = paste0("Source Field Value ", i, ":"),
+      #                                 value = ""), align = "right"),
+      #     column(width = 6, numericInput(inputId = paste0("record_priority_output_value_", i),
+      #                                    label = paste0("Record Priority ", i, ":"),
+      #                                    value = NULL), align = "left")
+      #   )
+      # })
     })
   })
 
@@ -4861,14 +4989,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Get the performance measure information
     audit_by                  <- audit_df$audit_by[selected_row]
     audit_date                <- audit_df$audit_date[selected_row]
+    audit_time                <- audit_df$audit_time[selected_row]
     performance_measures_json <- audit_df$performance_measures_json[selected_row]
 
     # Create a data frame which will contain the auditing information to export
     export_df <- data.frame(matrix(ncol = 0, nrow = 1))
 
     # Add the date and author as columns
-    export_df[["Audited By"]]   <- audit_by
-    export_df[["Audited Date"]] <- audit_date
+    export_df[["Audited By"]]    <- audit_by
+    export_df[["Date of Audit"]] <- audit_date
+    export_df[["Time of Audit"]] <- audit_time
 
     # Convert the performance measures_json to a data frame
     performance_measures_df <- jsonlite::fromJSON(performance_measures_json, simplifyDataFrame = TRUE)
@@ -12071,7 +12201,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     print(files_to_regenerate)
 
     # Create variables for the number of steps
-    total_steps  <- length(algorithm_ids_to_regenerate)*2
+    total_steps  <- length(files_to_regenerate)*2
     current_step <- 1
 
     # Start a progress bar
@@ -12088,25 +12218,25 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         return()
       }
 
-      # For each of our algorithms that we want to have regenerated, individually generate the reports
-      for(algorithm_id in algorithm_ids_to_regenerate){
-        # Get the algorithm_name
-        algorithm_name <- get_algorithm_name(linkage_metadata_conn, algorithm_id)
+      # Get the algorithm that we're regenerating
+      algorithm_id <- algorithm_ids_to_regenerate[1]
 
+      # For each of our algorithms that we want to have regenerated, individually generate the reports
+      for(saved_data in files_to_regenerate){
         # Progress for reading in this algorithms data
         progress_value <- 1/(total_steps+1)
-        incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Loading Saved Data for ", algorithm_name))
+        incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Loading Saved Data for ", saved_data))
         current_step <- current_step + 1
 
         # Get the file path where the .RData file should be
-        saved_file_path <- file.path(system.file(package = "datalink", "data"), paste0("linkage_report_metadata_id_", algorithm_id, ".RData"))
+        saved_file_path <- file.path(system.file(package = "datalink", "data"), saved_data)
 
         # Make sure the file exists
         if(!file.exists(saved_file_path)){
           progress_value <- 1/(total_steps+1)
-          incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Skipping Regenerating Report for ", algorithm_name))
+          incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Skipping Regenerating Report for ", saved_data))
           current_step <- current_step + 1
-          showNotification(paste0("Failed to Regenerate Report - Saved Data for Algorithm with ID [", algorithm_id, "] Does Not Exist, Skipping."), type = "error", closeButton = FALSE)
+          showNotification(paste0("Failed to Regenerate Report - Saved Data [", saved_data, "] Does Not Exist, Skipping."), type = "error", closeButton = FALSE)
         }
         else{
           ### Load the RData file in
@@ -12308,11 +12438,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           tryCatch({
             # Set the initial progress
             progress_value <- 1/(total_steps+1)
-            incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Regenerating Report for ", algorithm_name))
+            incProgress(progress_value, paste0("Step [", current_step, "/", total_steps, "] Regenerating Report for ", saved_data))
             current_step <- current_step + 1
 
             # Load the 'linkrep' library and generate a linkage quality report
             library("linkrep")
+
+            # Clean the report file name
+            cleaned_filename <- gsub("\\s*\\[.*\\]|\\.RData$", "", saved_data)
 
             final_linkage_quality_report(linked_data, algorithm_name, "", left_dataset_name,
                                          paste0("the ", right_dataset_name), output_dir, username, "datalink (Record Linkage)",
@@ -12323,7 +12456,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                          considered_algorithm_summary_data = considered_algo_summary_list, considered_algorithm_summary_tbl_footnotes = considered_algo_summary_footnotes_list,
                                          considered_algorithm_summary_table_names = considered_algo_summary_table_names,
                                          missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
-                                         R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
+                                         R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
+                                         report_file_name = cleaned_filename)
 
 
             # If we succeed, let the user know where they can find their information
@@ -12341,6 +12475,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
             # If we fail, let the user know why
             showNotification(paste0("Regenerating Report Failed - ", geterrmessage()), type = "error", closeButton = FALSE)
+            Sys.sleep(2)
             enable("regenerate_report_btn")
             return()
           })
@@ -12521,6 +12656,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       save_all_linkage_results        <- input$save_all_linkage_results
       save_missing_data_indicators    <- input$create_missing_data_indicators
       include_unlinked_records        <- input$include_unlinked_records
+      save_audit_performance          <- input$save_audit_performance
 
       # Get the folder and file inputs
       output_dir <- parseDirPath(volumes, input$linkage_output_dir)
@@ -12555,7 +12691,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                      output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, linkage_report_type = linkage_report_type,
                                                      generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
                                                      data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results,
-                                                     collect_missing_data_indicators = save_missing_data_indicators, include_unlinked_records = include_unlinked_records)
+                                                     collect_missing_data_indicators = save_missing_data_indicators, include_unlinked_records = include_unlinked_records,
+                                                     save_audit_performance = save_audit_performance)
 
       # Run the algorithms
       try_catch_success <- TRUE
@@ -12573,6 +12710,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           linkage_algorithm_footnote_list      <- results[["algorithm_footnotes"]]
           intermediate_performance_measures_df <- results[["performance_measures"]]
           intermediate_missing_indicators_df   <- results[["missing_data_indicators"]]
+          linked_data_generation_times         <- results[["generated_timestamps"]]
 
           # We will go through each of the algorithm IDs and save the data to an .Rdata file that can be used later
           for(index in 1:length(algorithm_ids)){
@@ -12583,12 +12721,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
             algorithm_summ <- linkage_algorithm_summary_list[[index]]
             algorithm_foot <- linkage_algorithm_footnote_list[[index]]
             performance_df <- as.data.frame(intermediate_performance_measures_df[intermediate_performance_measures_df$algorithm_name == algorithm_name, ])
-
-            # Format the timestamp to avoid invalid characters
-            timestamp <- format(Sys.time(), "%Y-%m-%d %Hh-%Mm-%Ss")
+            generated_timestamp <- linked_data_generation_times[index]
 
             # Construct the file name and path
-            file_name <- paste0(algorithm_name, " [", algorithm_id, "] (", timestamp, ").RData")
+            file_name <- paste0(algorithm_name, " [", algorithm_id, "] (", generated_timestamp, ").RData")
             file_path <- file.path(system.file(package = "datalink", "data"), file_name)
 
             # Save the data for this algorithm

@@ -913,6 +913,7 @@ load_linkage_file <- function(dataset_file){
 #' @param generate_threshold_plots A TRUE or FALSE value for whether you'd like to export threshold plots for each pass.
 #' @param save_all_linkage_results A TRUE or FALSE value for whether you'd like a list of all report data returned after all algorithms have been ran.
 #' @param collect_missing_data_indicators A TRUE or FALSE value for whether you'd like to have missing data indicators appear of the variables you're keeping as output.
+#' @param save_audit_performance A TRUE or FALSE value for whether you'd like to save the performance of each algorithm being ran for later auditing purposes.
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
@@ -926,7 +927,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          generate_algorithm_summary = FALSE,
                                          generate_threshold_plots = FALSE,
                                          save_all_linkage_results = FALSE,
-                                         collect_missing_data_indicators = FALSE){
+                                         collect_missing_data_indicators = FALSE,
+                                         save_audit_performance = FALSE){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -1001,6 +1003,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!isFALSE(collect_missing_data_indicators) && !is.na(collect_missing_data_indicators) && !is.null(collect_missing_data_indicators) &&
      (isTRUE(collect_missing_data_indicators) || collect_missing_data_indicators == "TRUE")){
     extra_params_list[["collect_missing_data_indicators"]] <- TRUE
+  }
+
+  ### Save Auditing Performance Measures
+  if(!isFALSE(save_audit_performance) && !is.na(save_audit_performance) && !is.null(save_audit_performance) &&
+     (isTRUE(save_audit_performance) || save_audit_performance == "TRUE")){
+    extra_params_list[["save_audit_performance"]] <- TRUE
   }
   #----------------------------------------------------------------------------#
 
