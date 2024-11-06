@@ -1044,7 +1044,7 @@ linkage_ui <- page_navbar(
       conditionalPanel(
         condition = "input.algorithm_specific_audits_rows_selected > 0",
         # View selected/saved algorithm performance
-        div(style = "display: flex; justify-content: center; align-items: center; width: 75%; margin: 0 auto;",
+        div(style = "display: flex; justify-content: center; align-items: center; width: 40%; margin: 0 auto;",
           card(
             full_screen = TRUE,
             height = 500,
@@ -4890,32 +4890,74 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     performance_measures_json <- audit_df$performance_measures_json[selected_row]
 
     # Convert the JSON to a data frame for manipulation
-    performance_measures_df <- jsonlite::fromJSON(performance_measures_json, simplifyDataFrame = TRUE)
+    performance_measures_list <- as.list(jsonlite::fromJSON(performance_measures_json))
 
-    print(performance_measures_df)
-    # LOOK AT DATASTAN TO GET THE CODE FOR CREATING UI FROM A FOR LOOP
+    # For each list value, add some 'help' text if it matches one of the name we expect
+    performance_measures_help <- c()
+    for(list_name in names(performance_measures_list)){
+      # Value for the help text
+      help_text <- ""
 
+      # If the name is "Linkage Rate":
+      if(list_name == "Linkage Rate"){
+        help_text <- paste0("The Linkage Rate is the percentage (%) of source records that were successfully linked to the opposite dataset.")
+      }
+      # If the name is "Time to Completion":
+      else if(list_name == "Time to Completion (s)"){
+        help_text <- paste0("The time that all passes took to complete in seconds.")
+      }
+      # If the name is "PPV":
+      else if(list_name == "PPV"){
+        help_text <- paste0("Positive Predictive Value (PPV) is the proportion (%) of predicted positive matches that are truly positive.")
+      }
+      # If the name is "NPV":
+      else if(list_name == "NPV"){
+        help_text <- paste0("Negative Predictive Value (NPV) is the proportion (%) of predicted negative matches that are truly negative.")
+      }
+      # If the name is "Sensitivity":
+      else if(list_name == "Sensitivity"){
+        help_text <- paste0("Sensitivity is the proportion (%) of positive matches the algorithm correctly identified.")
+      }
+      # If the name is "Specificity":
+      else if(list_name == "Specificity"){
+        help_text <- paste0("Specificity is the proportion (%) of negative matches the algorithm correctly identified.")
+      }
+      # If the name is "F1 Score":
+      else if(list_name == "F1 Score"){
+        help_text <- paste0("The F1 Score is a summary measure (%) of the performance of the predicitve ability on the postitive class. ",
+                            "It summarizes PPV and Sensitivity into a single number using a harmonic mean.")
+      }
+      # Otherwise, no help text is needed
+      else{
+        help_text <- ""
+      }
+
+      # Append the help text
+      performance_measures_help <- append(performance_measures_help, help_text)
+    }
+
+    # Render the UI output using 'lapply' to print out each list item
     output$selected_algorithm_performances_measures <- renderUI({
-      print("hi :)")
-      # num_fields <- input$number_of_record_priority_fields
-      #
-      # if(is.nan(num_fields) || is.na(num_fields) || num_fields <= 0){
-      #   showNotification("Error - Invalid Number of Record Priority Fields", type = "error", closeButton = FALSE)
-      #   return()
-      # }
-      #
-      # separator_inputs_list <- lapply(1:(num_fields), function(i) {
-      #   query_result <- dbGetQuery(metadata_connection, "SELECT * FROM categorical_values")
-      #
-      #   fluidRow(
-      #     column(width = 6, textInput(inputId = paste0("record_priority_input_value_", i),
-      #                                 label = paste0("Source Field Value ", i, ":"),
-      #                                 value = ""), align = "right"),
-      #     column(width = 6, numericInput(inputId = paste0("record_priority_output_value_", i),
-      #                                    label = paste0("Record Priority ", i, ":"),
-      #                                    value = NULL), align = "left")
-      #   )
-      # })
+      # Generate the performance measures list and return it
+      performance_measures_ui <- lapply(1:(length(performance_measures_list)), function(index){
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            # Label for the performance value
+            div(style = "margin-right: 10px;", HTML(paste0("<b>", names(performance_measures_list[index]), "</b>")))
+          )),
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            # Boxed text output for showing the uploaded file name
+            div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 250px",
+                paste0(performance_measures_list[[index]])
+            )
+          )),
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            # Help text for the performance measure
+            helpText(performance_measures_help[index], style = "width: 400px;")
+          )),
+          HTML("<br><br>")
+        )
+      })
     })
   })
 

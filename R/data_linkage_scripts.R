@@ -26,35 +26,77 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # Get the matching keys
         matching_keys_df <- get_matching_keys(linkage_metadata_db, iteration_id)
 
-        # Rename the fields of our blocking keys so that they match in both datasets
-        for(row_num in 1:nrow(blocking_keys_df)){
-          # Get the current row
+        ### BLOCKING CRITERIA
+        # Step 1: Rename fields in the right dataset to temporary names
+        for (row_num in 1:nrow(blocking_keys_df)) {
           row <- blocking_keys_df[row_num,]
-
-          # Get the left dataset field name (what we'll be renaming to)
-          left_dataset_field_name <- row$left_dataset_field
-
-          # Get the right dataset field name (what's being renamed)
           right_dataset_field_name <- row$right_dataset_field
+          temp_field_name <- paste0("temp_", right_dataset_field_name)
 
-          # Rename the right dataset field to match the field it's going to be matching with
-          names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+          # Rename the right dataset field to the temporary name
+          names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- temp_field_name
         }
 
-        # Rename the fields of our matching keys so that they match in both datasets
-        for(row_num in 1:nrow(matching_keys_df)){
-          # Get the current row
+        # Step 2: Now rename the temporary fields to the left dataset field names
+        for (row_num in 1:nrow(blocking_keys_df)) {
+          row <- blocking_keys_df[row_num,]
+          left_dataset_field_name <- row$left_dataset_field
+          temp_field_name <- paste0("temp_", row$right_dataset_field)
+
+          # Rename the temporary field to the desired left dataset field name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+        }
+
+        ### MATCHING CRITERIA
+        # Step 1: Rename fields in the right dataset to temporary names
+        for (row_num in 1:nrow(matching_keys_df)) {
           row <- matching_keys_df[row_num,]
-
-          # Get the left dataset field name (what we'll be renaming to)
-          left_dataset_field_name <- row$left_dataset_field
-
-          # Get the right dataset field name (what's being renamed)
           right_dataset_field_name <- row$right_dataset_field
+          temp_field_name <- paste0("temp_", right_dataset_field_name)
 
-          # Rename the right dataset field to match the field it's going to be matching with
-          names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+          # Rename the right dataset field to the temporary name
+          names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- temp_field_name
         }
+
+        # Step 2: Now rename the temporary fields to the left dataset field names
+        for (row_num in 1:nrow(matching_keys_df)) {
+          row <- matching_keys_df[row_num,]
+          left_dataset_field_name <- row$left_dataset_field
+          temp_field_name <- paste0("temp_", row$right_dataset_field)
+
+          # Rename the temporary field to the desired left dataset field name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+        }
+
+        # # Rename the fields of our blocking keys so that they match in both datasets
+        # for(row_num in 1:nrow(blocking_keys_df)){
+        #   # Get the current row
+        #   row <- blocking_keys_df[row_num,]
+        #
+        #   # Get the left dataset field name (what we'll be renaming to)
+        #   left_dataset_field_name <- row$left_dataset_field
+        #
+        #   # Get the right dataset field name (what's being renamed)
+        #   right_dataset_field_name <- row$right_dataset_field
+        #
+        #   # Rename the right dataset field to match the field it's going to be matching with
+        #   names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+        # }
+
+        # # Rename the fields of our matching keys so that they match in both datasets
+        # for(row_num in 1:nrow(matching_keys_df)){
+        #   # Get the current row
+        #   row <- matching_keys_df[row_num,]
+        #
+        #   # Get the left dataset field name (what we'll be renaming to)
+        #   left_dataset_field_name <- row$left_dataset_field
+        #
+        #   # Get the right dataset field name (what's being renamed)
+        #   right_dataset_field_name <- row$right_dataset_field
+        #
+        #   # Rename the right dataset field to match the field it's going to be matching with
+        #   names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+        # }
 
         # Go through the blocking variables, applying the linkage rules to each,
         # and storing the columns we'll be using to block on
@@ -859,35 +901,77 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # Get the matching keys
         matching_keys_df <- get_matching_keys(linkage_metadata_db, iteration_id)
 
-        # Rename the fields of our blocking keys so that they match in both datasets
-        for(row_num in 1:nrow(blocking_keys_df)){
-          # Get the current row
+        ### BLOCKING CRITERIA
+        # Step 1: Rename fields in the right dataset to temporary names
+        for (row_num in 1:nrow(blocking_keys_df)) {
           row <- blocking_keys_df[row_num,]
-
-          # Get the left dataset field name (what we'll be renaming to)
-          left_dataset_field_name <- row$left_dataset_field
-
-          # Get the right dataset field name (what's being renamed)
           right_dataset_field_name <- row$right_dataset_field
+          temp_field_name <- paste0("temp_", right_dataset_field_name)
 
-          # Rename the right dataset field to match the field it's going to be matching with
-          names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+          # Rename the right dataset field to the temporary name
+          names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- temp_field_name
         }
 
-        # Rename the fields of our matching keys so that they match in both datasets
-        for(row_num in 1:nrow(matching_keys_df)){
-          # Get the current row
+        # Step 2: Now rename the temporary fields to the left dataset field names
+        for (row_num in 1:nrow(blocking_keys_df)) {
+          row <- blocking_keys_df[row_num,]
+          left_dataset_field_name <- row$left_dataset_field
+          temp_field_name <- paste0("temp_", row$right_dataset_field)
+
+          # Rename the temporary field to the desired left dataset field name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+        }
+
+        ### MATCHING CRITERIA
+        # Step 1: Rename fields in the right dataset to temporary names
+        for (row_num in 1:nrow(matching_keys_df)) {
           row <- matching_keys_df[row_num,]
-
-          # Get the left dataset field name (what we'll be renaming to)
-          left_dataset_field_name <- row$left_dataset_field
-
-          # Get the right dataset field name (what's being renamed)
           right_dataset_field_name <- row$right_dataset_field
+          temp_field_name <- paste0("temp_", right_dataset_field_name)
 
-          # Rename the right dataset field to match the field it's going to be matching with
-          names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+          # Rename the right dataset field to the temporary name
+          names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- temp_field_name
         }
+
+        # Step 2: Now rename the temporary fields to the left dataset field names
+        for (row_num in 1:nrow(matching_keys_df)) {
+          row <- matching_keys_df[row_num,]
+          left_dataset_field_name <- row$left_dataset_field
+          temp_field_name <- paste0("temp_", row$right_dataset_field)
+
+          # Rename the temporary field to the desired left dataset field name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+        }
+
+        # # Rename the fields of our blocking keys so that they match in both datasets
+        # for(row_num in 1:nrow(blocking_keys_df)){
+        #   # Get the current row
+        #   row <- blocking_keys_df[row_num,]
+        #
+        #   # Get the left dataset field name (what we'll be renaming to)
+        #   left_dataset_field_name <- row$left_dataset_field
+        #
+        #   # Get the right dataset field name (what's being renamed)
+        #   right_dataset_field_name <- row$right_dataset_field
+        #
+        #   # Rename the right dataset field to match the field it's going to be matching with
+        #   names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+        # }
+
+        # # Rename the fields of our matching keys so that they match in both datasets
+        # for(row_num in 1:nrow(matching_keys_df)){
+        #   # Get the current row
+        #   row <- matching_keys_df[row_num,]
+        #
+        #   # Get the left dataset field name (what we'll be renaming to)
+        #   left_dataset_field_name <- row$left_dataset_field
+        #
+        #   # Get the right dataset field name (what's being renamed)
+        #   right_dataset_field_name <- row$right_dataset_field
+        #
+        #   # Rename the right dataset field to match the field it's going to be matching with
+        #   names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+        # }
 
         # Go through the blocking variables, applying the linkage rules to each,
         # and storing the columns we'll be using to block on
@@ -1084,7 +1168,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # started on the pairs, beginning with blocking keys
 
         #-- STEP 1: GENERATE PAIRS --#
-
         # Block on our first pair of keys, and if we have any more, then bind the rest
         linkage_pairs <- pair_blocking(left_dataset, right_dataset, on = blocking_keys_pairs[[1]])
 
