@@ -566,14 +566,14 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Add this column as one we will be removing
       cols_to_drop <- append(cols_to_drop, old_field_name)
     }
-    # POSTAL CODE (TAKE FIRST CHARACTER)
+    # POSTAL CODE INITIAL (TAKE FIRST CHARACTER)
     else if(field_type == 4){
       # Get the field name (appending an identifiable suffix to the column)
       old_field_name <- field_info$field_name
       new_field_name <- paste0(old_field_name, "_initial_categ")
 
       # Apply the substring function to the postal code field
-      output_df[[new_field_name]] <- substr(output_df[[old_field_name]], 1, 3)
+      output_df[[new_field_name]] <- substr(trimws(output_df[[old_field_name]]), 1, 1)
 
       # Apply the column label
       label(output_df[[new_field_name]]) <- field_label
@@ -677,6 +677,53 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Use the function to standardize the names
       standardized_field_values <- ifelse(!is.na(standardize_field(standardization_df_input, output_df, old_field_name)),
                                             standardize_field(standardization_df_input, output_df, old_field_name), "Other")
+      output_df[[new_field_name]] <- standardized_field_values
+
+      # Apply the column label
+      label(output_df[[new_field_name]]) <- field_label
+
+      # Add this column as one we will be removing
+      cols_to_drop <- append(cols_to_drop, old_field_name)
+    }
+    # FORWARD SORTATION AREA (GEOGRAPHIC AREA STANDARDIZATION)
+    else if(field_type == 9){
+      # Get the field name (appending an identifiable suffix to the column)
+      old_field_name <- field_info$field_name
+      new_field_name <- paste0(old_field_name, "_standardized_categ")
+
+      # Apply the substring function to the postal code field
+      output_df[[new_field_name]] <- substr(trimws(output_df[[old_field_name]]), 1, 1)
+
+      # Create a function for standardizing the field
+      standardize_field <- function(output_df, field_name){
+        # Create the standardization data frame of values and their areas
+        standardization_df <- data.frame(
+          unique = c("A", "B", "C", "E",
+                     "G", "H", "J", "K",
+                     "L", "M", "N", "P",
+                     "R", "S", "T", "V",
+                     "X", "Y", ""),
+          common = c("Newfoundland and Labrador", "Nova Scotia", "Prince Edward Island", "New Brunswick",
+                     "Eastern Quebec", "Metropolitan Montreal", "Western Quebec", "Eastern Ontario",
+                     "Central Ontario", "Metropolitan Toronto", "Southwestern Ontario", "Northern Ontario",
+                     "Manitoba", "Saskatchewan", "Alberta", "British Columbia",
+                     "Northwest Territories/Nunavut", "Yukon", "Missing")
+        )
+
+        # Get the possible values that the field could be
+        common_standardized_values <- standardization_df$common
+
+        # Determine which values they map to
+        names(common_standardized_values) <- tolower(standardization_df$unique)
+        standardized_values <- standardization_df$common[match(unlist(output_df[[field_name]]), standardization_df$unique)]
+
+        # Return the values
+        return(standardized_values)
+      }
+
+      # Use the function to standardize the names
+      standardized_field_values <- ifelse(!is.na(standardize_field(output_df, new_field_name)),
+                                          standardize_field(output_df, new_field_name), "Other")
       output_df[[new_field_name]] <- standardized_field_values
 
       # Apply the column label

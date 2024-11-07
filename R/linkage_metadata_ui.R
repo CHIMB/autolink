@@ -1685,11 +1685,12 @@ linkage_ui <- page_navbar(
                     choices = list("Generic/Pass-Through" = 1,
                                    "Date" = 2,
                                    "Age" = 3,
-                                   "Postal Code" = 4,
+                                   "Postal Code Initials" = 4,
                                    "Name Length" = 5,
                                    "Number of Names" = 6,
                                    "Derived Age" = 7,
-                                   "Standardized Values" = 8),
+                                   "Standardized Values" = 8,
+                                   "Forward Sortation Area (FSA)" = 9),
                     selected = 1,
                     width = validateCssUnit(500)),
                   )
@@ -5585,11 +5586,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df$field_type[df$field_type == 1]  <- 'General/Pass-Through'
     df$field_type[df$field_type == 2]  <- 'Date'
     df$field_type[df$field_type == 3]  <- 'Age'
-    df$field_type[df$field_type == 4]  <- 'Postal Code'
+    df$field_type[df$field_type == 4]  <- 'Postal Code Initials'
     df$field_type[df$field_type == 5]  <- 'Name Length'
     df$field_type[df$field_type == 6] <- 'Number of Names'
     df$field_type[df$field_type == 7]  <- 'Derived Age'
     df$field_type[df$field_type == 8] <- 'Standardized Values'
+    df$field_type[df$field_type == 9] <- 'Forward Sortation Area (FSA)'
 
     # With our data frame, we'll rename some of the columns to look better
     names(df)[names(df) == 'field_name'] <- 'Field Source Name(s)'
@@ -5705,7 +5707,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         )
       })
     }
-    # FIELD TYPE == 1, 2, 3, 4, 5, 6 (Only requires one input)
+    # FIELD TYPE == 1, 2, 3, 4, 5, 6, 9 (Only requires one input)
     else{
       # All other field types require just the input field
       output$linkage_algorithm_output_field_input <- renderUI({
