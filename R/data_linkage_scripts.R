@@ -2059,7 +2059,12 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         #-- STEP 3: CREATE THE MACHINE LEARNING MODEL --#
         # Before constructing our machine learning model, we'll need to make a formula
-        linkage_formula <- as.formula(paste("~", paste(matching_keys, collapse = " + ")))
+        if(has_ground_truth){
+          linkage_formula <- as.formula(paste("truth ~", paste(matching_keys, collapse = " + ")))
+        }
+        else{
+          linkage_formula <- as.formula(paste("~", paste(matching_keys, collapse = " + ")))
+        }
 
         # Afterwards, construct the model using glm()
         ml_model <- glm(linkage_formula, data = linkage_pairs, family = binomial())
@@ -2067,7 +2072,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         #-- STEP 4: APPLY THE MODEL TO OUR PAIRS --#
         # Apply the model and see what probabilities we obtain
-        linkage_pairs[, prob := predict(ml_model, type = "response", newdata = linkage_pairs)]
+        suppressWarnings(linkage_pairs[, prob := predict(ml_model, type = "response", newdata = linkage_pairs)])
 
         # Get the acceptance threshold for this iteration
         acceptance_threshold <- get_acceptence_thresholds(linkage_metadata_db, iteration_id)
@@ -2078,11 +2083,110 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           probability <- acceptance_threshold[["ml_probability"]]
 
           # Apply the probability
-          selected_pairs[, selected := prob > probability]
+          linkage_pairs[, selected := prob > probability]
         }
         else{
-          # FIGURE OUT WHAT TO DO IF THE USER DOES NOT KNOW WHAT PROBABILITY TO SELECT YET (I.e., plots, images, etc)
-          return()
+          # Create a list of plots and captions that we'll return
+          plot_list <- list()
+          plot_caps_list <- c()
+
+          # Get the pass name
+          iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
+
+          # Create the first plot of all candidate pair records
+          candidate_weights_plot <- ggplot(linkage_pairs, mapping = aes(prob)) +
+            geom_histogram(binwidth = 0.05, fill = "gray", colour = "black") +
+            labs(x = "Weight", y = "Frequency") +
+            theme_minimal(base_size = 8) +
+            # Set the entire background white with a black border
+            theme(
+              plot.background = element_rect(fill = "white", color = "black", size = 1),
+              panel.background = element_rect(fill = "white", color = "black"),
+              panel.grid = element_blank(), # Remove gridlines
+              axis.line = element_line(color = "black"), # Black axis lines
+              axis.ticks = element_line(color = "black"),
+              legend.background = element_rect(fill = "white", color = "black"),
+              legend.position = "bottom"
+            )
+          algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
+          iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
+          plot_list[["candidate_weights_plot"]] <- candidate_weights_plot
+          caption <- paste0("Probability distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, ".")
+          plot_caps_list <- append(plot_caps_list, caption)
+
+          # Create the second plot of the subset of candidate pair records (IF GROUND TRUTH IS PROVIDED)
+          ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+          if(nrow(ground_truth_df) > 0){
+            # Rename the fields of our ground truth keys so that they match in both datasets
+            for(row_num in 1:nrow(ground_truth_df)){
+              # Get the current row
+              row <- ground_truth_df[row_num,]
+
+              # Get the left dataset field name (what we'll be renaming to)
+              left_dataset_field_name <- row$left_dataset_field
+
+              # Get the right dataset field name (what's being renamed)
+              right_dataset_field_name <- row$right_dataset_field
+
+              # Rename the right dataset field to match the field it's going to be matching with
+              names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+            }
+
+            # Get the left fields
+            left_ground_truth_fields <- ground_truth_df$left_dataset_field
+
+            # Get the right fields
+            right_ground_truth_fields <- ground_truth_df$right_dataset_field
+
+            # Compare variables to get the truth
+            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+
+            # Filter out pairs with missing ground truth
+            linkage_pairs_non_missing <- linkage_pairs[!is.na(linkage_pairs$truth),] # Works for now, more testing should be done
+
+            # Add a "Match Type" column to identify what we color the plot as
+            linkage_pairs_non_missing$match_type <- ifelse(linkage_pairs_non_missing$truth == TRUE, "Match", "Miss")
+
+            # Create the histogram, coloring based on match type
+            candidate_weights_plot_gt <- ggplot(linkage_pairs_non_missing, aes(x = prob, fill = match_type)) +
+              geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
+              scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+              labs(x = "Weight", y = "Frequency") +
+              theme_minimal(base_size = 8) +
+              # Set the entire background white with a black border
+              theme(
+                plot.background = element_rect(fill = "white", color = "black", size = 1),
+                panel.background = element_rect(fill = "white", color = "black"),
+                panel.grid = element_blank(), # Remove gridlines
+                axis.line = element_line(color = "black"), # Black axis lines
+                axis.ticks = element_line(color = "black"),
+                legend.background = element_rect(fill = "white", color = "black"),
+                legend.position = "bottom"
+              )
+            algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
+            iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
+            ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
+            caption <- paste0("Probability distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
+                              "matching and non-matching ground truth fields (", ground_truth_fields, ").")
+            plot_list[["candidate_weights_plot_ground_truth"]] <- candidate_weights_plot_gt
+            plot_caps_list <- append(plot_caps_list, caption)
+          }
+
+          # Create a list of return parameters
+          return_list <- list()
+
+          ### Get the linked indices
+          return_list[["linked_indices"]] <- NA
+
+          ### Returned the greedy select dataset
+          return_list[["unlinked_dataset_pairs"]] <- linkage_pairs
+
+          ### Returned the plot list
+          return_list[["threshold_plots"]] <- plot_list
+
+          ### Returned the plot captions
+          return_list[["plot_captions"]] <- plot_caps_list
+          return(return_list)
         }
         #------------------------------------------#
 
@@ -2177,7 +2281,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         if("ml_probability" %in% names(acceptance_threshold)){
           acceptance_threshold <- acceptance_threshold[["ml_probability"]]
           # Create a histogram of the posterior thresholds with the decision boundary
-          decision_boundary <- ggplot(linkage_pairs, aes(x = mpost, fill = selected_label)) +
+          decision_boundary <- ggplot(linkage_pairs, aes(x = prob, fill = selected_label)) +
             geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
             scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
             labs(x = "Probability", y = "Frequency") +
@@ -2198,7 +2302,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             )
           algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
           ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
-          caption <- paste0("Posterior distribution of ", trimws(iteration_name), "'s linked pairs for ", algorithm_name, " with the selected probability acceptance threshold",
+          caption <- paste0("Probability distribution of ", trimws(iteration_name), "'s linked pairs for ", algorithm_name, " with the selected probability acceptance threshold",
                             " of ", acceptance_threshold, ".")
           plot_list[["decision_boundary_plot"]] <- decision_boundary
           plot_caps_list <- append(plot_caps_list, caption)
@@ -2217,30 +2321,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         ### Return our list of return values
         return(return_list)
         #--------------------------#
-
-        # ### STEPS FROM FAHIM'S ML ALGORITHM BELOW:
-        # # Step 1: Blocking
-        # pairs <- pair_blocking(data1, data2, on=c("SCAN_DATE","DATE_OF_BIRTH_Month","ln_1"))
-        #
-        # # Step 2: Comparing
-        # compare_pair<-compare_pairs(pairs, on = c("FIRST_NAME","LAST_NAME","DATE_OF_BIRTH_Year","DATE_OF_BIRTH_Day","POSTAL_CODE","GENDER"),
-        #                             comparator = list(LAST_NAME = cmp_jarowinkler(0.95),LAST_NAME = cmp_jarowinkler(0.9)), inplace = TRUE)
-        #
-        # selected_pairs<- compare_vars(compare_pair,type='all',"PHIN_match",on_x="label",on_y="label")
-        #
-        # # Step 3: Creating the model
-        # selected_model<- glm(PHIN_match ~ FIRST_NAME+LAST_NAME+DATE_OF_BIRTH_Year+DATE_OF_BIRTH_Day+POSTAL_CODE+GENDER, data = selected_pairs, family = binomial())
-        # summary(selected_model)
-        #
-        # # Step 4: Add the prediction to our pairs
-        # selected_pairs[, prob := predict(selected_model, type = "response", newdata = selected_pairs)]
-        # selected_pairs[, select := prob > 0.5]
-        #
-        # # Step 5: Link the dataset
-        # linked_data_set <- link(selected_pairs, selection = "select", keep_from_pairs = c(".x", ".y","prob"))
-        # nrow(linked_data_set)
-        #
-        # table(selected_pairs$select > 0.5, selected_pairs$PHIN_match)
       }
     }
   )
@@ -3194,13 +3274,21 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
               # Get the blocking variables
               blocking_fields_df <- get_blocking_keys(linkage_metadata_db, tested_iteration_id)
-              blocking_fields <- paste(blocking_fields_df$left_dataset_field, collapse = ", ")
+              # Clean the blocking variable name
+              cleaned_blocking_fields <- str_replace_all(blocking_fields_df$left_dataset_field, "[[:punct:]]", " ") # Remove punctuation
+              cleaned_blocking_fields <- str_to_title(cleaned_blocking_fields) # Set to title-case
+              blocking_fields         <- paste(cleaned_blocking_fields, collapse = ", ")
 
               # Get the matching variables
               matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
                               JOIN dataset_fields on field_id = left_dataset_field_id
                               WHERE iteration_id =', tested_iteration_id)
               matching_df <- dbGetQuery(linkage_metadata_db, matching_query)
+
+              # Clean the matching variable name
+              cleaned_name <- str_replace_all(matching_df$field_name, "[[:punct:]]", " ") # Remove punctuation
+              cleaned_name <- str_to_title(cleaned_name) # Set to title-case
+              matching_df$field_name <- cleaned_name
 
               # Loop through each matching variable to get its comparison methods
               for(j in 1:nrow(matching_df)){

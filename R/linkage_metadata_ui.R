@@ -659,103 +659,88 @@ linkage_ui <- page_navbar(
 
           HTML("<br>"), # White space
 
-          div(style = "display: flex; justify-content: center; align-items: center;",
+          # Column layout for all buttons
+          layout_column_wrap(
+            width = 1/4,
+            height = 250,
+            heights_equal = "all",
+
+            # Card for Regenerating Linkage Reports
             card(
-              width = 1,
-              height = 125,
               full_screen = FALSE,
-              card_header("Regenerate Linkage Report for the Successfully Ran Algorithm", class = 'bg-dark'),
+              card_header("Regenerate Linkage Report Page", class = 'bg-dark'),
               card_body(
                 fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("go_to_regenerate_report", "Regenerate Report", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 65px",
+                      actionButton("go_to_regenerate_report", "Regenerate Report", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
                     )
-                  ),
-                ),
+                  )
+                )
               )
-            )
-          ),
+            ),
 
-          HTML("<br>"), # White space
-
-          # CARD FOR ARCHIVING AND PUBLISHING ALGORITHMS
-          div(style = "display: flex; justify-content: center; align-items: center;",
+            # CARD FOR ARCHIVING AND PUBLISHING ALGORITHMS
             card(
-              width = 1,
-              height = 125,
               full_screen = FALSE,
               card_header("Archive or Publish Selected Algorithm", class = 'bg-dark'),
               card_body(
                 fluidRow(
-                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
                       actionButton("archive_algorithm", "Archive Selected Algorithm", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("box-archive")),
                     )
                   ),
-                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
                       actionButton("publish_algorithm", "Publish Selected Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("scroll")),
                     )
                   )
-                ),
+                )
               )
-            )
-          ),
+            ),
 
-          HTML("<br>"), # White space
-
-          # Create a card for the buttons
-          div(style = "display: flex; justify-content: center; align-items: center;",
+            # Create a card for the buttons
             card(
-              width = 1,
-              height = 125,
               full_screen = FALSE,
-              card_header("View/Edit Algorithm Iteration Specific Information", class = 'bg-dark'),
+              card_header("Modify Algorithm Iteration Information", class = 'bg-dark'),
               card_body(
                 fluidRow(
-                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                       actionButton("toggle_algorithm", "Set as Default Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-on")),
                     )
                   ),
-
-                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
                       actionButton("toggle_algorithm_for_testing", "Toggle for Testing", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-off")),
                     )
                   ),
-                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
                       actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("list")),
                     )
-                  ),
-                ),
+                  )
+                )
               )
-            )
-          ),
+            ),
 
-          HTML("<br>"), # White space
-
-          # Create a card for editing/viewing algorithm output information
-          div(style = "display: flex; justify-content: center; align-items: center;",
+            # Create a card for editing/viewing algorithm output information
             card(
-              width = 1,
-              height = 125,
               full_screen = FALSE,
-              card_header("View/Edit Algorithm Output Information", class = 'bg-dark'),
+              card_header("Modify Algorithm Output Information", class = 'bg-dark'),
               card_body(
                 fluidRow(
-                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                       actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("square-check")),
                     )
                   ),
-                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
                       actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("file-export")),
                     )
                   ),
-                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
                       actionButton("linkage_algorithms_to_audits", "Saved Performance Measures", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
                     )
                   )
                 )
               )
             )
-          )
+          ),
         ),
 
         # Line break to separate the table and new algorithm input
@@ -901,6 +886,24 @@ linkage_ui <- page_navbar(
       # Conditional panel for if a row was selected
       conditionalPanel(
         condition = "input.archived_linkage_algorithms_rows_selected > 0",
+
+        # Table for showing the algorithm details (so the user does not need to restore the algorithm first)
+        h5(strong("Details of selected algorithm")),
+        fluidRow(
+          # Card for the data table
+          card(
+            full_screen = TRUE,
+            height = 500,
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.9vw;",
+              dataTableOutput("archived_linkage_algorithms_details"),
+            )),
+          )
+        ),
+
+        # Line break
+        HTML("<br>"),
+
+        # Button for restoring the algorithm
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
             actionButton("restore_linkage_algorithm", "Restore Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
@@ -945,6 +948,21 @@ linkage_ui <- page_navbar(
       # Conditional panel for if a row WAS selected
       conditionalPanel(
         condition = "input.published_linkage_algorithms_rows_selected > 0",
+
+        # Table for showing the algorithm details (so the user does not need to restore the algorithm first)
+        h5(strong("Details of selected algorithm")),
+        fluidRow(
+          # Card for the data table
+          card(
+            full_screen = TRUE,
+            height = 500,
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.9vw;",
+              dataTableOutput("published_linkage_algorithms_details"),
+            )),
+          )
+        ),
+
+        # Un-publish button
         fluidRow(
           column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
             actionButton("unpublish_linkage_algorithm", "Unpublish Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
@@ -1668,51 +1686,96 @@ linkage_ui <- page_navbar(
       h6(p(strong("NOTE: "), "No duplicate fields allowed.")),
       dataTableOutput("currently_added_algorithm_output_fields"),
 
-      # If no row is selected, the user can enter a new output field + type
+      # Line break
+      HTML("<br>"),
+
+      # If no row is selected, the user can enter a new output field + type OR use another algorithms output fields
       conditionalPanel(
         condition = "input.currently_added_algorithm_output_fields_rows_selected <= 0",
 
-        # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
-        layout_column_wrap(
-          width = 1/2,
-          height = 550,
-          # CARD FOR SELECTING THE FIELD TYPE
-          card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
-            fluidPage(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    selectInput("linkage_algorithm_output_field_type", label = "Field Type:",
-                    choices = list("Generic/Pass-Through" = 1,
-                                   "Date" = 2,
-                                   "Age" = 3,
-                                   "Postal Code Initials" = 4,
-                                   "Name Length" = 5,
-                                   "Number of Names" = 6,
-                                   "Derived Age" = 7,
-                                   "Standardized Values" = 8,
-                                   "Forward Sortation Area (FSA)" = 9),
-                    selected = 1,
-                    width = validateCssUnit(500)),
-                  )
-                ),
-              )
+        # Select between manually adding output fields, or use an existing algorithms output fields
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              radioButtons("algorithm_output_add_type", strong("Select Output Field Add Type:"),
+                           c("Manually Add Output Fields" = 1,
+                             "Use Existing Algorithms Output Fields" = 2),
+                           width = validateCssUnit(500))
             )
           ),
-          # CARD FOR THE INPUT UI
-          card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+        ),
+
+        # If the user would like to manually add output fields:
+        conditionalPanel(
+          condition = 'input.algorithm_output_add_type == 1',
+
+          # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
+          layout_column_wrap(
+            width = 1/2,
+            height = 550,
+            # CARD FOR SELECTING THE FIELD TYPE
+            card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+              fluidPage(
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      selectInput("linkage_algorithm_output_field_type", label = "Field Type:",
+                      choices = list("Generic/Pass-Through" = 1,
+                                     "Date" = 2,
+                                     "Age" = 3,
+                                     "Postal Code Initials" = 4,
+                                     "Name Length" = 5,
+                                     "Number of Names" = 6,
+                                     "Derived Age" = 7,
+                                     "Standardized Values" = 8,
+                                     "Forward Sortation Area (FSA)" = 9),
+                      selected = 1,
+                      width = validateCssUnit(500)),
+                    )
+                  ),
+                )
+              )
+            ),
+            # CARD FOR THE INPUT UI
+            card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+              fluidPage(
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
+                                    width = validateCssUnit(500), resize = "none"),
+                    )
+                  ),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      uiOutput("linkage_algorithm_output_field_input"),
+                    )
+                  ),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("add_linkage_algorithm_output_field", "Add Output Field", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                    )
+                  )
+                )
+              )
+            ),
+          )
+        ),
+
+        # If the user would like to use a previous algorithms output fields
+        conditionalPanel(
+          condition = 'input.algorithm_output_add_type == 2',
+
+          # CARD FOR SELECTING THE FIELD TYPE
+          card(full_screen = TRUE, card_header("Use Existing Algorithm's Output Fields", class = 'bg-dark'),
+          height = 600,
             fluidPage(
               fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
+                    uiOutput("usable_previous_algorithm_outputs")
                   )
                 ),
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    uiOutput("linkage_algorithm_output_field_input"),
+                    dataTableOutput("selected_algorithm_output_fields")
                   )
                 ),
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("add_linkage_algorithm_output_field", "Add Output Field", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                    actionButton("use_selected_algorithms_fields", "Use Selected Algorithm's Output Fields", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("plus")),
                   )
                 )
               )
@@ -1728,7 +1791,7 @@ linkage_ui <- page_navbar(
         div(style = "display: flex; justify-content: center; align-items: center;",
           card(width = 0.25, max_height = 125, full_screen = FALSE, card_header("Drop Linkage Output Fields", class = 'bg-dark'),
             fluidPage(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                   actionButton("drop_linkage_algorithm_output_field", "Drop Output Field", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
                 )
               )
@@ -3536,7 +3599,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Create a new entry query for entering into the database
     #----#
     new_entry_query <- paste("INSERT INTO linkage_methods (implementation_name, technique_label, implementation_desc, version)",
-                             "VALUES(?, ?, ?);")
+                             "VALUES(?, ?, ?, ?);")
     new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
     dbBind(new_entry, list(implementation_name, technique_label, implementation_desc, implementation_vers))
     dbClearResult(new_entry)
@@ -4063,6 +4126,25 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
     updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
 
+    # Update the available previous algorithms output fields table
+    output$usable_previous_algorithm_outputs <- renderUI({
+      # Perform query using linkage_metadata_conn
+      query_result <- dbGetQuery(linkage_metadata_conn, paste("SELECT * from linkage_algorithms WHERE dataset_id_left =", left_dataset_id,
+                                                              "AND dataset_id_right =", right_dataset_id,
+                                                              "AND algorithm_id !=", algorithm_id))
+
+      # Extract columns from query result
+      choices <- setNames(query_result$algorithm_id, query_result$algorithm_name)
+
+      # Create select input with dynamic choices
+      span(selectizeInput("previous_algorithm_output_ids", label = "Algorithm's Output Fields to Use:",
+        choices = choices, multiple = FALSE, width = validateCssUnit(500),
+        options = list(
+          placeholder = "Select the Previously Used Algorithm's Output Fields",
+          onInitialize = I('function() { this.setValue(""); }')
+        )))
+    })
+
     # Show the iterations page
     nav_show('main_navbar', 'linkage_algorithm_output_page')
     updateNavbarPage(session, "main_navbar", selected = "linkage_algorithm_output_page")
@@ -4379,6 +4461,162 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     get_archived_linkage_algorithms()
   })
 
+  # Observes which row the user selected and shows the selected algorithms info
+  observeEvent(input$archived_linkage_algorithms_rows_selected, {
+    # Get the selected row
+    selected_row <- input$archived_linkage_algorithms_rows_selected
+
+    # Make sure the row is not null
+    if(is.null(selected_row)) return()
+
+    # If not null, get the selected algorithm ID
+    query <- paste('SELECT * FROM linkage_algorithms
+                    WHERE dataset_id_left =', archived_algorithms_left_dataset_id, ' AND dataset_id_right =', archived_algorithms_right_dataset_id,
+                   'AND archived = 1 AND published = 0',
+                   'ORDER BY algorithm_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+    algorithm_id <- df[selected_row, "algorithm_id"]
+
+    # Render the table
+    output$archived_linkage_algorithms_details <- renderDataTable({
+      # Query to get all linkage method information from the 'linkage_methods' table
+      query <- paste('SELECT * FROM linkage_iterations
+                WHERE algorithm_id =', algorithm_id,
+                     'ORDER BY iteration_num ASC;')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+
+      # Loop through each row in the dataframe to replace the acceptance_rule_id with the method name and parameters & the linkage method
+      if(nrow(df) > 0){
+        for (i in 1:nrow(df)) {
+          # Get the acceptance_rule_id for the current row
+          acceptance_rule_id <- df$acceptance_rule_id[i]
+          if (nrow(df) > 0 && !is.na(acceptance_rule_id)) {
+            # Query to get the acceptance method name from the acceptance_rules table
+            method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                             WHERE acceptance_rule_id =', acceptance_rule_id)
+            method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+            # Query to get the associated parameters for the acceptance_rule_id
+            params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+            params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+            # Combine the parameters into a string
+            params_str <- paste(params_df$parameter, collapse = ", ")
+
+            # Create the final string "method_name (key1=value1, key2=value2)"
+            method_with_params <- paste0(method_name, " (", params_str, ")")
+
+            # Replace the acceptance_rule_id with the method and parameters string
+            df$acceptance_rule_id[i] <- method_with_params
+          }
+
+          # Get the linkage_method_id for the current row
+          linkage_method_id <- df$linkage_method_id[i]
+          if (nrow(df) > 0 && !is.na(linkage_method_id)){
+            # Query to get the linkage method
+            method_query <- paste('SELECT technique_label, implementation_name FROM linkage_iterations li
+                             JOIN linkage_methods lm on li.linkage_method_id = lm.linkage_method_id
+                             WHERE lm.linkage_method_id =', linkage_method_id)
+            method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+            # Create a string with the implementation name and label together
+            linkage_method_and_technique <- paste0(method_df$implementation_name, " (", method_df$technique_label, ")")
+
+            # Replace the linkage method ID with the string
+            suppressWarnings(df$linkage_method_id[i] <- linkage_method_and_technique)
+          }
+
+          # Get the iteration_id for the current row
+          iteration_id <- df$iteration_id[i]
+
+          # Query to get blocking LEFT fields
+          blocking_query <- paste('SELECT field_name FROM blocking_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', iteration_id)
+          blocking_fields <- dbGetQuery(linkage_metadata_conn, blocking_query)$field_name
+          blocking_left_fields <- paste(blocking_fields, collapse = ", ")
+
+          # Add blocking fields to the dataframe
+          df$blocking_left_fields[i] <- blocking_left_fields
+
+          # Query to get matching LEFT fields
+          matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', iteration_id)
+          matching_df <- dbGetQuery(linkage_metadata_conn, matching_query)
+
+          # Loop through each matching variable to get its comparison methods
+          for(j in 1:nrow(matching_df)){
+            # Get the comparison_rule_id for this row
+            comparison_rule_id <- matching_df$comparison_rule_id[j]
+            if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
+              # Query to get the acceptance method name from the comparison_rules table
+              method_query <- paste('SELECT method_name FROM comparison_rules cr
+                             JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                             WHERE comparison_rule_id =', comparison_rule_id)
+              method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+              # Query to get the associated parameters for the comparison_rule_id
+              params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+              params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+              # Combine the parameters into a string
+              params_str <- paste(params_df$parameter, collapse = ", ")
+
+              # Create the final string "method_name (key1=value1, key2=value2)"
+              method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+
+              # Replace the comparison_rule_id with the method and parameters string
+              matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+            }
+          }
+
+          matching_fields <- matching_df$field_name
+          matching_left_fields <- paste(matching_fields, collapse = ", ")
+
+          # Add blocking fields to the dataframe
+          df$matching_left_fields[i] <- matching_left_fields
+        }
+      }
+      else{
+        # Create an empty data frame if no iterations exist
+        df <- data.frame(
+          algorithm_id = numeric(),
+          iteration_id = numeric(),
+          iteration_name = character(),
+          iteration_num = numeric(),
+          modified_date = character(),
+          modified_by = character(),
+          enabled = numeric(),
+          linkage_method_id = numeric(),
+          acceptance_rule_id = numeric(),
+          blocking_left_fields = character(),
+          matching_left_fields = character(),
+          standardization_file_id = numeric()
+        )
+      }
+
+      # With our data frame, we'll rename some of the columns to look better
+      names(df)[names(df) == 'iteration_name'] <- 'Iteration Name'
+      names(df)[names(df) == 'iteration_num'] <- 'Iteration Order'
+      names(df)[names(df) == 'linkage_method_id'] <- 'Linkage Method'
+      names(df)[names(df) == 'acceptance_rule_id'] <- 'Acceptance Rules'
+      names(df)[names(df) == 'blocking_left_fields'] <- 'Blocking Keys'
+      names(df)[names(df) == 'matching_left_fields'] <- 'Matching Keys'
+
+      # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
+      df <- subset(df, select = -c(algorithm_id, iteration_id, standardization_file_id, modified_date, modified_by, enabled))
+
+      # Reorder the columns so that 'Blocking Keys' and 'Matching Keys' come after 'Linkage Method'
+      df <- df[, c('Iteration Name', 'Iteration Order', 'Linkage Method', 'Blocking Keys', 'Matching Keys',
+                   'Acceptance Rules')]
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'none', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+    })
+  })
+
   # Allow for un-archiving the selected algorithm
   observeEvent(input$restore_linkage_algorithm, {
     # Get the row that we're supposed to be toggling
@@ -4515,6 +4753,162 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   # Render the data table for all published linkage algorithms of the desired 2 datasets
   output$published_linkage_algorithms <- renderDataTable({
     get_published_linkage_algorithms()
+  })
+
+  # Observes which row the user selected and shows the selected algorithms info
+  observeEvent(input$published_linkage_algorithms_rows_selected, {
+    # Get the selected row
+    selected_row <- input$published_linkage_algorithms_rows_selected
+
+    # Make sure the row is not null
+    if(is.null(selected_row)) return()
+
+    # If not null, get the selected algorithm ID
+    query <- paste('SELECT * FROM linkage_algorithms
+                    WHERE dataset_id_left =', published_algorithms_left_dataset_id, ' AND dataset_id_right =', published_algorithms_right_dataset_id,
+                   'AND archived = 0 AND published = 1',
+                   'ORDER BY algorithm_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+    algorithm_id <- df[selected_row, "algorithm_id"]
+
+    # Render the table
+    output$published_linkage_algorithms_details <- renderDataTable({
+      # Query to get all linkage method information from the 'linkage_methods' table
+      query <- paste('SELECT * FROM linkage_iterations
+                WHERE algorithm_id =', algorithm_id,
+                     'ORDER BY iteration_num ASC;')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+
+      # Loop through each row in the dataframe to replace the acceptance_rule_id with the method name and parameters & the linkage method
+      if(nrow(df) > 0){
+        for (i in 1:nrow(df)) {
+          # Get the acceptance_rule_id for the current row
+          acceptance_rule_id <- df$acceptance_rule_id[i]
+          if (nrow(df) > 0 && !is.na(acceptance_rule_id)) {
+            # Query to get the acceptance method name from the acceptance_rules table
+            method_query <- paste('SELECT method_name FROM acceptance_rules ar
+                             JOIN acceptance_methods am on ar.acceptance_method_id = am.acceptance_method_id
+                             WHERE acceptance_rule_id =', acceptance_rule_id)
+            method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+            # Query to get the associated parameters for the acceptance_rule_id
+            params_query <- paste('SELECT parameter FROM acceptance_rules_parameters WHERE acceptance_rule_id =', acceptance_rule_id)
+            params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+            # Combine the parameters into a string
+            params_str <- paste(params_df$parameter, collapse = ", ")
+
+            # Create the final string "method_name (key1=value1, key2=value2)"
+            method_with_params <- paste0(method_name, " (", params_str, ")")
+
+            # Replace the acceptance_rule_id with the method and parameters string
+            df$acceptance_rule_id[i] <- method_with_params
+          }
+
+          # Get the linkage_method_id for the current row
+          linkage_method_id <- df$linkage_method_id[i]
+          if (nrow(df) > 0 && !is.na(linkage_method_id)){
+            # Query to get the linkage method
+            method_query <- paste('SELECT technique_label, implementation_name FROM linkage_iterations li
+                             JOIN linkage_methods lm on li.linkage_method_id = lm.linkage_method_id
+                             WHERE lm.linkage_method_id =', linkage_method_id)
+            method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+            # Create a string with the implementation name and label together
+            linkage_method_and_technique <- paste0(method_df$implementation_name, " (", method_df$technique_label, ")")
+
+            # Replace the linkage method ID with the string
+            suppressWarnings(df$linkage_method_id[i] <- linkage_method_and_technique)
+          }
+
+          # Get the iteration_id for the current row
+          iteration_id <- df$iteration_id[i]
+
+          # Query to get blocking LEFT fields
+          blocking_query <- paste('SELECT field_name FROM blocking_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', iteration_id)
+          blocking_fields <- dbGetQuery(linkage_metadata_conn, blocking_query)$field_name
+          blocking_left_fields <- paste(blocking_fields, collapse = ", ")
+
+          # Add blocking fields to the dataframe
+          df$blocking_left_fields[i] <- blocking_left_fields
+
+          # Query to get matching LEFT fields
+          matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
+                              JOIN dataset_fields on field_id = left_dataset_field_id
+                              WHERE iteration_id =', iteration_id)
+          matching_df <- dbGetQuery(linkage_metadata_conn, matching_query)
+
+          # Loop through each matching variable to get its comparison methods
+          for(j in 1:nrow(matching_df)){
+            # Get the comparison_rule_id for this row
+            comparison_rule_id <- matching_df$comparison_rule_id[j]
+            if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
+              # Query to get the acceptance method name from the comparison_rules table
+              method_query <- paste('SELECT method_name FROM comparison_rules cr
+                             JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                             WHERE comparison_rule_id =', comparison_rule_id)
+              method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+              # Query to get the associated parameters for the comparison_rule_id
+              params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+              params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+              # Combine the parameters into a string
+              params_str <- paste(params_df$parameter, collapse = ", ")
+
+              # Create the final string "method_name (key1=value1, key2=value2)"
+              method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+
+              # Replace the comparison_rule_id with the method and parameters string
+              matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+            }
+          }
+
+          matching_fields <- matching_df$field_name
+          matching_left_fields <- paste(matching_fields, collapse = ", ")
+
+          # Add blocking fields to the dataframe
+          df$matching_left_fields[i] <- matching_left_fields
+        }
+      }
+      else{
+        # Create an empty data frame if no iterations exist
+        df <- data.frame(
+          algorithm_id = numeric(),
+          iteration_id = numeric(),
+          iteration_name = character(),
+          iteration_num = numeric(),
+          modified_date = character(),
+          modified_by = character(),
+          enabled = numeric(),
+          linkage_method_id = numeric(),
+          acceptance_rule_id = numeric(),
+          blocking_left_fields = character(),
+          matching_left_fields = character(),
+          standardization_file_id = numeric()
+        )
+      }
+
+      # With our data frame, we'll rename some of the columns to look better
+      names(df)[names(df) == 'iteration_name'] <- 'Iteration Name'
+      names(df)[names(df) == 'iteration_num'] <- 'Iteration Order'
+      names(df)[names(df) == 'linkage_method_id'] <- 'Linkage Method'
+      names(df)[names(df) == 'acceptance_rule_id'] <- 'Acceptance Rules'
+      names(df)[names(df) == 'blocking_left_fields'] <- 'Blocking Keys'
+      names(df)[names(df) == 'matching_left_fields'] <- 'Matching Keys'
+
+      # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
+      df <- subset(df, select = -c(algorithm_id, iteration_id, standardization_file_id, modified_date, modified_by, enabled))
+
+      # Reorder the columns so that 'Blocking Keys' and 'Matching Keys' come after 'Linkage Method'
+      df <- df[, c('Iteration Name', 'Iteration Order', 'Linkage Method', 'Blocking Keys', 'Matching Keys',
+                   'Acceptance Rules')]
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'none', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+    })
   })
 
   # Allow for un-publishing the selected algorithm
@@ -5753,6 +6147,188 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         basename(uploaded_file_add)
       })
     }
+  })
+
+  # Renders the table for the output fields that we can use from a previously used algorithm
+  observeEvent(input$previous_algorithm_output_ids, {
+    # Get the selected algorithm
+    algorithm_id <- input$previous_algorithm_output_ids
+
+    # If the algorithm id is valid, look up the table, otherwise return
+    if(algorithm_id == "") return()
+
+    # Render the data table
+    output$selected_algorithm_output_fields <- renderDataTable({
+      # Query to get blocking variables with left and right dataset field names
+      df <- dbGetQuery(linkage_metadata_conn, "
+                    SELECT of.output_field_id, of.dataset_label, of.field_type, df.field_name, standardization_lookup_id
+                    FROM output_fields of
+                    JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+                    JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+                    WHERE of.algorithm_id = ?
+                    ORDER BY ofp.output_field_id ASC, ofp.parameter_id ASC", params = list(algorithm_id))
+
+      # Group the data frame
+      df <- df %>%
+        group_by(output_field_id) %>%
+        summarise(
+          dataset_label = paste(unique(dataset_label), collapse = ", "),
+          field_type = paste(unique(field_type), collapse = ", "),
+          field_name = paste(unique(field_name), collapse = ", "),
+          standardization_lookup_id = paste(unique(standardization_lookup_id), collapse = ", ")
+        ) %>%
+        ungroup()
+
+      # Get the standardization file for each output field (if there is one)
+      if(nrow(df) > 0){
+        for(row_num in 1:nrow(df)){
+          # Get the standardizing ID for this row
+          standardizing_id <- suppressWarnings(as.numeric(df$standardization_lookup_id[row_num]))
+
+          # If the ID is not NA, then get the label
+          if(!is.na(standardizing_id) && !is.na(standardizing_id) && is.numeric(standardizing_id)){
+            # Get the file label
+            file_label <- dbGetQuery(linkage_metadata_conn, "SELECT * FROM name_standardization_files WHERE standardization_file_id = ?",
+                                     params = list(standardizing_id))$standardization_file_label
+
+            # Put the label back into the data frame
+            df$standardization_lookup_id[row_num] <- file_label
+          }
+          else{
+            df$standardization_lookup_id[row_num] <- ""
+          }
+        }
+      }
+
+      # Change the field type by replacing it with values
+      df$field_type[df$field_type == 1]  <- 'General/Pass-Through'
+      df$field_type[df$field_type == 2]  <- 'Date'
+      df$field_type[df$field_type == 3]  <- 'Age'
+      df$field_type[df$field_type == 4]  <- 'Postal Code Initials'
+      df$field_type[df$field_type == 5]  <- 'Name Length'
+      df$field_type[df$field_type == 6] <- 'Number of Names'
+      df$field_type[df$field_type == 7]  <- 'Derived Age'
+      df$field_type[df$field_type == 8] <- 'Standardized Values'
+      df$field_type[df$field_type == 9] <- 'Forward Sortation Area (FSA)'
+
+      # With our data frame, we'll rename some of the columns to look better
+      names(df)[names(df) == 'field_name'] <- 'Field Source Name(s)'
+      names(df)[names(df) == 'dataset_label'] <- 'Field Output Label'
+      names(df)[names(df) == 'field_type'] <- 'Field Type'
+      names(df)[names(df) == 'standardization_lookup_id'] <- 'Standardization File'
+
+      # Drop the output field if
+      df <- select(df, -output_field_id)
+
+      # Put it into a data table now
+      dt <- datatable(df, selection = 'none', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+    })
+  })
+
+  # Adds the output fields using a previously used algorithm's output fields
+  observeEvent(input$use_selected_algorithms_fields, {
+    # Get the selected algorithm
+    algorithm_id <- input$previous_algorithm_output_ids
+
+    # If the algorithm id is invalid, return
+    if(algorithm_id == ""){
+      showNotification("Failed to Add Linkage Algorithm Output Field(s) - No Algorithm Is Selected", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    # If it is valid, look up the field types, labels, IDs, etc.
+    df <- dbGetQuery(linkage_metadata_conn, "
+                    SELECT of.output_field_id, of.dataset_label, of.field_type, ofp.dataset_field_id, ofp.parameter_id, standardization_lookup_id
+                    FROM output_fields of
+                    JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+                    JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+                    WHERE of.algorithm_id = ?
+                    ORDER BY ofp.output_field_id ASC, ofp.parameter_id ASC", params = list(algorithm_id))
+
+
+    # Start a transaction, we must first delete the fields for this algorithm, then add the selected algorithms fields
+    tryCatch({
+      # Start the transaction
+      dbBegin(linkage_metadata_conn)
+
+      # Delete the current output fields
+      df_delete <- dbGetQuery(linkage_metadata_conn, "
+                      SELECT of.output_field_id, of.dataset_label, of.field_type, ofp.dataset_field_id, ofp.parameter_id, standardization_lookup_id
+                      FROM output_fields of
+                      JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+                      JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+                      WHERE of.algorithm_id = ?
+                      ORDER BY ofp.output_field_id ASC, ofp.parameter_id ASC", params = list(algorithm_output_fields_algorithm_id))
+      output_field_ids_to_delete <- unique(df_delete$output_field_id)
+
+      # Delete each of the output_field_ids from both tables
+      for(output_field_id in output_field_ids_to_delete){
+        # Delete the fields in both tables using a transaction
+        #----#
+        delete_query <- paste("DELETE FROM output_field_parameters
+                          WHERE output_field_id = ?")
+        delete <- dbSendStatement(linkage_metadata_conn, delete_query)
+        dbBind(delete, list(output_field_id))
+        dbClearResult(delete)
+
+        delete_query <- paste("DELETE FROM output_fields
+                          WHERE output_field_id = ?")
+        delete <- dbSendStatement(linkage_metadata_conn, delete_query)
+        dbBind(delete, list(output_field_id))
+        dbClearResult(delete)
+        #----#
+      }
+
+      # Loop through each UNIQUE output_field_id and add the records to both the output fields & parameters table
+      for(output_field_id in unique(df$output_field_id)){
+        # Get the fields for inserting
+        dataset_label  <- unique(df$dataset_label[df$output_field_id == output_field_id])
+        field_type     <- unique(df$field_type[df$output_field_id == output_field_id])
+        standard_id    <- unique(df$standardization_lookup_id[df$output_field_id == output_field_id])
+        dataset_fields <- unique(df$dataset_field_id[df$output_field_id == output_field_id])
+        parameter_ids  <- unique(df$parameter_id[df$output_field_id == output_field_id])
+
+        # First, insert into the output fields page
+        new_entry_query <- paste("INSERT INTO output_fields (algorithm_id, dataset_label, field_type, standardization_lookup_id)",
+                                 "VALUES(?, ?, ?, ?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(algorithm_output_fields_algorithm_id, dataset_label, field_type, standard_id))
+        dbClearResult(new_entry)
+
+        # Get the most recently created output_field_id
+        output_field_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS output_field_id;")$output_field_id
+
+        # Next, insert into the parameters page
+        for(index in 1:length(parameter_ids)){
+          new_entry_query <- paste("INSERT INTO output_field_parameters (output_field_id, parameter_id, dataset_field_id)",
+                                   "VALUES(?, ?, ?);")
+          new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+          dbBind(new_entry, list(output_field_id, parameter_ids[index], dataset_fields[index]))
+          dbClearResult(new_entry)
+        }
+      }
+
+      # Commit the transaction
+      dbCommit(linkage_metadata_conn)
+
+      # Update Data Tables and UI Renders
+      #----#
+      output$currently_added_algorithm_output_fields <- renderDataTable({
+        get_algorithm_output_fields()
+      })
+      #----#
+
+      # Show success notification
+      #----#
+      showNotification("Linkage Algorithm Output Field(s) Successfully Added", type = "message", closeButton = FALSE)
+      #----#
+    },
+    error = function(e){
+      # Rollback if an error occurs
+      dbRollback(linkage_metadata_conn)
+      showNotification(paste0("Failed to Add Linkage Algorithm Output Field(s) - ", e), type = "error", closeButton = FALSE)
+      return()
+    })
   })
 
   # Adds the provided output field, label, and type into the database
@@ -12897,6 +13473,7 @@ start_linkage_metadata_ui <- function(metadata_file_path, username){
            onStart = function(){
              cat("Data Linkage App - OPENED")
              onStop(function(){
+               dbDisconnect(linkage_metadata_conn)
                cat("Data Linkage App - CLOSED")
              })
            })

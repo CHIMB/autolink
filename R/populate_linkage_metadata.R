@@ -311,6 +311,11 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
                              'VALUES(2, "P", "Reclin2Linkage", "Probabilistic linkage pass using the Reclin2 package.", "v1");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, implementation_desc, version)',
+                             'VALUES(3, "M", "Reclin2Linkage", "Machine learning linkage pass using the Reclin2 package.", "v1");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
   }
   linkage_methods_insert()
   #~~~~
@@ -330,6 +335,11 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
 
     new_entry_query <- paste('INSERT INTO acceptance_methods (acceptance_method_id, method_name, description)',
                              'VALUES(3, "Match Weight", "An unbounded match weight between positive and negative infinity for which a record pair must exceed to be considered a successful link.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_methods (acceptance_method_id, method_name, description)',
+                             'VALUES(4, "Machine Learning Probability", "A probabilistic value between 0 and 1 for which the machine learning model will consider a pair a match.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
@@ -356,6 +366,11 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
 
     new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
                              'VALUES(3, 4, "match_weight", "The unbounded weight for determining if a record pair is a successful link.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO acceptance_method_parameters (acceptance_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(4, 5, "ml_probability", "The model probability for determining if a record pair is a successful link.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
