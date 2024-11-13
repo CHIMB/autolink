@@ -1719,7 +1719,7 @@ linkage_ui <- page_navbar(
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                       selectInput("linkage_algorithm_output_field_type", label = "Field Type:",
                       choices = list("Generic/Pass-Through" = 1,
-                                     "Date" = 2,
+                                     "Date (Year)" = 2,
                                      "Age" = 3,
                                      "Postal Code Initials" = 4,
                                      "Name Length" = 5,
@@ -5978,7 +5978,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Change the field type by replacing it with values
     df$field_type[df$field_type == 1]  <- 'General/Pass-Through'
-    df$field_type[df$field_type == 2]  <- 'Date'
+    df$field_type[df$field_type == 2]  <- 'Date (Year)'
     df$field_type[df$field_type == 3]  <- 'Age'
     df$field_type[df$field_type == 4]  <- 'Postal Code Initials'
     df$field_type[df$field_type == 5]  <- 'Name Length'
