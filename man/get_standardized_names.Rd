@@ -12,6 +12,8 @@ get_standardized_names(
 )
 }
 \arguments{
+\item{linkage_db}{A connection to a linkage metadata file}
+
 \item{iteration_id}{An integer ID for the current iteration.}
 
 \item{data_field}{A vector of names that will be standardized.}
