@@ -262,15 +262,28 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   ")
 
   ### GROUND TRUTH VARIABLES
+  #-- V1 --#
+  # dbExecute(my_db, "
+  #   CREATE TABLE ground_truth_variables (
+  #     algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
+  #     parameter_id INTEGER PRIMARY KEY,
+  #     left_dataset_field_id REFERENCES dataset_fields(field_id),
+  #     right_dataset_field_id REFERENCES dataset_fields(field_id),
+  #     linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id)
+  #   );
+  # ")
+  #-- V2 --#
   dbExecute(my_db, "
     CREATE TABLE ground_truth_variables (
-      algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
+      dataset_id_left INTEGER REFERENCES datasets(dataset_id),
+      dataset_id_right INTEGER REFERENCES datasets(dataset_id),
       parameter_id INTEGER PRIMARY KEY,
       left_dataset_field_id REFERENCES dataset_fields(field_id),
       right_dataset_field_id REFERENCES dataset_fields(field_id),
-      linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id)
+      comparison_rule_id INTEGER REFERENCES comparison_rules(comparison_rule_id)
     );
   ")
+
 
   ### BLOCKING AND MATCHING VARIABLES
   dbExecute(my_db, "

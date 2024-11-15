@@ -149,7 +149,7 @@ linkage_ui <- page_navbar(
           datasets you may end up providing. You are currently on the Home/Welcome page where you are encouraged to read from the
           various dropdowns to understand what the application has to offer and where you can access specific pages."
         ),
-        accordion_panel(title = "Datasets - First Stop",
+        accordion_panel(title = "Step 1: Prepare Datasets",
           "The datasets page should be your first stop upon starting the application for the first time, or upon coming back after
           a long time not using the application. On this page, you can view the uploaded datasets, select an existing dataset to update,
           or add a new dataset.",
@@ -165,7 +165,7 @@ linkage_ui <- page_navbar(
           "When uploading a file, you can see the uploaded files field names and class types before submitting the dataset so that you
           can verify the dataset you're uploading is valid."
         ),
-        accordion_panel(title = "Linkage Methods - Second Stop",
+        accordion_panel(title = "Step 2: Review Linkage Methods",
           "The linkage methods page should be your next stop after reviewing, updating, or adding datasets, and provides a table of the
           currently usable linkage methods that can be used when creating the individual passes of a linkage algorithm in the next step.",
 
@@ -180,7 +180,7 @@ linkage_ui <- page_navbar(
           filling in the other information to your liking which will be output when generating the optional linkage reports, and for selecting
           a linkage method in a later algorithm creation step."
         ),
-        accordion_panel(title = "Linkage Linkage Algorithms - Third Stop",
+        accordion_panel(title = "Step 3: Create & Modify Your Algorithms",
           "The linkage algorithms page is the third and final stop after reviewing all the datasets and linkage methods available for use.
           This page allows you to select a left and right dataset that you'd like to link, followed by the creation or modification of empty
           linkage algorithms.",
@@ -200,7 +200,7 @@ linkage_ui <- page_navbar(
           "To see what other pages are accessible from the linkage algorithms page, consider looking at the other drop down in case you are having
           trouble any specific page."
         ),
-        accordion_panel(title = "Other Accessible Pages",
+        accordion_panel(title = "Additional Actions",
           "If you are having trouble finding a specific page within the GUI, consider finding the page title here and follow the steps outlined below.",
 
           HTML("<br><br>"), # Line break
@@ -672,7 +672,7 @@ linkage_ui <- page_navbar(
               card_body(
                 fluidRow(
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 65px",
-                      actionButton("go_to_regenerate_report", "Regenerate Report", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
+                      actionButton("go_to_regenerate_report", "Regenerate Report...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
                     )
                   )
                 )
@@ -712,7 +712,7 @@ linkage_ui <- page_navbar(
                     )
                   ),
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("list")),
+                      actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes...", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("list")),
                     )
                   )
                 )
@@ -726,15 +726,15 @@ linkage_ui <- page_navbar(
               card_body(
                 fluidRow(
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("square-check")),
+                      actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("square-check")),
                     )
                   ),
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("file-export")),
+                      actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("file-export")),
                     )
                   ),
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("linkage_algorithms_to_audits", "Saved Performance Measures", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
+                      actionButton("linkage_algorithms_to_audits", "Saved Performance Measures...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
                     )
                   )
                 )
@@ -750,46 +750,24 @@ linkage_ui <- page_navbar(
         conditionalPanel(
           condition = "input.currently_added_linkage_algorithms_rows_selected <= 0",
 
-          # Section for running algorithms that are enabled for testing
-          h5(strong("Or, run linkage algorithms here:")),
-          h6(p(strong("Note: "), paste("Algorithms that are enabled for testing will be run together."))),
+          # Card for the run algorithms, archived algorithms, and published algorithms pages
           div(style = "display: flex; justify-content: center; align-items: center;",
             card(
               width = 1,
-              height = 125,
+              height = 85,
               full_screen = FALSE,
-              card_header("Run Algorithms", class = 'bg-dark'),
               card_body(
                 fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("run_default_algorithm", "Run Algorithm(s) Page", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("file-waveform")),
+                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                      actionButton("run_default_algorithm", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("file-waveform")),
                     )
                   ),
-                )
-              )
-            )
-          ),
-
-          # Line break between sections
-          HTML("<br><br>"),
-
-          # Section for moving to the archived OR published algorithm pages
-          h5(strong("Or, view and modify the archived or published algorithms here:")),
-          h6(p(strong("Note: "), paste("When restoring or unpublishing algorithms, an algorithm with the same name CAN'T be active at that time."))),
-          div(style = "display: flex; justify-content: center; align-items: center;",
-            card(
-              width = 1,
-              height = 125,
-              full_screen = FALSE,
-              card_header("Transfer to the Archived or Published Algorithms Page", class = 'bg-dark'),
-              card_body(
-                fluidRow(
-                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                      actionButton("move_to_archived_algorithms", "View or Restore Archived Algorithms", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("box-archive")),
+                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("move_to_archived_algorithms", "Archived Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("box-archive")),
                     )
                   ),
-                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                      actionButton("move_to_published_algorithms", "View or Remove Published Algorithms", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("scroll")),
+                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                      actionButton("move_to_published_algorithms", "Published Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("scroll")),
                     )
                   )
                 ),
@@ -1623,17 +1601,17 @@ linkage_ui <- page_navbar(
                   fluidRow(
                     column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                       # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Linkage Rule:"),
+                      div(style = "margin-right: 10px;", "Comparison Rule:"),
                     )),
                     column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                       # Boxed text output for showing the uploaded file name
-                       div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                          textOutput("selected_ground_truth_linkage_rule")
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                        textOutput("selected_ground_truth_comparison_rule")
                       ),
                       # Add linkage rule button
-                      actionButton("prepare_ground_truth_linkage_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                      actionButton("prepare_ground_truth_comparison_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
                       # Remove linkage rule button
-                      actionButton("remove_ground_truth_linkage_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                      actionButton("remove_ground_truth_comparison_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
                     ))
                   )
                 )
@@ -2692,7 +2670,7 @@ linkage_ui <- page_navbar(
                   helpText("Per Pass PNG plots of the linkage algorithm and its acceptance threshold distribution.")
                 )),
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("generate_threshold_plots", "Threshold Plots", FALSE)
+                  checkboxInput("generate_threshold_plots", "Histograms", FALSE)
                 )),
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                   helpText("Collects missing data indicators of the output fields to be placed in the linkage report.")
@@ -5498,7 +5476,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   modify_ground_truth_return_page      <- "linkage_algorithms_page"
 
   # Some global variables for the linkage rule that needs to be added
-  ground_truth_linkage_rule_to_add     <- NA
+  ground_truth_comparison_rule_to_add     <- NA
 
   # Back button will bring you back to whichever page you came from
   observeEvent(input$modify_ground_truth_back, {
@@ -5519,82 +5497,46 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                   ON gt.left_dataset_field_id = dfl.field_id
                 LEFT JOIN dataset_fields dfr
                   ON gt.right_dataset_field_id = dfr.field_id
-                WHERE gt.algorithm_id =', algorithm_id,
+                WHERE gt.dataset_id_left =', modify_ground_truth_left_dataset_id, 'AND gt.dataset_id_right =', modify_ground_truth_right_dataset_id,
                    'ORDER BY gt.parameter_id ASC;')
     df <- dbGetQuery(linkage_metadata_conn, query)
 
     # Loop through each row in the dataframe to replace the linkage_rule_id with the method name and parameters
     for (i in 1:nrow(df)) {
-
-      # Get the linkage_rule_id for the current row
-      linkage_rule_id <- df$linkage_rule_id[i]
-      if (nrow(df) > 0 && !is.na(linkage_rule_id)){
+      # Get the comparison_rule_id for the current row
+      comparison_rule_id <- df$comparison_rule_id[i]
+      if(nrow(df) > 0 && !is.na(comparison_rule_id)){
         # Query to get the acceptance method name from the comparison_rules table
-        method_query <- paste('SELECT * FROM linkage_rules
-                           WHERE linkage_rule_id =', linkage_rule_id)
-        method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+        method_query <- paste('SELECT method_name FROM comparison_rules cr
+                           JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                           WHERE comparison_rule_id =', comparison_rule_id)
+        method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
 
-        # We'll start with "Alternative Field"
-        alt_field_val <- method_df$alternate_field_value
-        if(!is.na(alt_field_val)){
-          method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
-        }
+        # Query to get the associated parameters for the comparison_rule_id
+        params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+        params_df <- dbGetQuery(linkage_metadata_conn, params_query)
 
-        # Next we'll handle the "Integer Variance"
-        int_variance <- method_df$integer_value_variance
-        if(!is.na(int_variance)){
-          method_df$integer_value_variance <- paste0("±", int_variance)
-        }
+        # Combine the parameters into a string
+        params_str <- paste(params_df$parameter, collapse = ", ")
 
-        # Next we'll handle "Name Substring"
-        name_substring <- method_df$substring_length
-        if(!is.na(name_substring)){
-          method_df$substring_length <- paste0("First ", name_substring, " character(s)")
-        }
+        # Create the final string "method_name (key1=value1, key2=value2)"
+        method_with_params <- paste0(method_name, " (", params_str, ")")
 
-        # With standardized names, we'll replace the [0, 1] with [No, Yes]
-        method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
-
-        # Rename the column names to be easier to read when printed in table format
-        names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
-        names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
-        names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
-        names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
-
-        # Drop the linkage_rule_id from the table
-        method_df <- subset(method_df, select = -c(linkage_rule_id))
-
-        # Initialize an empty list to store non-NA values
-        non_na_values <- list()
-
-        # Loop through each column in the current row
-        for (col_name in colnames(method_df)) {
-          value <- method_df[1, col_name]
-
-          # If the value is not NA, add it to the list
-          if (!is.na(value)) {
-            non_na_values <- c(non_na_values, paste0(value))
-          }
-        }
-
-        # Combine the non-NA values into a single string, separated by commas
-        combined_values <- paste(non_na_values, collapse = ", ")
-
-        # Place the combined values into the data frame
-        df$linkage_rule_id[i] <- combined_values
+        # Replace the comparison_rule_id with the method and parameters string
+        df$comparison_rule_id[i] <- method_with_params
       }
     }
 
     # With our data frame, we'll rename some of the columns to look better
     names(df)[names(df) == 'right_field_name'] <- 'Right Dataset Field'
     names(df)[names(df) == 'left_field_name'] <- 'Left Dataset Field'
-    names(df)[names(df) == 'linkage_rule_id'] <- 'Linkage Rules'
+    names(df)[names(df) == 'comparison_rule_id'] <- 'Comparison Rules'
 
     # Drop the algorithm_id, parameter_id, and dataset field ID columns from the table
-    df <- subset(df, select = -c(algorithm_id, parameter_id, right_dataset_field_id, left_dataset_field_id))
+    df <- subset(df, select = -c(dataset_id_left, dataset_id_right, parameter_id, right_dataset_field_id, left_dataset_field_id))
 
     # Reorder the columns
-    df <- df[, c('Right Dataset Field', 'Left Dataset Field', 'Linkage Rules')]
+    df <- df[, c('Right Dataset Field', 'Left Dataset Field', 'Comparison Rules')]
 
     # Put it into a data table now
     dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
@@ -5651,54 +5593,67 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     right_dataset_ground_truth_fields()
   })
 
-  ### LINKAGE RULE EVENTS ###
+  ### COMPARISON RULE EVENTS ###
   #----#
-  # Selecting a linkage rule for adding ground truth variables
-  observeEvent(input$prepare_ground_truth_linkage_rule, {
-    # Re-render the data table
-    output$ground_truth_add_linkage_rules <- renderDataTable({
-      get_linkage_rules()
+  # Selecting an comparison rule for the iteration
+  observeEvent(input$prepare_ground_truth_comparison_rule, {
+    # Generates the table of acceptance methods
+    output$add_comparison_method_ground_truth <- renderDataTable({
+      get_comparison_methods_and_parameters()
+    })
+
+    output$iteration_comparison_rule_add_inputs <- renderUI({
+
     })
 
     showModal(modalDialog(
-      title = "Choose Linkage Rule",
+      title = "Choose Comparison Rule",
       easyClose = TRUE,
       footer = NULL,
-      fluidRow(
-        # Linkage rule table
-        h5(strong("Select a Linkage Rule Below to Use for the Ground Truth Variables:")),
-        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            dataTableOutput("ground_truth_add_linkage_rules"),
+      fluidPage(
+        # Comparison rule table
+        h5("Select a Comparison Method & Enter Rule Parameters:"),
+        layout_column_wrap(
+          width = 1/2,
+          height = 500,
+
+          # Card for the comparison methods table
+          card(card_header("Comparison Methods Table", class = "bg-dark"),
+            dataTableOutput("add_comparison_method_ground_truth")
+          ),
+
+          # Card for the comparison rules UI
+          card(card_header("Comparison Rule Inputs", class = "bg-dark"),
+            uiOutput("ground_truth_comparison_rule_add_inputs")
           )
         ),
 
-        # If NO row is selected, the user may add a new linkage rule by clicking
-        # a button that will take them to the linkage rule page
+        # OPTION 1: User may enter a new comparison method & parameters
         conditionalPanel(
-          condition = "input.ground_truth_add_linkage_rules_rows_selected <= 0",
+          condition = "input.add_comparison_method_ground_truth_rows_selected <= 0",
           HTML("<br>"),
-          h5(strong("Or, Create a New Rule Here:")),
 
-          # Button for going to the linkage rules page from this modal
+          # Button for moving the user to the comparison methods page
           fluidRow(
+            h5(strong("Or, create a new comparison method below:")),
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("ground_truth_add_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
+                actionButton("add_ground_truth_to_add_comparison_methods", "Create Comparison Method", class = "btn-info"),
               )
             ),
           )
         ),
 
-        # If a row IS SELECTED, the user can then click then choose that rule
+        # OPTION 2: User can submit which comparison rule they'd like to use
         conditionalPanel(
-          condition = "input.ground_truth_add_linkage_rules_rows_selected > 0",
+          condition = "input.add_comparison_method_ground_truth_rows_selected > 0",
           HTML("<br>"),
 
-          # Button for preparing the selected linkage rule to add
+          # Button for moving the user to the comparison rules page
           fluidRow(
             column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("ground_truth_add_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
+                actionButton("prepare_ground_truth_comparison_rule_to_add", "Add Comparison Rule", class = "btn-success"),
               )
-            ),
+            )
           )
         ),
       ),
@@ -5706,112 +5661,204 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     ))
   })
 
-  # Brings the user to the linkage rules page
-  observeEvent(input$ground_truth_add_linkage_rules_to_linkage_rules, {
-
-    # Set the return page to the add linkage iterations page
-    linkage_rules_return_page <<- "ground_truth_variables_page"
-
-    # Show the linkage rule page
-    nav_show("main_navbar", "linkage_rule_page")
-
-    # Brings you to the linkage rules page
-    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
+  # Generates the table of comparison methods
+  output$add_comparison_method_ground_truth <- renderDataTable({
+    get_comparison_methods_and_parameters()
   })
 
-  # Selects the linkage rule the user wanted
-  observeEvent(input$ground_truth_add_prepare_linkage_rule, {
-    # Get the selected row
-    selected_row <- input$ground_truth_add_linkage_rules_rows_selected
+  # Generates the dynamic comparison rule inputs
+  observeEvent(input$add_comparison_method_ground_truth_rows_selected, {
+    selected_row <- input$add_comparison_method_ground_truth_rows_selected
 
-    # Query to get all linkage rule information from the 'linkage_rules' table
-    query <- paste('SELECT * FROM linkage_rules
-               ORDER BY linkage_rule_id ASC;')
+    if (!is.null(selected_row)) {
+      # Perform a query to get the comparison methods
+      query <- paste('SELECT * from comparison_methods')
+      df <- dbGetQuery(linkage_metadata_conn, query)
+      # Retrieve the comparison method id of the selected row
+      selected_method <- df$comparison_method_id[selected_row]
+
+      output$ground_truth_comparison_rule_add_inputs <- renderUI({
+        modify_iteration_get_comparison_rule_inputs(selected_method, "modify_ground_truth_comparison_rule_input")
+      })
+    }
+    else{
+      output$ground_truth_comparison_rule_add_inputs <- renderUI({
+
+      })
+    }
+  })
+
+  # Selects the comparison rule the user wanted
+  observeEvent(input$prepare_ground_truth_comparison_rule_to_add, {
+    # Get the selected row
+    selected_row <- input$add_comparison_method_ground_truth_rows_selected
+
+    # Query to get all linkage rule information from the 'comparison_methods' table
+    query <- paste('SELECT * FROM comparison_methods
+               ORDER BY comparison_method_id ASC;')
     df <- dbGetQuery(linkage_metadata_conn, query)
 
     # Get the linkage rule
-    linkage_rule_id <- df$linkage_rule_id[selected_row]
+    comparison_method_id <- df$comparison_method_id[selected_row]
 
-    # Set the global variable to the selected linkage rule id
-    ground_truth_linkage_rule_to_add <<- linkage_rule_id
+    # Get the parameter IDs, keys, and descriptions of the inputs we need
+    query <- paste('SELECT * from comparison_method_parameters
+                   WHERE comparison_method_id =', comparison_method_id)
+    df <- dbGetQuery(linkage_metadata_conn, query)
 
-    # Render the UI output text
-    if(!is.na(linkage_rule_id)){
-      # Query to get the acceptance method name from the comparison_rules table
-      method_query <- paste('SELECT * FROM linkage_rules
-                           WHERE linkage_rule_id =', linkage_rule_id)
-      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+    # Get the number of inputs we'll be adding
+    num_inputs <- nrow(df)
+    parameter_ids <- df$parameter_id
 
-      # We'll start with "Alternative Field"
-      alt_field_val <- method_df$alternate_field_value
-      if(!is.na(alt_field_val)){
-        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+    # Error handling
+    #----#
+    # Error Handling to make sure all inputs are filled
+    for(index in 1:(num_inputs)){
+      # Get the input value for each input
+      input_val <- input[[paste0("modify_ground_truth_comparison_rule_input", index)]]
+      # Ensure it isn't null
+      if(is.na(input_val)){
+        showNotification("Failed to Use Comparison Rule - Some Input(s) Are Missing", type = "error", closeButton = FALSE)
+        return()
       }
+    }
+    #----#
 
-      # Next we'll handle the "Integer Variance"
-      int_variance <- method_df$integer_value_variance
-      if(!is.na(int_variance)){
-        method_df$integer_value_variance <- paste0("±", int_variance)
-      }
+    # If the rule already exists, then use that Comparison Rule ID
+    df <- data.frame()
+    for (index in 1:(num_inputs)) {
+      # Get the parameter to input
+      parameter <- input[[paste0("modify_ground_truth_comparison_rule_input", index)]]
 
-      # Next we'll handle "Name Substring"
-      name_substring <- method_df$substring_length
-      if(!is.na(name_substring)){
-        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
-      }
+      # Get the parameter ID
+      parameter_id <- parameter_ids[index]
 
-      # With standardized names, we'll replace the [0, 1] with [No, Yes]
-      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+      # Check if the database has this eact match
+      get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM comparison_rules_parameters
+                                                  WHERE parameter_id = ? AND parameter = ?;')
+      dbBind(get_query, list(parameter_id, parameter))
+      output_df <- dbFetch(get_query)
+      dbClearResult(get_query)
+      df <- rbind(df, output_df)
+    }
 
-      # Rename the column names to be easier to read when printed in table format
-      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
-      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
-      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
-      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+    # Group by the comparison_rule_id
+    df_grouped <- df %>% group_by(comparison_rule_id) %>% filter(n() == num_inputs)
 
-      # Drop the linkage_rule_id from the table
-      method_df <- subset(method_df, select = -c(linkage_rule_id))
+    # If it contains exactly those parameters, then there will be a row in the grouped df, so grab the acceptance rule
+    comparison_rule_id <- 0
+    if(nrow(df_grouped) > 0){
+      comparison_rule_id <- df_grouped$comparison_rule_id[1]
+    }
+    #----#
 
-      # Initialize an empty list to store non-NA values
-      non_na_values <- list()
+    # If the comparison_rule_id is 0, then it does not exist, so create a new one
+    if(comparison_rule_id == 0){
+      # Add all the necessary acceptance rule information
+      successful <- TRUE
+      #----#
+      added_comparison_rule_id <- tryCatch({
+        # Start a transaction
+        dbBegin(linkage_metadata_conn)
 
-      # Loop through each column in the current row
-      for (col_name in colnames(method_df)) {
-        value <- method_df[1, col_name]
+        # Start by creating a new comparison rule
+        new_entry_query <- paste("INSERT INTO comparison_rules (comparison_method_id)",
+                                 "VALUES(?);")
+        new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+        dbBind(new_entry, list(comparison_method_id))
+        dbClearResult(new_entry)
 
-        # If the value is not NA, add it to the list
-        if (!is.na(value)) {
-          non_na_values <- c(non_na_values, paste0(value))
+        # Add the dataset fields to the other table after we insert basic information
+        #----#
+        # Get the most recently inserted comparison_rule_id value
+        new_comparison_rule_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS comparison_rule_id;")$comparison_rule_id
+
+        # Insert each parameter value into the database
+        for (index in 1:(num_inputs)) {
+          # Get the parameter to input
+          parameter <- input[[paste0("modify_ground_truth_comparison_rule_input", index)]]
+
+          # Get the parameter ID
+          parameter_id <- parameter_ids[index]
+
+          insert_field_query <- "INSERT INTO comparison_rules_parameters (comparison_rule_id, parameter_id, parameter) VALUES (?, ?, ?);"
+          insert_field_stmt <- dbSendStatement(linkage_metadata_conn, insert_field_query)
+          dbBind(insert_field_stmt, list(new_comparison_rule_id, parameter_id, parameter))
+          dbClearResult(insert_field_stmt)
         }
-      }
 
-      # Combine the non-NA values into a single string, separated by commas
-      combined_values <- paste(non_na_values, collapse = ", ")
+        # End a transaction
+        dbCommit(linkage_metadata_conn)
 
-      # Render the output text
-      output$selected_ground_truth_linkage_rule <- renderText({
-        combined_values
+        # Return the new comparison rule
+        new_comparison_rule_id
+      },
+      error = function(e){
+        # If we throw an error because of timeout, or bad insert, then rollback and return
+        successful <- FALSE
+        dbRollback(linkage_metadata_conn)
+        showNotification("Failed to Add Comparison Rule - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+        return(0)
+      })
+
+      # If we didn't successfully add the acceptance rule, then return
+      if(!successful) return()
+
+      comparison_rule_id <- added_comparison_rule_id
+      #----#
+    }
+
+    # Render the output text to make the method readable
+    if(!is.na(comparison_rule_id)){
+      # Query to get the acceptance method name from the comparison_rules table
+      method_query <- paste('SELECT method_name FROM comparison_rules cr
+                           JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                           WHERE comparison_rule_id =', comparison_rule_id)
+      method_name <- dbGetQuery(linkage_metadata_conn, method_query)$method_name
+
+      # Query to get the associated parameters for the comparison_rule_id
+      params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+      params_df <- dbGetQuery(linkage_metadata_conn, params_query)
+
+      # Combine the parameters into a string
+      params_str <- paste(params_df$parameter, collapse = ", ")
+
+      # Create the final string "method_name (key1=value1, key2=value2)"
+      method_with_params <- paste0(method_name, " (", params_str, ")")
+      output$selected_ground_truth_comparison_rule <- renderText({
+        method_with_params
       })
     }
+
+    # Set the global variable
+    ground_truth_comparison_rule_to_add <<- comparison_rule_id
 
     # Dismiss the modal
     removeModal()
   })
 
-  # Generates the table of linkage rules
-  output$ground_truth_add_linkage_rules <- renderDataTable({
-    get_linkage_rules()
-  })
-
-  # Remove the linkage rule for this ground truth variable
-  observeEvent(input$remove_ground_truth_linkage_rule, {
+  # Remove the comparison rule for this ground truth variable
+  observeEvent(input$remove_ground_truth_comparison_rule, {
     # Set the global variable value to NA
-    ground_truth_linkage_rule_to_add <<- NA
+    ground_truth_comparison_rule_to_add <<- NA
 
     # Render the text output to not include anything
-    output$selected_ground_truth_linkage_rule <- renderText({
+    output$selected_ground_truth_comparison_rule <- renderText({
       " "
     })
+  })
+
+  # Brings the user to the comparison methods page
+  observeEvent(input$add_ground_truth_to_add_comparison_methods, {
+
+    # Set the return page to the add linkage iterations page
+    comparison_methods_return_page <<- "ground_truth_variables_page"
+
+    # Show the linkage rule page
+    nav_show("main_navbar", "comparison_methods_page")
+
+    # Brings you to the linkage rules page
+    updateNavbarPage(session, "main_navbar", selected = "comparison_methods_page")
   })
   #----#
 
@@ -5822,7 +5869,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     algorithm_id           <- modify_ground_truth_algorithm_id
     left_dataset_field_id  <- input$left_ground_truth_field
     right_dataset_field_id <- input$right_ground_truth_field
-    linkage_rule_id        <- ground_truth_linkage_rule_to_add
+    comparison_rule_id     <- ground_truth_comparison_rule_to_add
 
     # Error handling
     #----#
@@ -5832,10 +5879,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       return()
     }
 
+    # Convert the left and right dataset ID to integers
+    left_dataset_field_id  <- as.numeric(left_dataset_field_id)
+    right_dataset_field_id <- as.numeric(right_dataset_field_id)
+
     # Make sure this ground truth variable isn't already being used
     get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM ground_truth_variables
-                                                  WHERE right_dataset_field_id = ? AND left_dataset_field_id = ? AND algorithm_id = ?;')
-    dbBind(get_query, list(right_dataset_field_id, left_dataset_field_id, algorithm_id))
+                                                  WHERE right_dataset_field_id = ? AND left_dataset_field_id = ? AND dataset_id_left = ? AND dataset_id_right = ?;')
+    dbBind(get_query, list(right_dataset_field_id, left_dataset_field_id, modify_ground_truth_left_dataset_id, modify_ground_truth_right_dataset_id))
     output_df <- dbFetch(get_query)
     num_of_databases <- nrow(output_df)
     dbClearResult(get_query)
@@ -5847,10 +5898,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Create a new entry query for entering into the database
     #----#
-    new_entry_query <- paste("INSERT INTO ground_truth_variables (algorithm_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id)",
-                             "VALUES(?, ?, ?, ?);")
+    new_entry_query <- paste("INSERT INTO ground_truth_variables (dataset_id_left, dataset_id_right, right_dataset_field_id, left_dataset_field_id, comparison_rule_id)",
+                             "VALUES(?, ?, ?, ?, ?);")
     new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-    dbBind(new_entry, list(algorithm_id, right_dataset_field_id, left_dataset_field_id, linkage_rule_id))
+    dbBind(new_entry, list(modify_ground_truth_left_dataset_id, modify_ground_truth_right_dataset_id, right_dataset_field_id, left_dataset_field_id, comparison_rule_id))
     dbClearResult(new_entry)
     #----#
 
@@ -5865,10 +5916,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     output$currently_added_ground_truth_variables <- renderDataTable({
       get_ground_truth_variables()
     })
-    output$selected_ground_truth_linkage_rule <- renderText({
+    output$selected_ground_truth_comparison_rule <- renderText({
       ""
     })
-    ground_truth_linkage_rule_to_add <<- NA
+    ground_truth_comparison_rule_to_add <<- NA
     #----#
 
     # Show success notification
@@ -5882,7 +5933,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     algorithm_id <- modify_ground_truth_algorithm_id
     selected_row <- input$currently_added_ground_truth_variables_rows_selected
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from ground_truth_variables
-                                                WHERE algorithm_id =', algorithm_id,
+                                                   WHERE dataset_id_left =', modify_ground_truth_left_dataset_id,
+                                                  'AND dataset_id_right =', modify_ground_truth_right_dataset_id,
                                                   'ORDER BY parameter_id ASC'))
     # Get the fields to delete
     parameter_id  <- df$parameter_id[selected_row]

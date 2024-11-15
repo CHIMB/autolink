@@ -422,7 +422,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Get the comparison rules for the current row
           comparison_rules_json <- row$comparison_rules
 
-          # Make sure the linkage rules aren't NA
+          # Make sure the comparison rules aren't NA
           if(!is.na(comparison_rules_json)){
             comparison_rules <- jsonlite::fromJSON(comparison_rules_json)
 
@@ -702,6 +702,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Now, if a ground truth is provided get the ground truth variables to calculate specificity later on
         ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+        comparison_rules_list_gt <- list()
         has_ground_truth <- FALSE
         if(nrow(ground_truth_df) > 0){
           has_ground_truth <- TRUE
@@ -718,6 +719,138 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # Rename the right dataset field to match the field it's going to be matching with
             names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+
+            # Get the comparison rules for the current row
+            comparison_rules_json <- row$comparison_rules
+
+            # Make sure the comparison rules aren't NA
+            if(!is.na(comparison_rules_json)){
+              comparison_rules <- jsonlite::fromJSON(comparison_rules_json)
+
+              # Get the field we'll apply the comparison rules to
+              dataset_field <- row$left_dataset_field
+
+              # Based on the comparison rule, map it to the appropriate function
+              if("jw_score" %in% names(comparison_rules)){
+                # "jw_score" uses the Reclin2 cmp_jarowinkler function, so get the value
+                threshold <- comparison_rules[["jw_score"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
+              }
+              else if ("numeric_tolerance" %in% names(comparison_rules)){
+                # custom "numeric error tolerance" function
+                numeric_error_tolerance <- function(tolerance){
+                  function(x , y){
+                    if(!missing(x) && !missing(y)){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 abs(x - y) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the tolerance value
+                tolerance <- comparison_rules[["numeric_tolerance"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- numeric_error_tolerance(tolerance)
+              }
+              else if ("date_tolerance" %in% names(comparison_rules)){
+                # Custom "date error tolerance" function
+                date_error_tolerance <- function(tolerance){
+                  function(x , y){
+                    if(!missing(x) && !missing(y)){
+                      # Convert values to dates
+                      x = as.Date(x)
+                      y = as.Date(y)
+
+                      # Determine if the date is within error tolerance
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 abs(x - y) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the tolerance value
+                tolerance <- comparison_rules[["date_tolerance"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- date_error_tolerance(tolerance)
+              }
+              else if ("levenshtein_string_cost" %in% names(comparison_rules)){
+                # Custom "levenshtein distance" function
+                levenshtein_string_dist <- function(dist){
+                  function(x, y){
+                    if(!missing(x) && !missing(y)){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 stringdist::stringdist(x, y, method = "lv") <= dist)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the levenshtein distance value
+                dist <- comparison_rules[["levenshtein_string_cost"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- levenshtein_string_dist(dist)
+              }
+              else if ("damerau_levenshtein_string_cost" %in% names(comparison_rules)){
+                # Custom "damerau levenshtein distance" function
+                damerau_levenshtein_string_dist <- function(dist){
+                  function(x, y){
+                    if(!missing(x) && !missing(y)){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 stringdist::stringdist(x, y, method = "dl") <= dist)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the levenshtein distance value
+                dist <- comparison_rules[["damerau_levenshtein_string_cost"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- damerau_levenshtein_string_dist(dist)
+              }
+              else if ("to_soundex" %in% names(comparison_rules)){
+                # Custom "soundex match" function
+                soundex_dist <- function(){
+                  function(x, y){
+                    if(!missing(x) && !missing(y)){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 stringdist::stringdist(x, y, method = "soundex") == 0)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- soundex_dist()
+              }
+            }
           }
 
           # Get the left fields
@@ -727,7 +860,13 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           right_ground_truth_fields <- ground_truth_df$right_dataset_field
 
           # Compare variables to get the truth
-          linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+          if(length(comparison_rules_list_gt) > 0){
+            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields,
+                                          comparator = comparison_rules_list_gt)
+          }
+          else{
+            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+          }
         }
         #--------------------------#
 
@@ -3235,7 +3374,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
           # Get the algorithms enabled for testing
           enabled_algorithms <- dbGetQuery(linkage_metadata_db, paste0('SELECT algorithm_id FROM linkage_algorithms
-                                                               WHERE enabled_for_testing = 1 AND enabled = 0
+                                                               WHERE enabled_for_testing = 1 AND enabled = 0 AND archived = 0 AND published = 0
                                                                  AND dataset_id_left = ', left_dataset_id, ' AND dataset_id_right = ', right_dataset_id,
                                                               ' ORDER BY algorithm_id ASC'))$algorithm_id
 

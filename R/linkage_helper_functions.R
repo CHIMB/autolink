@@ -380,16 +380,21 @@ get_algorithm_name <- function(linkage_db, algorithm_id){
 #' get_ground_truth_fields(linkage_db, algorithm_id)
 #' @export
 get_ground_truth_fields <- function(linkage_db, algorithm_id){
-  # Start by getting all the rows from ground_truth_variables that match to a specific algorithm_id
+  # Get the left and right dataset
+  datasets_df <- dbGetQuery(linkage_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+  left_dataset_id  <- datasets_df$dataset_id_left
+  right_dataset_id <- datasets_df$dataset_id_right
+
+  # Get all the rows from ground_truth_variables that match to a left and right dataset id
   ground_truth_df <- dbGetQuery(linkage_db, paste0('
     SELECT
       dvf.field_name AS left_dataset_field,
       dvf2.field_name AS right_dataset_field,
-      gtv.linkage_rule_id
+      gtv.comparison_rule_id
     FROM ground_truth_variables gtv
     INNER JOIN dataset_fields dvf ON gtv.left_dataset_field_id = dvf.field_id
     INNER JOIN dataset_fields dvf2 ON gtv.right_dataset_field_id = dvf2.field_id
-    WHERE gtv.algorithm_id = ', algorithm_id))
+    WHERE gtv.dataset_id_left = ', left_dataset_id, ' AND gtv.dataset_id_right = ', right_dataset_id))
 
   # Prevent error in-case there are no blocking variables for this iteration
   if(nrow(ground_truth_df) <= 0){
@@ -402,38 +407,32 @@ get_ground_truth_fields <- function(linkage_db, algorithm_id){
     # Get the current row
     row <- ground_truth_df[row_num,]
 
-    # Get the parameters for each row if a linkage rule id was selected
-    linkage_rule_id <- row$linkage_rule_id
-    if(!is.na(linkage_rule_id)){
+    # Get the parameters for each row if a comparison rule id was selected
+    comparison_rule_id <- row$comparison_rule_id
+    if(!is.na(comparison_rule_id)){
       # Get the linkage rule fields
-      parameters_df <- dbGetQuery(linkage_db, paste0('SELECT * from linkage_rules where linkage_rule_id = ', linkage_rule_id))
+      parameters_df <- dbGetQuery(linkage_db, paste0('
+        SELECT
+          crp.parameter_id,
+          crp.parameter,
+          cmp.parameter_key
+        FROM comparison_rules_parameters crp
+        JOIN comparison_method_parameters cmp ON crp.parameter_id = cmp.parameter_id
+        WHERE crp.comparison_rule_id = ', comparison_rule_id))
 
-      # Initialize an empty list to store key-value pairs
-      key_value_pairs <- list()
-
-      # Iterate over the columns in parameters_df
-      for (col_name in names(parameters_df)[-1]) {
-        # Get the value for the current column
-        value <- parameters_df[[col_name]][1]
-
-        # Only include non-NA values
-        if (!is.na(value)) {
-          # Add the key-value pair to the list
-          key_value_pairs[[col_name]] <- value
-        }
-      }
+      key_value_pairs <- as.list(setNames(parameters_df$parameter, parameters_df$parameter_key))
 
       # Convert the list of key-value pairs to a JSON string
-      linkage_rule_json <- jsonlite::toJSON(key_value_pairs, auto_unbox = TRUE)
+      comparison_rule_json <- jsonlite::toJSON(key_value_pairs, auto_unbox = TRUE)
 
       # Store the linkage rules over the initial linkage rule ID, and continue through the loop
-      row$linkage_rule_id <- linkage_rule_json
+      row$comparison_rule_id <- comparison_rule_json
       ground_truth_df[row_num, ] <- row
     }
   }
 
-  # Rename the "linkage_rule_id" column to "linkage_rules"
-  names(ground_truth_df)[names(ground_truth_df) == 'linkage_rule_id'] <- 'linkage_rules'
+  # Rename the "comparison_rule_id" column to "comparison_rules"
+  names(ground_truth_df)[names(ground_truth_df) == 'comparison_rule_id'] <- 'comparison_rules'
 
   # Return the blocking keys w/ rules
   return(ground_truth_df)
