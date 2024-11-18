@@ -662,16 +662,19 @@ linkage_ui <- page_navbar(
           # Column layout for all buttons
           layout_column_wrap(
             width = 1/4,
-            height = 250,
+            height = 210,
             heights_equal = "all",
 
             # Card for Regenerating Linkage Reports
             card(
               full_screen = FALSE,
-              card_header("Regenerate Linkage Report Page", class = 'bg-dark'),
               card_body(
                 fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 65px",
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
+                      actionButton("run_algorithm_alt", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("file-waveform")),
+                    )
+                  ),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
                       actionButton("go_to_regenerate_report", "Regenerate Report...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
                     )
                   )
@@ -682,7 +685,6 @@ linkage_ui <- page_navbar(
             # CARD FOR ARCHIVING AND PUBLISHING ALGORITHMS
             card(
               full_screen = FALSE,
-              card_header("Archive or Publish Selected Algorithm", class = 'bg-dark'),
               card_body(
                 fluidRow(
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
@@ -700,7 +702,6 @@ linkage_ui <- page_navbar(
             # Create a card for the buttons
             card(
               full_screen = FALSE,
-              card_header("Modify Algorithm Iteration Information", class = 'bg-dark'),
               card_body(
                 fluidRow(
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -722,7 +723,6 @@ linkage_ui <- page_navbar(
             # Create a card for editing/viewing algorithm output information
             card(
               full_screen = FALSE,
-              card_header("Modify Algorithm Output Information", class = 'bg-dark'),
               card_body(
                 fluidRow(
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -734,7 +734,7 @@ linkage_ui <- page_navbar(
                     )
                   ),
                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("linkage_algorithms_to_audits", "Saved Performance Measures...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
+                      actionButton("linkage_algorithms_to_audits", "Performance Measures...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
                     )
                   )
                 )
@@ -1009,46 +1009,46 @@ linkage_ui <- page_navbar(
       # Render the data table of currently available iterations
       h5(strong("Select A Saved Performance Entry to View & Export:")),
 
-      # Card for the data table
-      div(style = "display: flex; justify-content: center; align-items: center; width: 75%; margin: 0 auto;",
-        card(
-          full_screen = TRUE,
-          height = 500,
-          page_fillable(
-            dataTableOutput("algorithm_specific_audits"),
+      # UI date range input
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            dateRangeInput("audit_date_range", label = "Limit Audit Date Range", start = "1983-01-01", end = NULL),
           )
         )
       ),
 
-      # If NO ROW IS SELECTED, the user can limit results by choosing a range of years
-      conditionalPanel(
-        condition = "input.algorithm_specific_audits_rows_selected <= 0",
-
-        # Header for selecting a new date range
-        h5(strong("Or, limit the performance selection by changing the date range:")),
-
-        # UI date range input
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              dateRangeInput("audit_date_range", label = "Limit Audit Date Range", start = "1983-01-01", end = NULL),
+      # Card for the data table
+      layout_column_wrap(
+        width = NULL,
+        style = css(grid_template_columns = '2fr 1fr;'),
+        height = 500,
+        # CARD FOR AUDIT SELECTION
+        card(
+          full_screen = TRUE,
+          height = 500,
+          page_fillable(
+            column(
+              width = 12,
+              div(
+                style = "margin-bottom: 10px;",  # Add spacing below the buttons
+                actionButton("select_all_audit", "Select All", class = "btn btn-primary btn-sm"),
+                actionButton("select_none_audit", "Select None", class = "btn btn-secondary btn-sm")
+              ),
+              dataTableOutput("algorithm_specific_audits"),
             )
-          ),
+          )
+        ),
+        # CARD FOR DEFINITIONS
+        card(
+          height = 500,
+          uiOutput("selected_algorithm_performances_measures")
         )
       ),
 
       # If A ROW IS SELECTED, the user can export the results by clicking the button
       conditionalPanel(
-        condition = "input.algorithm_specific_audits_rows_selected > 0",
-        # View selected/saved algorithm performance
-        div(style = "display: flex; justify-content: center; align-items: center; width: 40%; margin: 0 auto;",
-          card(
-            full_screen = TRUE,
-            height = 500,
-            fluidPage(
-              uiOutput("selected_algorithm_performances_measures")
-            )
-          )
-        ),
+        # THIS WAS BROKEN BEFORE, IF SOMETHING KEEPS BREAKING JUST USE "input.algorithm_specific_audits_rows_selected > 0"!
+        condition = "typeof input.algorithm_specific_audits_rows_selected !== 'undefined' && input.algorithm_specific_audits_rows_selected.length > 0",
 
         # Export Audit Button
         fluidRow(
@@ -2546,12 +2546,16 @@ linkage_ui <- page_navbar(
           height = 600,
           full_screen = FALSE,
           card_header("Select Algorithms to Run", class = 'bg-dark'),
-          card_body(
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                dataTableOutput("select_linkage_algorithms_to_run"),
-              )),
-            ),
+          page_fillable(
+            column(
+              width = 12,
+              div(
+                style = "margin-bottom: 10px;",  # Add spacing below the buttons
+                actionButton("select_all_run", "Select All", class = "btn btn-primary btn-sm"),
+                actionButton("select_none_run", "Select None", class = "btn btn-secondary btn-sm")
+              ),
+              dataTableOutput("select_linkage_algorithms_to_run"),
+            )
           )
         )
       ),
@@ -2625,23 +2629,17 @@ linkage_ui <- page_navbar(
       HTML("<br>"), # Spacing
 
       ### STEP 4
-      h5(strong("Step 4: Select Output Options")),
+      h5(strong("Step 4: Select Export Options")),
       # Create a card for editing/viewing algorithm output information
       column(width = 6, offset = 3,  # Control the card's width and center it
         div(style = "display: flex; justify-content: center; align-items: center;",
           card(
             width = NULL,  # Remove the width inside the card and control it from the column
-            height = 650,
+            height = 460,
             full_screen = FALSE,
-            card_header("Select Output Options", class = 'bg-dark'),
+            card_header("Optional Export Options", class = 'bg-dark'),
             card_body(
               fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Includes the unlinked record pairs that appear in the linkage data OR linkage quality report.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("include_unlinked_records", "Unlinked Pairs in Final Output", FALSE)
-                )),
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                   helpText("Per Pass CSV output of the linked pairs that were selected.")
                 )),
@@ -2672,6 +2670,30 @@ linkage_ui <- page_navbar(
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                   checkboxInput("generate_threshold_plots", "Histograms", FALSE)
                 )),
+              )
+            )
+          )
+        )
+      ),
+
+      ### STEP 5
+      h5(strong("Step 5: Select Output Options")),
+      # Create a card for editing/viewing algorithm output information
+      column(width = 6, offset = 3,  # Control the card's width and center it
+        div(style = "display: flex; justify-content: center; align-items: center;",
+          card(
+            width = NULL,  # Remove the width inside the card and control it from the column
+            height = 300,
+            full_screen = FALSE,
+            card_header("Optional Output Options", class = 'bg-dark'),
+            card_body(
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  helpText("Includes the unlinked record pairs that appear in the linkage data or the linkage quality report.")
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                  checkboxInput("include_unlinked_records", "Unlinked Pairs in Final Output", FALSE)
+                )),
                 column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                   helpText("Collects missing data indicators of the output fields to be placed in the linkage report.")
                 )),
@@ -2692,8 +2714,8 @@ linkage_ui <- page_navbar(
 
       HTML("<br>"), # Spacing
 
-      ### STEP 5
-      h5(strong("Step 5: Retain Record Linkage Data")),
+      ### STEP 6
+      h5(strong("Step 6: Retain Record Linkage Data")),
       # Create a card for saving the results obtained during record linkage
       column(width = 6, offset = 3,  # Control the card's width and center it
         div(style = "display: flex; justify-content: center; align-items: center;",
@@ -2719,8 +2741,8 @@ linkage_ui <- page_navbar(
 
       HTML("<br>"), # Spacing
 
-      ### STEP 6
-      h5(strong("Step 6: Run Record Linkage for the Selected Algorithm(s)")),
+      ### STEP 7
+      h5(strong("Step 7: Run Record Linkage for the Selected Algorithm(s)")),
       # Create a card for editing/viewing algorithm output information
       div(style = "display: flex; justify-content: center; align-items: center;",
         card(
@@ -4073,6 +4095,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     })
     updateDateRangeInput(session, "audit_date_range", start = "1983-01-01", end = format(Sys.Date(), format = "%Y-%m-%d"))
 
+    # Clear the selected rows
+    selected_rows_audit$selected <- NULL
+
     # Show the iterations page
     nav_show('main_navbar', 'audits_page')
     updateNavbarPage(session, "main_navbar", selected = "audits_page")
@@ -4128,7 +4153,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     updateNavbarPage(session, "main_navbar", selected = "linkage_algorithm_output_page")
   })
 
-  # Run the default algorithm button
+  # Run algorithm button
   observeEvent(input$run_default_algorithm, {
     # Get the selected row
     left_dataset_id  <- input$linkage_algorithm_left_dataset
@@ -4143,6 +4168,36 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     output$select_linkage_algorithms_to_run <- renderDataTable({
       get_linkage_algorithms_to_run()
     })
+
+    # Clear the selected rows
+    selected_rows_run$selected <- NULL
+
+    # Update the return button'
+    updateActionButton(session, "run_algorithm_back", label = "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long"))
+
+    # Show the iterations page
+    nav_show('main_navbar', 'run_algorithm_page')
+    updateNavbarPage(session, "main_navbar", selected = "run_algorithm_page")
+  })
+
+  # Run algorithm button (ALT)
+  observeEvent(input$run_algorithm_alt, {
+    # Get the selected row
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+
+    # Update global variables
+    run_algorithm_left_dataset_id  <<- left_dataset_id
+    run_algorithm_right_dataset_id <<- right_dataset_id
+    run_algorithm_return_page      <<- "linkage_algorithms_page"
+
+    # Re-render data table
+    output$select_linkage_algorithms_to_run <- renderDataTable({
+      get_linkage_algorithms_to_run()
+    })
+
+    # Clear the selected rows
+    selected_rows_run$selected <- NULL
 
     # Update the return button'
     updateActionButton(session, "run_algorithm_back", label = "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long"))
@@ -5072,6 +5127,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   linkage_audits_algorithm_id <- 1
   linkage_audits_return_page  <- "linkage_algorithms_page"
 
+  # Reactive values to track selected rows
+  selected_rows_audit <- reactiveValues(selected = NULL)
+
   # Back button will bring you back to whichever page you came from
   observeEvent(input$linkage_audits_back, {
     # Show return to the page you came from
@@ -5170,9 +5228,22 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     audit_df <- audit_df[, c(1, 2, 4, 3)]
 
     # Put it into a data table now
-    dt <- datatable(audit_df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+    #dt <- datatable(audit_df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
+    dt <- datatable(audit_df, selection = list(mode = "multiple", selected = selected_rows_audit$selected), rownames = FALSE, options = list(lengthChange = FALSE))
     return(dt)
   }
+
+  # Handle 'Select All' button click
+  observeEvent(input$select_all_audit, {
+    # Update selected rows to include all rows
+    selected_rows_audit$selected <- seq_len(nrow(get_audit_information()$x$data))
+  })
+
+  # Handle 'Select None' button click
+  observeEvent(input$select_none_audit, {
+    # Clear the selected rows
+    selected_rows_audit$selected <- NULL
+  })
 
   # Renders the table of audit information
   output$algorithm_specific_audits <- renderDataTable({
@@ -5185,85 +5256,33 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     lower_date   <- input$audit_date_range[1]
     upper_date   <- input$audit_date_range[2]
 
+    # Clear the selected rows
+    selected_rows_audit$selected <- NULL
+
     # Re-render the audit table
     output$algorithm_specific_audits <- renderDataTable({
       get_audit_information()
     })
   })
 
-  # Observe whenever the user selects a row, so we can populate the UI with easier to read performance values
-  observeEvent(input$algorithm_specific_audits_rows_selected, {
-    # Get the selected row
-    selected_row <- input$algorithm_specific_audits_rows_selected
-    algorithm_id <- linkage_audits_algorithm_id
+  # Update `selected_rows_audit` when a row is clicked manually
+  observe({
+    selected_rows_audit$selected <- input$algorithm_specific_audits_rows_selected
+  })
 
-    # Make sure the selected row is valid
-    if(is.null(selected_row)) return()
-
-    # Get the date inputs
-    lower_date   <- input$audit_date_range[1]
-    upper_date   <- input$audit_date_range[2]
-
-    # Format the dates
-    lower_date <- as.character(as.Date(lower_date, "%Y-%m-%d"))
-    upper_date <- as.character(as.Date(upper_date, "%Y-%m-%d"))
-
-    # Keep a data frame variable to obtain the table the user selected from
-    audit_df <- data.frame()
-
-    # QUERY 1 (Both date ranges were provided)
-    if(!is.na(lower_date) && !is.na(upper_date)){
-      # Query for obtaining the performance measures
-      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date >= ? AND audit_date <= ? AND algorithm_id = ? ORDER BY audit_id'
-
-      # Execute the query and bind parameters
-      df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, upper_date, algorithm_id))
-
-      # Return the queried data frame to our audit_df variable
-      audit_df <- df
-    }
-
-    # QUERY 2 (Only lower date range was provided)
-    if(!is.na(lower_date) && is.na(upper_date)){
-      # Query for obtaining the performance measures
-      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date >= ? AND algorithm_id = ? ORDER BY audit_id'
-
-      # Execute the query and bind parameters
-      df <- dbGetQuery(linkage_metadata_conn, query, params = list(lower_date, algorithm_id))
-
-      # Return the queried data frame to our audit_df variable
-      audit_df <- df
-    }
-
-    # QUERY 3 (Only upper date range was provided)
-    if(is.na(lower_date) && !is.na(upper_date)){
-      # Query for obtaining the performance measures
-      query <- 'SELECT * FROM performance_measures_audit WHERE audit_date <= ? AND algorithm_id = ? ORDER BY audit_id'
-
-      # Execute the query and bind parameters
-      df <- dbGetQuery(linkage_metadata_conn, query, params = list(upper_date, algorithm_id))
-
-      # Return the queried data frame to our audit_df variable
-      audit_df <- df
-    }
-
-    # QUERY 4 (No date range was provided)
-    if(is.na(lower_date) && is.na(upper_date)){
-      # Query for obtaining the performance measures
-      query <- 'SELECT * FROM performance_measures_audit WHERE algorithm_id = ? ORDER BY audit_id'
-
-      # Execute the query and bind parameters
-      df <- dbGetQuery(linkage_metadata_conn, query, params = list(algorithm_id))
-
-      # Return the queried data frame to our audit_df variable
-      audit_df <- df
-    }
-
-    # Get the selected rows performance measure JSON
-    performance_measures_json <- audit_df$performance_measures_json[selected_row]
-
+  # Render the UI output using 'lapply' to print out each list item
+  output$selected_algorithm_performances_measures <- renderUI({
     # Convert the JSON to a data frame for manipulation
-    performance_measures_list <- as.list(jsonlite::fromJSON(performance_measures_json))
+    performance_measures_list <- list()
+    performance_measures_list[["Linkage Rate"]] <- ""
+    performance_measures_list[["Time to Completion (s)"]] <- ""
+    performance_measures_list[["PPV"]] <- ""
+    performance_measures_list[["NPV"]] <- ""
+    performance_measures_list[["Sensitivity"]] <- ""
+    performance_measures_list[["Specificity"]] <- ""
+    performance_measures_list[["F1 Score"]] <- ""
+    performance_measures_list[["FDR"]] <- ""
+    performance_measures_list[["FOR"]] <- ""
 
     # For each list value, add some 'help' text if it matches one of the name we expect
     performance_measures_help <- c()
@@ -5297,8 +5316,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       }
       # If the name is "F1 Score":
       else if(list_name == "F1 Score"){
-        help_text <- paste0("The F1 Score is a summary measure (%) of the performance of the predicitve ability on the postitive class. ",
+        help_text <- paste0("The F1 Score is a summary measure (%) of the performance of the predicitive ability on the postitive class. ",
                             "It summarizes PPV and Sensitivity into a single number using a harmonic mean.")
+      }
+      # If the name is "FDR":
+      else if(list_name == "FDR"){
+        help_text <- paste0("False Discovery Rate (FDR) is the proportion (%) of incorrect links among all detected links.")
+      }
+      # If the name is "FOR":
+      else if(list_name == "FOR"){
+        help_text <- paste0("False Omission Rate (FOR) is the proportion (%) of missed correct links among all actual links.")
       }
       # Otherwise, no help text is needed
       else{
@@ -5309,38 +5336,35 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       performance_measures_help <- append(performance_measures_help, help_text)
     }
 
-    # Render the UI output using 'lapply' to print out each list item
-    output$selected_algorithm_performances_measures <- renderUI({
-      # Generate the performance measures list and return it
-      performance_measures_ui <- lapply(1:(length(performance_measures_list)), function(index){
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            # Label for the performance value
-            div(style = "margin-right: 10px;", HTML(paste0("<b>", names(performance_measures_list[index]), "</b>")))
-          )),
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            # Boxed text output for showing the uploaded file name
-            div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 250px",
-                paste0(performance_measures_list[[index]])
-            )
-          )),
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            # Help text for the performance measure
-            helpText(performance_measures_help[index], style = "width: 400px;")
-          )),
-          HTML("<br><br>")
-        )
-      })
+    # Generate the performance measures list and return it
+    performance_measures_ui <- lapply(1:(length(performance_measures_list)), function(index){
+      fluidRow(
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                               # Label for the performance value
+                               div(style = "margin-right: 10px;", HTML(paste0("<b>", names(performance_measures_list[index]), "</b>")))
+        )),
+        # column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+        #   # Boxed text output for showing the uploaded file name
+        #   div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 250px",
+        #       paste0(performance_measures_list[[index]])
+        #   )
+        # )),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                               # Help text for the performance measure
+                               helpText(performance_measures_help[index], style = "width: 400px;")
+        )),
+        HTML("<br><br>")
+      )
     })
   })
 
   # Observes when the user exports a selected audit
   observeEvent(input$export_selected_audit, {
     # Get the user input information (ID, date ranges)
-    selected_row <- input$algorithm_specific_audits_rows_selected
-    algorithm_id <- linkage_audits_algorithm_id
-    lower_date   <- input$audit_date_range[1]
-    upper_date   <- input$audit_date_range[2]
+    selected_rows <- input$algorithm_specific_audits_rows_selected
+    algorithm_id  <- linkage_audits_algorithm_id
+    lower_date    <- input$audit_date_range[1]
+    upper_date    <- input$audit_date_range[2]
 
     # Format the dates
     lower_date <- as.character(as.Date(lower_date, "%Y-%m-%d"))
@@ -5398,28 +5422,36 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     }
 
     # Get the algorithm name
-    df <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
-    algorithm_name <- stri_replace_all_regex(df$algorithm_name, " ", "")
+    algorithm_name <- get_algorithm_name(linkage_metadata_conn, algorithm_id)
 
-    # Get the performance measure information
-    audit_by                  <- audit_df$audit_by[selected_row]
-    audit_date                <- audit_df$audit_date[selected_row]
-    audit_time                <- audit_df$audit_time[selected_row]
-    performance_measures_json <- audit_df$performance_measures_json[selected_row]
+    # Create a data frame of the data frame to export
+    export_df <- data.frame()
 
-    # Create a data frame which will contain the auditing information to export
-    export_df <- data.frame(matrix(ncol = 0, nrow = 1))
+    # For each of the selected rows, get and bind information by rows
+    for(selected_row in selected_rows){
+      # Get the performance measure information
+      audit_by                  <- audit_df$audit_by[selected_row]
+      audit_date                <- audit_df$audit_date[selected_row]
+      audit_time                <- audit_df$audit_time[selected_row]
+      performance_measures_json <- audit_df$performance_measures_json[selected_row]
 
-    # Add the date and author as columns
-    export_df[["Audited By"]]    <- audit_by
-    export_df[["Date of Audit"]] <- audit_date
-    export_df[["Time of Audit"]] <- audit_time
+      # Create a data frame which will contain the auditing information to export
+      export_df_temp <- data.frame(matrix(ncol = 0, nrow = 1))
 
-    # Convert the performance measures_json to a data frame
-    performance_measures_df <- jsonlite::fromJSON(performance_measures_json, simplifyDataFrame = TRUE)
+      # Add the date and author as columns
+      export_df_temp[["Audited By"]]    <- audit_by
+      export_df_temp[["Date of Audit"]] <- audit_date
+      export_df_temp[["Time of Audit"]] <- audit_time
 
-    # Bind the columns
-    export_df <- cbind(export_df, performance_measures_df)
+      # Convert the performance measures_json to a data frame
+      performance_measures_df <- jsonlite::fromJSON(performance_measures_json, simplifyDataFrame = TRUE)
+
+      # Bind the columns
+      export_df_temp <- cbind(export_df_temp, performance_measures_df)
+
+      # Bind the rows
+      export_df <- bind_rows(export_df, export_df_temp)
+    }
 
     # Get user input by requiring them to supply a directory for output
     output_dir <- choose.dir(getwd(), "Choose a Folder")
@@ -5427,7 +5459,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Two things can happen, if no directory is chosen, or NA happens, write it to the working directory, otherwise use user input
     if(!is.na(output_dir)){
       # Define base file name
-      base_filename <- paste0(algorithm_name, '_performance_measures_', audit_date)
+      base_filename <- paste0(algorithm_name, ' Performance Measures (', format(Sys.time(), "%Y-%m-%d %Hh-%Mm-%Ss"), ')')
 
       # Start with the base file name
       full_filename <- file.path(output_dir, paste0(base_filename, ".csv"))
@@ -5464,7 +5496,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     full_filename <- stri_replace_all_regex(full_filename, "\\\\", "/")
     showNotification(paste0("Performance Measures Exported to: ", full_filename), type = "message", closeButton = FALSE)
   })
-
   #----
   #--------------------------------------------#
 
@@ -13169,6 +13200,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   run_algorithm_right_dataset_id <- 1
   run_algorithm_return_page  <- "linkage_algorithms_page"
 
+  # Reactive values to track selected rows
+  selected_rows_run <- reactiveValues(selected = NULL)
+
   # Initialize the selected file and folder to be empty
   output$uploaded_linkage_standardize_names_file <- renderText({
     "No File Has Been Chosen"
@@ -13217,12 +13251,29 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right, published, archived))
 
     # Put it into a data table now
-    dt <- datatable(df, selection = 'multiple', rownames = FALSE, options = list(lengthChange = FALSE))
+    dt <- datatable(df, selection = list(mode = "multiple", selected = selected_rows_run$selected), rownames = FALSE, options = list(lengthChange = FALSE))
   }
 
   # Render the data table for the linkage algorithms of the desired 2 datasets
   output$select_linkage_algorithms_to_run <- renderDataTable({
     get_linkage_algorithms_to_run()
+  })
+
+  # Handle 'Select All' button click
+  observeEvent(input$select_all_run, {
+    # Update selected rows to include all rows
+    selected_rows_run$selected <- seq_len(nrow(get_linkage_algorithms_to_run()$x$data))
+  })
+
+  # Handle 'Select None' button click
+  observeEvent(input$select_none_run, {
+    # Clear the selected rows
+    selected_rows_run$selected <- NULL
+  })
+
+  # Update `selected_rows_run` when a row is clicked manually
+  observe({
+    selected_rows_run$selected <- input$select_linkage_algorithms_to_run_rows_selected
   })
 
   # Get the computer volumes

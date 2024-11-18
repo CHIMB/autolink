@@ -382,6 +382,13 @@ get_algorithm_name <- function(linkage_db, algorithm_id){
 get_ground_truth_fields <- function(linkage_db, algorithm_id){
   # Get the left and right dataset
   datasets_df <- dbGetQuery(linkage_db, paste0('SELECT * FROM linkage_algorithms WHERE algorithm_id = ', algorithm_id))
+
+  # Prevent error in-case there are no datasets for this algorithm ID
+  if(nrow(datasets_df) <= 0){
+    return(data.frame())
+  }
+
+  # Grab the dataset IDs
   left_dataset_id  <- datasets_df$dataset_id_left
   right_dataset_id <- datasets_df$dataset_id_right
 
