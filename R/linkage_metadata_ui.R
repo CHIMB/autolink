@@ -1,5 +1,7 @@
 # UI ----
 linkage_ui <- page_navbar(
+  # Set the theme of the application
+  theme = bs_theme(bootswatch = "spacelab"),
   # Tags
   #----
   tags$head(
@@ -133,10 +135,34 @@ linkage_ui <- page_navbar(
       }
     ")),
     tags$head(tags$style('h6 {color:blue;}')),
+    # Add additional content here...
+    tags$style(HTML("
+        .navbar-nav {
+          display: flex;
+          align-items: center;
+        }
+        .navbar-brand {
+          display: flex;
+          align-items: center;
+        }
+        .navbar-brand img {
+          vertical-align: middle;
+        }
+        .navbar {
+          min-height: 60px; /* Adjust to your preference */
+        }
+     ")
+    )
   ),
   #----
-  title = "Data Linkage GUI",
-  bg = "#f05a28",
+  title =
+    div(
+      img(
+        src = "figures/autolink_logo_blue_wide_v2.png",
+        width = 210,
+        height = 70
+      )
+    ),
   id = 'main_navbar',
   #-- HOME PAGE --#
   #----
@@ -13567,6 +13593,9 @@ start_linkage_metadata_ui <- function(metadata_file_path, username){
 
   # Calling useShinyjs here so that we can disable and enable buttons during data linkage
   shinyjs::useShinyjs()
+
+  # Add a resource path
+  addResourcePath("figures", system.file("help/figures", package = "datalink"))
 
   # Start the Shiny Application
   shinyApp(ui = linkage_ui,
