@@ -2805,11 +2805,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #-- HIDING PAGES EVENTS --#
   # Initially hide some tabs we don't need the users to access
   nav_hide('main_navbar', 'linkage_rule_page')
-  nav_hide('main_navbar', 'acceptance_rules_page')
-  nav_hide('main_navbar', 'comparison_rules_page')
   nav_hide('main_navbar', 'view_linkage_iterations_page')
   nav_hide('main_navbar', 'add_linkage_iterations_page')
-  nav_hide('main_navbar', 'update_linkage_iterations_page')
   nav_hide('main_navbar', 'acceptance_methods_page')
   nav_hide('main_navbar', 'comparison_methods_page')
   nav_hide('main_navbar', 'ground_truth_variables_page')
@@ -2823,8 +2820,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   # If the user goes off of an inner tab, hide it
   observeEvent(input$main_navbar, {
     # Get the tabs that are not necessary for the user
-    tabs_to_hide <- c("linkage_rule_page", "acceptance_rules_page", "comparison_rules_page",
-                      "view_linkage_iterations_page", "add_linkage_iterations_page", "update_linkage_iterations_page",
+    tabs_to_hide <- c("linkage_rule_page", "view_linkage_iterations_page", "add_linkage_iterations_page",
                       "acceptance_methods_page", "comparison_methods_page", "ground_truth_variables_page", "audits_page",
                       "linkage_algorithm_output_page", "run_algorithm_page", "regenerate_report_page",
                       "archived_linkage_algorithms_page", "published_linkage_algorithms_page")
