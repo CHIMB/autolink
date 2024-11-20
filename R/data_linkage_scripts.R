@@ -66,36 +66,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
         }
 
-        # # Rename the fields of our blocking keys so that they match in both datasets
-        # for(row_num in 1:nrow(blocking_keys_df)){
-        #   # Get the current row
-        #   row <- blocking_keys_df[row_num,]
-        #
-        #   # Get the left dataset field name (what we'll be renaming to)
-        #   left_dataset_field_name <- row$left_dataset_field
-        #
-        #   # Get the right dataset field name (what's being renamed)
-        #   right_dataset_field_name <- row$right_dataset_field
-        #
-        #   # Rename the right dataset field to match the field it's going to be matching with
-        #   names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
-        # }
-
-        # # Rename the fields of our matching keys so that they match in both datasets
-        # for(row_num in 1:nrow(matching_keys_df)){
-        #   # Get the current row
-        #   row <- matching_keys_df[row_num,]
-        #
-        #   # Get the left dataset field name (what we'll be renaming to)
-        #   left_dataset_field_name <- row$left_dataset_field
-        #
-        #   # Get the right dataset field name (what's being renamed)
-        #   right_dataset_field_name <- row$right_dataset_field
-        #
-        #   # Rename the right dataset field to match the field it's going to be matching with
-        #   names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
-        # }
-
         # Go through the blocking variables, applying the linkage rules to each,
         # and storing the columns we'll be using to block on
         blocking_keys <- c() # Holds the blocking keys
@@ -1088,36 +1058,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Rename the temporary field to the desired left dataset field name
           names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
         }
-
-        # # Rename the fields of our blocking keys so that they match in both datasets
-        # for(row_num in 1:nrow(blocking_keys_df)){
-        #   # Get the current row
-        #   row <- blocking_keys_df[row_num,]
-        #
-        #   # Get the left dataset field name (what we'll be renaming to)
-        #   left_dataset_field_name <- row$left_dataset_field
-        #
-        #   # Get the right dataset field name (what's being renamed)
-        #   right_dataset_field_name <- row$right_dataset_field
-        #
-        #   # Rename the right dataset field to match the field it's going to be matching with
-        #   names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
-        # }
-
-        # # Rename the fields of our matching keys so that they match in both datasets
-        # for(row_num in 1:nrow(matching_keys_df)){
-        #   # Get the current row
-        #   row <- matching_keys_df[row_num,]
-        #
-        #   # Get the left dataset field name (what we'll be renaming to)
-        #   left_dataset_field_name <- row$left_dataset_field
-        #
-        #   # Get the right dataset field name (what's being renamed)
-        #   right_dataset_field_name <- row$right_dataset_field
-        #
-        #   # Rename the right dataset field to match the field it's going to be matching with
-        #   names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
-        # }
 
         # Go through the blocking variables, applying the linkage rules to each,
         # and storing the columns we'll be using to block on
@@ -2165,9 +2105,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           compare_pairs(linkage_pairs, on = matching_keys, inplace=TRUE)
         }
 
-        # Now, if a ground truth is provided get the ground truth variables to calculate specificity later on (WHEN DO WE DO THIS IN ML??? FIND OUT!)
+        # Now, if a ground truth is provided get the ground truth variables to calculate specificity later on
         ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
         has_ground_truth <- FALSE
+        comparison_rules_list_gt <- list()
         if(nrow(ground_truth_df) > 0){
           has_ground_truth <- TRUE
           # Rename the fields of our ground truth keys so that they match in both datasets
@@ -2183,6 +2124,138 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # Rename the right dataset field to match the field it's going to be matching with
             names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+
+            # Get the comparison rules for the current row
+            comparison_rules_json <- row$comparison_rules
+
+            # Make sure the comparison rules aren't NA
+            if(!is.na(comparison_rules_json)){
+              comparison_rules <- jsonlite::fromJSON(comparison_rules_json)
+
+              # Get the field we'll apply the comparison rules to
+              dataset_field <- row$left_dataset_field
+
+              # Based on the comparison rule, map it to the appropriate function
+              if("jw_score" %in% names(comparison_rules)){
+                # "jw_score" uses the Reclin2 cmp_jarowinkler function, so get the value
+                threshold <- comparison_rules[["jw_score"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
+              }
+              else if ("numeric_tolerance" %in% names(comparison_rules)){
+                # custom "numeric error tolerance" function
+                numeric_error_tolerance <- function(tolerance){
+                  function(x , y){
+                    if(!missing(x) && !missing(y)){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 abs(x - y) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the tolerance value
+                tolerance <- comparison_rules[["numeric_tolerance"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- numeric_error_tolerance(tolerance)
+              }
+              else if ("date_tolerance" %in% names(comparison_rules)){
+                # Custom "date error tolerance" function
+                date_error_tolerance <- function(tolerance){
+                  function(x , y){
+                    if(!missing(x) && !missing(y)){
+                      # Convert values to dates
+                      x = as.Date(x)
+                      y = as.Date(y)
+
+                      # Determine if the date is within error tolerance
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 abs(x - y) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the tolerance value
+                tolerance <- comparison_rules[["date_tolerance"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- date_error_tolerance(tolerance)
+              }
+              else if ("levenshtein_string_cost" %in% names(comparison_rules)){
+                # Custom "levenshtein distance" function
+                levenshtein_string_dist <- function(dist){
+                  function(x, y){
+                    if(!missing(x) && !missing(y)){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 stringdist::stringdist(x, y, method = "lv") <= dist)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the levenshtein distance value
+                dist <- comparison_rules[["levenshtein_string_cost"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- levenshtein_string_dist(dist)
+              }
+              else if ("damerau_levenshtein_string_cost" %in% names(comparison_rules)){
+                # Custom "damerau levenshtein distance" function
+                damerau_levenshtein_string_dist <- function(dist){
+                  function(x, y){
+                    if(!missing(x) && !missing(y)){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 stringdist::stringdist(x, y, method = "dl") <= dist)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the levenshtein distance value
+                dist <- comparison_rules[["damerau_levenshtein_string_cost"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- damerau_levenshtein_string_dist(dist)
+              }
+              else if ("to_soundex" %in% names(comparison_rules)){
+                # Custom "soundex match" function
+                soundex_dist <- function(){
+                  function(x, y){
+                    if(!missing(x) && !missing(y)){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 stringdist::stringdist(x, y, method = "soundex") == 0)
+                      return(within_tolerance)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- soundex_dist()
+              }
+            }
           }
 
           # Get the left fields
@@ -2192,7 +2265,13 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           right_ground_truth_fields <- ground_truth_df$right_dataset_field
 
           # Compare variables to get the truth
-          linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+          if(length(comparison_rules_list_gt) > 0){
+            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields,
+                                          comparator = comparison_rules_list_gt)
+          }
+          else{
+            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+          }
         }
         #---------------------------#
 
@@ -2559,7 +2638,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   label(intermediate_performance_measures_df$linkage_rate) <- "Linkage Rate"
   #----
 
-  # For Steps 2-5, we'll run each of our algorithms
+  # For Steps 2-8, we'll run each of our algorithms
   algorithm_num <- 0
   for(algorithm_id in algorithm_ids){
     # Generate the timestamp this was executed at

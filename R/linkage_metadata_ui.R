@@ -1,2807 +1,3024 @@
 # UI ----
-linkage_ui <- page_navbar(
-  # Set the theme of the application
-  theme = bs_theme(bootswatch = "spacelab"),
-  # Tags
+linkage_ui <- fluidPage(
+
+  #-- Loading Screens --#
   #----
-  tags$head(
-    tags$style(
-      HTML("#shiny-notification-panel {
-              top: 0;
-              bottom: unset;
-              left: 0;
-              right: 0;
-              margin-left: auto;
-              margin-right: auto;
-              width: 100% !important;
-              max-width: 750px !important;
-              opacity: 1;
-            }"
-      ),
-      HTML(".shiny-notification-message {
-              background-color:#0ec116;
-              color:#000000;
-              opacity: 1 !important;
-              text-align: center;
-           }"
-      ),
-      HTML(".shiny-notification-error {
-              background-color:#C90000;
-              color:#000000;
-              opacity: 1 !important;
-              text-align: center;
-           }"
-      ),
-      HTML(
-        ".dataTables_wrapper caption {
-          font-size: 16px;
-          font-weight: bold;
-          color: black;
-          text-align: center;
-        }"
-      ),
-      HTML("
-        input[type=number] {
-              -moz-appearance:textfield;
-        }
-        input[type=number]::{
-              -moz-appearance:textfield;
-        }
-        input[type=number]::-webkit-outer-spin-button,
-        input[type=number]::-webkit-inner-spin-button {
-              -webkit-appearance: none;
-              margin: 0;
-        }"
-      ),
-      HTML(
-        ".popover {
-          max-width: 50%;
-        }"
-      ),
-      HTML(
-        "body { word-wrap: break-word; }"
-      ),
-      HTML("
-        .modal-sm {
-          width: 50vw !important;  /* Set modal width to 50% of the viewport width */
-          max-width: none !important; /* Disable the default max-width */
-        }
-        .modal-lg {
-          width: 90vw !important;  /* Set modal width to 90% of the viewport width */
-          max-width: none !important; /* Disable the default max-width */
-        }
-        .modal-content {
-          overflow-y: auto;  /* Add scrolling to the modal content */
-        }"
-      ),
-      HTML("
-        .accordion .accordion-button {
-          background-color: #d3d3d3; /* Darker color for closed state */
-          color: #000000;
-        }
-        .accordion .accordion-button:not(.collapsed) {
-          background-color: #f8f9fa; /* Lighter color for open state */
-          color: #000000;
-        }"
-      ),
-      HTML("
-        .tooltip-inner {
-          max-width: 300px;  /* Custom width */
-          background-color: #f8f9fa;  /* Light background */
-          color: #333;  /* Dark text */
-          opacity: 1 !important; /* Fully solid */
-          border: 1px solid #ddd;  /* Border styling */
-          padding: 10px;  /* Adjust padding */
-        }"
-      ),
-      HTML("
-          .modal{
-            z-index: 1150;
-        }"
-      ),
-      HTML("
-          .dataset-field-box {
-            border: 1px solid #ddd; /* Border color */
-            padding: 10px; /* Padding inside the box */
-            background-color: #f9f9f9; /* Background color */
-            border-radius: 5px; /* Rounded corners */
-            margin-bottom: 10px; /* Space below each box */
-          }"
-      ),
+  # LOAD 1 (Nothing done yet)
+  div(
+    id = "loading_screen",
+    fluidPage(
+      h2("Loading, please wait..."),
     ),
-    tags$style(HTML("
-      .btn-circle {
-        border-radius: 50%;
-        width: 40px; /* Adjust as needed */
-        height: 40px; /* Adjust as needed */
-        padding: 0; /* Remove padding */
-        font-size: 18px; /* Adjust icon size */
-      }
-      .btn-green {
-        background-color: lightgreen;
-        border: none;
-        color: white;
-      }
-      .btn-red {
-        background-color: lightcoral;
-        border: none;
-        color: white;
-      }
-      .btn-green:hover {
-        background-color: green; /* Darker shade on hover */
-      }
-      .btn-red:hover {
-        background-color: red; /* Darker shade on hover */
-      }
-    ")),
-    tags$head(tags$style('h6 {color:blue;}')),
-    # Add additional content here...
-    tags$style(HTML("
-        .navbar-nav {
-          display: flex;
-          align-items: center;
-        }
-        .navbar-brand {
-          display: flex;
-          align-items: center;
-        }
-        .navbar-brand img {
-          vertical-align: middle;
-        }
-        .navbar {
-          min-height: 60px; /* Adjust to your preference */
-        }
-     ")
-    )
+    style = "text-align: center; margin-top: 20%;",
   ),
-  #----
-  title =
+
+  # LOAD 2 (hiding tabs)
+  hidden(
     div(
-      img(
-        src = "figures/autolink_logo_blue_wide_v2.png",
-        width = 210,
-        height = 70
-      )
-    ),
-  id = 'main_navbar',
-  #-- HOME PAGE --#
-  #----
-  nav_panel(title = "Home", value = "home_page",
-    fluidPage(
-      HTML("<br><br>"),
-      accordion(
-        accordion_panel(title = "Welcome",
-          "Welcome to the Data Linkage GUI. From this application you can create, modify, and use linkage algorithms on uploaded
-          datasets you may end up providing. You are currently on the Home/Welcome page where you are encouraged to read from the
-          various dropdowns to understand what the application has to offer and where you can access specific pages."
-        ),
-        accordion_panel(title = "Step 1: Prepare Datasets",
-          "The datasets page should be your first stop upon starting the application for the first time, or upon coming back after
-          a long time not using the application. On this page, you can view the uploaded datasets, select an existing dataset to update,
-          or add a new dataset.",
-
-          HTML("<br><br>"), # Line break
-
-          "The page will keep a record of the local file location of the dataset when adding your uploaded file so that data linkage may
-          be ran from the application. When using the same SQLite file on other PCs, this file location should updated by clicking on the
-          desired row and uploading the file from the new location.",
-
-          HTML("<br><br>"), # Line break
-
-          "When uploading a file, you can see the uploaded files field names and class types before submitting the dataset so that you
-          can verify the dataset you're uploading is valid."
-        ),
-        accordion_panel(title = "Step 2: Review Linkage Methods",
-          "The linkage methods page should be your next stop after reviewing, updating, or adding datasets, and provides a table of the
-          currently usable linkage methods that can be used when creating the individual passes of a linkage algorithm in the next step.",
-
-          HTML("<br><br>"), # Line break
-
-          HTML("Additionally, you may create your own linkage class in R and create a method here to have the package dynamically call your custom
-                linkage class. To do so, you must follow the naming and return guidelines found on the <b>datalink</b> GitHub page."),
-
-          HTML("<br><br>"), # Line break
-
-          "After the class is successfully created, the Implementation/Class Name input should match the name of the R class you created EXACTLY,
-          filling in the other information to your liking which will be output when generating the optional linkage reports, and for selecting
-          a linkage method in a later algorithm creation step."
-        ),
-        accordion_panel(title = "Step 3: Create & Modify Your Algorithms",
-          "The linkage algorithms page is the third and final stop after reviewing all the datasets and linkage methods available for use.
-          This page allows you to select a left and right dataset that you'd like to link, followed by the creation or modification of empty
-          linkage algorithms.",
-
-          HTML("<br><br>"), # Line break
-
-          "From the existing algorithms, select one to perform any varying number of metadata related modifications such as adding, modifying,
-          or dropping passes from the algorithm, adding ground truth variables, or selecting which fields should be output.",
-
-          HTML("<br><br>"), # Line break
-
-          "Once an algorithm is completed to your liking, you may progress to the Run Algorithm(s) page and select from your list of created algorithms
-          on which you'd like to run, tailoring all kinds of output to personal preference.",
-
-          HTML("<br><br>"), # Line break
-
-          "To see what other pages are accessible from the linkage algorithms page, consider looking at the other drop down in case you are having
-          trouble any specific page."
-        ),
-        accordion_panel(title = "Additional Actions",
-          "If you are having trouble finding a specific page within the GUI, consider finding the page title here and follow the steps outlined below.",
-
-          HTML("<br><br>"), # Line break
-
-          # RUN ALGORITHM(S) PAGE
-          h5(strong("Run Algorithm(s) Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Run Algorithm(s) Page Button</li>
-                </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # REGNERATE REPORT PAGE
-          h5(strong("Regenerate Report(s) Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm To Regenerate Report Of</li>
-                  <li>Selected Linkage Algorithm > Regenerate Report Button</li>
-                </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # GROUND TRUTH VARIABLES PAGE
-          h5(strong("Ground Truth Variables Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm</li>
-                  <li>Selected Linkage Algorithm > Ground Truth Variables Button</li>
-               </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # ALGORITHM OUTPUT PAGE
-          h5(strong("Algorithm Output Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm</li>
-                  <li>Selected Linkage Algorithm > Algorithm Output Button</li>
-               </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # SAVED PERFORMANCE MEASURES PAGE
-          h5(strong("Saved Performance Measures Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm</li>
-                  <li>Selected Linkage Algorithm > Saved Performance Measures Button</li>
-               </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # ALGORITHM PASSES
-          h5(strong("Algorithm Passes Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm</li>
-                  <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
-                </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # MODIFY ALGORITHM PASSES/ITERATIONS PAGE
-          h5(strong("Modify Algorithm Passes/Iterations Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm</li>
-                  <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
-                  <li>Algorithm Passes > Add New Iteration Button</li>
-                  <li><b>OR,</b> Selecting an Existing Iteration and Pressing the Modify Button</li>
-                  <li><b>OR,</b> Selecting a Previously Used Iteration and Pressing the Review And Add Iteration Button</li>
-                </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # CREATE LINKAGE RULE PAGE
-          h5(strong("Create Linkage Rule Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm</li>
-                  <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
-                  <li>Algorithm Passes > Modify Algorithm Passes/Iteration Page</li>
-                  <li>Step 3: Select the Blocking Variables > Pencil Button Next to Linkage Rules</li>
-                  <li>Linkage Rules Pop-up > Create New Linkage Rule Button</li>
-                </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # ADD/MODIFY COMPARISON METHODS AND PARAMETERS PAGE
-          h5(strong("Add and Modify Comparison Methods & Parameters Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm</li>
-                  <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
-                  <li>Algorithm Passes > Modify Algorithm Passes/Iteration Page</li>
-                  <li>Step 4: Select the Matching Variables > Pencil Button Next to Comparison Rules</li>
-                  <li>Comparison Rules Pop-up > Create Comparison Method Button</li>
-                </ul>"),
-
-          HTML("<br>"), # Line break
-
-          # ADD/MODIFY ACCEPTANCE METHODS AND PARAMETERS PAGE
-          h5(strong("Add and Modify Acceptance Methods & Parameters Page")),
-          HTML("<ul>
-                  <li>Home > Linkage Algorithms Tab</li>
-                  <li>Linkage Algorithms > Select Existing Algorithm</li>
-                  <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
-                  <li>Algorithm Passes > Modify Algorithm Passes/Iteration Page</li>
-                  <li>Step 6: Select the Acceptance Rule > Pencil Button Next to Acceptance Rule</li>
-                  <li>Acceptance Rules Pop-up > Create Acceptance Method Button</li>
-                </ul>"),
-        ),
+      id = "loading_screen_2",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Hiding Tabs..."),
       ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
 
-      HTML("<br><br>"), # Line break
+  # LOAD 3 (loading datasets)
+  hidden(
+    div(
+      id = "loading_screen_3",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Datasets Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 4 (loading linkage methods)
+  hidden(
+    div(
+      id = "loading_screen_4",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Linkage Methods Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 5 (loading linkage algorithms)
+  hidden(
+    div(
+      id = "loading_screen_5",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Testable Linkage Algorithms Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 6 (loading archived linkage algorithms)
+  hidden(
+    div(
+      id = "loading_screen_6",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Archived Linkage Algorithms Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 7 (loading published linkage algorithms)
+  hidden(
+    div(
+      id = "loading_screen_7",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Published Linkage Algorithms Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 8 (loading linkage audits)
+  hidden(
+    div(
+      id = "loading_screen_8",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Saved Performance Measures Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 9 (loading ground truth variables)
+  hidden(
+    div(
+      id = "loading_screen_9",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Ground Truth Variables Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 10 (loading algorithm output fields)
+  hidden(
+    div(
+      id = "loading_screen_10",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Algorithm Output Fields Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 11 (loading viewable linkage iterations)
+  hidden(
+    div(
+      id = "loading_screen_11",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Viewable Linkage Iterations Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 12 (loading modify linkage iterations)
+  hidden(
+    div(
+      id = "loading_screen_12",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Modify Linkage Iterations Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 13 (loading acceptance method & parameters)
+  hidden(
+    div(
+      id = "loading_screen_13",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Acceptance Methods & Parameters Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 14 (loading comparison method & parameters)
+  hidden(
+    div(
+      id = "loading_screen_14",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Comparison Methods & Parameters Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 15 (loading linkage rules)
+  hidden(
+    div(
+      id = "loading_screen_15",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Linkage Rules Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 16 (loading regenerate report)
+  hidden(
+    div(
+      id = "loading_screen_16",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Regenerate Report Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
+    )
+  ),
+
+  # LOAD 17 (loading run algorithm(s))
+  hidden(
+    div(
+      id = "loading_screen_17",
+      fluidPage(
+        h2("Loading, please wait..."),
+        h4("Loading the Run Algorithm(s) Page..."),
+      ),
+      style = "text-align: center; margin-top: 20%;",
     )
   ),
   #----
-  #---------------#
+  #---------------------#
 
-  #-- DATASETS PAGE --#
-  #----
-  nav_panel(title = "Datasets", value = "datasets_page",
-    fluidPage(
-      h5(strong("Select An Existing Dataset to Update:")),
-      h6(p(strong("NOTE: "), "For datasets that use the same dataset code/prefix, only one be enabled at a time.")),
-      dataTableOutput("currently_added_datasets"),
-
-      # If the user has selected a row, then we can either UPDATE or TOGGLE a dataset
-      conditionalPanel(
-        condition = "input.currently_added_datasets_rows_selected > 0",
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("toggle_dataset", "Toggle Selected Dataset", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-off")),
-
-            # Add the popover manually
-            h1(tooltip(bs_icon("question-circle"),
-                          paste("Toggle whether a dataset is available to be used in data linkage.",
-                                "If a dataset is Enabled, you may select/view/add/modify linkage algorithms",
-                                "and passes using that dataset, and may also use the dataset to perform data linkage.",
-                                "If Disabled, the dataset, algorithms, and passes will be ignored, and it",
-                                "may not be used for data linkage."),
-                          placement = "right",
-                          options = list(container = "body"))),
-          ))
-        ),
-        HTML("<br><br>"),
-        h5(strong("Update the Dataset Information & View Dataset Fields Here:")),
-
-        # Create a column layout to separate the user inputs and dataset fields
-        layout_column_wrap(
-          width = 1/2,
-          height = 550,
-          # Card for the user inputs
-          card(card_header("Update Dataset Information", class = "bg-dark"),
-            fluidRow(
-              column(width = 12, div(style = "display: flex; align-items: center;",
-                 textAreaInput("update_dataset_code", label = "Dataset Code/File Prefix:", value = "",
-                               width = validateCssUnit(500), resize = "none"),
-
-                 # Add the popover manually
-                 h1(tooltip(bs_icon("question-circle"),
-                            paste("The dataset code is the prefix of the source dataset that you will be using",
-                                  "during the data linkage process. The prefix you enter here should match the",
-                                  "prefix of the file you are using using EXACTLY."),
-                            placement = "right",
-                            options = list(container = "body")))
-               )),
-               column(width = 12, div(style = "display: flex; align-items: center;",
-                 textAreaInput("update_dataset_name", label = "Dataset Name:", value = "",
-                               width = validateCssUnit(500), resize = "none"),
-
-                 # Add the popover manually
-                 h1(tooltip(bs_icon("question-circle"),
-                            paste("The dataset name should be an identifiable name for the dataset that you can",
-                                  "reasonably identify. The ideal name is the full expanded name of the dataset",
-                                  "that you plan on storing."),
-                            placement = "right",
-                            options = list(container = "body")))
-               )),
-               column(width = 12, div(style = "display: flex; align-items: center;",
-                 numericInput("update_dataset_vers", label = "Dataset Version:",
-                              value = NULL, width = validateCssUnit(500)),
-
-                 # Add the popover manually
-                 h1(tooltip(bs_icon("question-circle"),
-                            paste("The dataset version number can help differentiate dataset names additionally",
-                                    "while also allowing for storing different versions of the same dataset."),
-                           placement = "right",
-                           options = list(container = "body")))
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                # Label for the uploaded file name
-                div(style = "margin-right: 10px;", "Uploaded File (Path):"),
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                # Boxed text output for showing the uploaded file name
-                div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                  textOutput("uploaded_file_name_update")
-                ),
-                # Upload button
-                actionButton("update_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
-
-                # Add the popover manually
-                h1(tooltip(bs_icon("question-circle"),
-                           paste("The dataset you plan on using to perform data linkage should be uploaded here.",
-                                 "The column names will be grabbed from the first row in the source dataset for",
-                                 "future use when creating linkage algorithms and passes."),
-                           placement = "right",
-                           options = list(container = "body")))
-              ))
+  #-- Main Content --#
+  hidden(
+    div(
+      id = "main_content",
+      page_navbar(
+        # Set the theme of the application
+        theme = bs_theme(bootswatch = "spacelab"),
+        # Tags
+        #----
+        tags$head(
+          tags$style(
+            HTML("#shiny-notification-panel {
+                    top: 0;
+                    bottom: unset;
+                    left: 0;
+                    right: 0;
+                    margin-left: auto;
+                    margin-right: auto;
+                    width: 100% !important;
+                    max-width: 750px !important;
+                    opacity: 1;
+                  }"
+            ),
+            HTML(".shiny-notification-message {
+                    background-color:#0ec116;
+                    color:#000000;
+                    opacity: 1 !important;
+                    text-align: center;
+                 }"
+            ),
+            HTML(".shiny-notification-error {
+                    background-color:#C90000;
+                    color:#000000;
+                    opacity: 1 !important;
+                    text-align: center;
+                 }"
+            ),
+            HTML(
+              ".dataTables_wrapper caption {
+                font-size: 16px;
+                font-weight: bold;
+                color: black;
+                text-align: center;
+              }"
+            ),
+            HTML("
+              input[type=number] {
+                    -moz-appearance:textfield;
+              }
+              input[type=number]::{
+                    -moz-appearance:textfield;
+              }
+              input[type=number]::-webkit-outer-spin-button,
+              input[type=number]::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+              }"
+            ),
+            HTML(
+              ".popover {
+                max-width: 50%;
+              }"
+            ),
+            HTML(
+              "body { word-wrap: break-word; }"
+            ),
+            HTML("
+              .modal-sm {
+                width: 50vw !important;  /* Set modal width to 50% of the viewport width */
+                max-width: none !important; /* Disable the default max-width */
+              }
+              .modal-lg {
+                width: 90vw !important;  /* Set modal width to 90% of the viewport width */
+                max-width: none !important; /* Disable the default max-width */
+              }
+              .modal-content {
+                overflow-y: auto;  /* Add scrolling to the modal content */
+              }"
+            ),
+            HTML("
+              .accordion .accordion-button {
+                background-color: #d3d3d3; /* Darker color for closed state */
+                color: #000000;
+              }
+              .accordion .accordion-button:not(.collapsed) {
+                background-color: #f8f9fa; /* Lighter color for open state */
+                color: #000000;
+              }"
+            ),
+            HTML("
+              .tooltip-inner {
+                max-width: 300px;  /* Custom width */
+                background-color: #f8f9fa;  /* Light background */
+                color: #333;  /* Dark text */
+                opacity: 1 !important; /* Fully solid */
+                border: 1px solid #ddd;  /* Border styling */
+                padding: 10px;  /* Adjust padding */
+              }"
+            ),
+            HTML("
+                .modal{
+                  z-index: 1150;
+              }"
+            ),
+            HTML("
+                .dataset-field-box {
+                  border: 1px solid #ddd; /* Border color */
+                  padding: 10px; /* Padding inside the box */
+                  background-color: #f9f9f9; /* Background color */
+                  border-radius: 5px; /* Rounded corners */
+                  margin-bottom: 10px; /* Space below each box */
+                }"
             ),
           ),
-
-          # Card for viewing the selected fields
-          card(card_header("View Selected Dataset Fields", class = "bg-dark"),
-            dataTableOutput("selected_dataset_fields")
+          tags$style(HTML("
+            .btn-circle {
+              border-radius: 50%;
+              width: 40px; /* Adjust as needed */
+              height: 40px; /* Adjust as needed */
+              padding: 0; /* Remove padding */
+              font-size: 18px; /* Adjust icon size */
+            }
+            .btn-green {
+              background-color: lightgreen;
+              border: none;
+              color: white;
+            }
+            .btn-red {
+              background-color: lightcoral;
+              border: none;
+              color: white;
+            }
+            .btn-green:hover {
+              background-color: green; /* Darker shade on hover */
+            }
+            .btn-red:hover {
+              background-color: red; /* Darker shade on hover */
+            }
+          ")),
+          tags$head(tags$style('h6 {color:blue;}')),
+          # Add additional content here...
+          tags$style(HTML("
+              .navbar-nav {
+                display: flex;
+                align-items: center;
+              }
+              .navbar-brand {
+                display: flex;
+                align-items: center;
+              }
+              .navbar-brand img {
+                vertical-align: middle;
+              }
+              .navbar {
+                min-height: 60px; /* Adjust to your preference */
+              }
+           ")
           )
         ),
-
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("update_dataset", "Update Dataset", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("pen")),
-          ))
-        ),
-        HTML("<br>")
-      ),
-      # abbreviated
-      # If the user has no row selected, then we can ADD a new dataset
-      conditionalPanel(
-        condition = "input.currently_added_datasets_rows_selected <= 0",
-        HTML("<br>"),
-        h5(strong("Or, Add the Dataset Information & View Uploaded Fields Here:")),
-
-        # Create a column layout for the user inputs and viewable fields
-        layout_column_wrap(
-          width = 1/2,
-          height = 550,
-
-          # Card for the user inputs
-          card(card_header("Add Dataset Information", class = "bg-dark"),
-           fluidRow(
-             column(width = 12, div(style = "display: flex; align-items: center;",
-               textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
-                             width = validateCssUnit(500), resize = "none"),
-
-               # Add the popover manually
-               h1(tooltip(bs_icon("question-circle"),
-                          paste("The dataset code is the prefix of the source dataset that you will be using",
-                                "during the data linkage process. The prefix you enter here should match the",
-                                "prefix of the file you are using using EXACTLY."),
-                          placement = "right",
-                          options = list(container = "body")))
-             )),
-             column(width = 12, div(style = "display: flex; align-items: center;",
-               textAreaInput("add_dataset_name", label = "Dataset Name:", value = "",
-                             width = validateCssUnit(500), resize = "none"),
-
-               # Add the popover manually
-               h1(tooltip(bs_icon("question-circle"),
-                          paste("The dataset name should be an identifiable name for the dataset that you can",
-                                "reasonably identify. The ideal name is the full expanded name of the dataset",
-                                "that you plan on storing."),
-                          placement = "right",
-                          options = list(container = "body")))
-             )),
-             column(width = 12, div(style = "display: flex; align-items: center;",
-               numericInput("add_dataset_version", label = "Dataset Version:",
-                            value = NULL, width = validateCssUnit(500)),
-
-               # Add the popover manually
-               h1(tooltip(bs_icon("question-circle"),
-                          paste("The dataset version number can help differentiate dataset names additionally",
-                                "while also allowing for storing different versions of the same dataset."),
-                          placement = "right",
-                          options = list(container = "body")))
-             )),
-             column(width = 12, div(style = "display: flex; align-items: center;",
-               selectInput("add_dataset_is_fwf", label = "Is The Dataset of Fixed-Width Format?",
-                           choices = list("No" = 1,
-                                          "Yes" = 2),
-                           selected = 1,
-                           width = validateCssUnit(500)),
-
-               # Add the popover manually
-               h1(tooltip(bs_icon("question-circle"),
-                          paste("If the dataset being used for linkage is fwf, select yes before uploading the",
-                                "dataset so that the column widths can be extracted for confirmation."),
-                          placement = "right",
-                          options = list(container = "body")))
-             )),
-             column(width = 12, div(style = "display: flex; align-items: center;",
-               fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                    # Label for the uploaded file name
-                    div(style = "margin-right: 10px;", "Uploaded File (Path):"),
-                  )),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    # Boxed text output for showing the uploaded file name
-                    div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                      textOutput("uploaded_file_name")
-                    ),
-                    # Upload button
-                    actionButton("add_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The dataset you plan on using to perform data linkage should be uploaded here.",
-                                     "The column names will be grabbed from the first row in the source dataset for",
-                                     "future use when creating linkage algorithms and passes."),
-                               placement = "right",
-                                 options = list(container = "body")))
-                  ))
-                )
-              ))
-            ),
-          ),
-          # Card for viewing the uploaded fields
-          card(card_header("View Uploaded Dataset Fields", class = "bg-dark"),
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              dataTableOutput("uploaded_dataset_fields"),
-            )),
-
-            # If the user has submitted a dataset file, they can also change the widths (IF A ROW IS SELECTED)
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                numericInput("update_field_width_input", label = "Field Width:",
-                             value = NULL, width = validateCssUnit(300)),
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("update_field_width_btn", "Update Field Width", class = "btn-warning"),
-              ))
-            ),
-          )
-        ),
-
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("add_dataset", "Add Dataset", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-          ))
-        ),
-        HTML("<br><br>"),
-      )
-    )
-  ),
-  #----
-  #-------------------#
-
-  #-- LINKAGE METHODS PAGE --#
-  #----
-  nav_panel(title = "Linkage Methods", value = "linkage_methods_page",
-    fluidPage(
-      # Generate the table
-      h5(strong("View the Currently Usable Linkage Methods:")),
-      h6(p(strong("NOTE: "), "Only one combination of implementation name and technique label can exist at a time.")),
-      dataTableOutput("currently_added_linkage_methods"),
-
-      # Line break
-      HTML("<br>"),
-
-      # Add linkage method fields here
-      h5(strong("Or, Add a New Linkage Method Here:")),
-      fluidRow(
-        column(width = 3, div(style = "display: flex; align-items: center;",
-          textAreaInput("add_implementation_name", label = "Implementation/Class Name:", value = "",
-                        width = validateCssUnit(500), resize = "none"),
-
-          # Add the popover manually
-          h1(tooltip(bs_icon("question-circle"),
-                     paste("The linkage implementation/class name should match the custom R script built",
-                           "by yourself to be used for linkage EXACTLY. During linkage, the program will",
-                           "try to source and call your custom class by searching for this exact name."),
-                     placement = "right",
-                     options = list(container = "body")))
-        )),
-        column(width = 3, div(style = "display: flex; align-items: center;",
-          textAreaInput("add_technique_label", label = "Linkage Method:", value = "",
-                        width = validateCssUnit(500), resize = "none"),
-
-          # Add the popover manually
-          h1(tooltip(bs_icon("question-circle"),
-                     paste("Within a linkage implementation, there are various techniques that can be used",
-                           "(Deterministic, Probabilistic) and the program will pass to your class which",
-                           "technique should be used."),
-                     placement = "right",
-                     options = list(container = "body")))
-        )),
-        column(width = 3, div(style = "display: flex; align-items: center;",
-          textAreaInput("add_implementation_desc", label = "Implementation Description:", value = "",
-                        width = validateCssUnit(500), resize = "none"),
-
-          # Add the popover manually
-          h1(tooltip(bs_icon("question-circle"),
-                     paste("Short description of the linkage class being created including its method and name."),
-                     placement = "right",
-                     options = list(container = "body")))
-        )),
-        column(width = 3, div(style = "display: flex; align-items: center;",
-          numericInput("add_implementation_vers", label = "Implementation Version:",
-                       value = NULL, width = validateCssUnit(500)),
-
-          # Add the popover manually
-          h1(tooltip(bs_icon("question-circle"),
-                     paste("The implementation version can help differentiate implementations from",
-                           "other implementations with similar names and techniques."),
-                     placement = "right",
-                     options = list(container = "body")))
-        )),
-      ),
-      HTML("<br>"),
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-          actionButton("add_linkage_method", "Add Linkage Method", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-        ))
-      )
-    )
-  ),
-  #----
-  #--------------------------#
-
-  #-- TESTING LINKAGE ALGORITHMS PAGE --#
-  #----
-  nav_panel(title = "Testable Linkage Algorithms", value = "linkage_algorithms_page",
-    fluidPage(
-      # Two select inputs for choosing which datasets we want to be using
-      h5(strong("Select a Left and Right Dataset To View or Add Linkage Algorithms:")),
-      h6(p(strong("Note: "), paste("The left and right dataset must be distinct."))),
-      fluidRow(
-        column(width = 6, div(style = "display: flex; justify-content: right; align-items: right;",
-          uiOutput("linkage_algorithm_left_dataset_input"),
-        )),
-        column(width = 6, div(style = "display: flex; justify-content: left; align-items: left;",
-          uiOutput("linkage_algorithm_right_dataset_input"),
-        ))
-      ),
-
-      # Line break to give the input and table some space
-      HTML("<br><br>"),
-
-      # Once the user selects their LEFT and RIGHT dataset, show them the table of linkage algorithms
-      conditionalPanel(
-        condition = "input.linkage_algorithm_left_dataset != '' && input.linkage_algorithm_right_dataset != ''
-                    && input.linkage_algorithm_left_dataset != input.linkage_algorithm_right_dataset",
-
-        # Generate the table
-        h5(strong("Select a Row to either Enable/Disable the Algorithm, View/Modify Passes, or View/Modify Ground Truth Variables:")),
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            dataTableOutput("currently_added_linkage_algorithms"),
-          )),
-        ),
-        # If a row WAS selected
-        conditionalPanel(
-          condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
-
-          HTML("<br>"), # White space
-
-          # Column layout for all buttons
-          layout_column_wrap(
-            width = 1/4,
-            height = 210,
-            heights_equal = "all",
-
-            # Card for Regenerating Linkage Reports
-            card(
-              full_screen = FALSE,
-              card_body(
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
-                      actionButton("run_algorithm_alt", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("file-waveform")),
-                    )
-                  ),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("go_to_regenerate_report", "Regenerate Report...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
-                    )
-                  )
-                )
-              )
-            ),
-
-            # CARD FOR ARCHIVING AND PUBLISHING ALGORITHMS
-            card(
-              full_screen = FALSE,
-              card_body(
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
-                      actionButton("archive_algorithm", "Archive Selected Algorithm", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("box-archive")),
-                    )
-                  ),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("publish_algorithm", "Publish Selected Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("scroll")),
-                    )
-                  )
-                )
-              )
-            ),
-
-            # Create a card for the buttons
-            card(
-              full_screen = FALSE,
-              card_body(
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("toggle_algorithm", "Set as Default Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-on")),
-                    )
-                  ),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("toggle_algorithm_for_testing", "Toggle for Testing", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-off")),
-                    )
-                  ),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes...", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("list")),
-                    )
-                  )
-                )
-              )
-            ),
-
-            # Create a card for editing/viewing algorithm output information
-            card(
-              full_screen = FALSE,
-              card_body(
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("square-check")),
-                    )
-                  ),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("file-export")),
-                    )
-                  ),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                      actionButton("linkage_algorithms_to_audits", "Performance Measures...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
-                    )
-                  )
-                )
-              )
+        #----
+        title =
+          div(
+            img(
+              src = "figures/autolink_logo_blue_wide_v2.png",
+              width = 210,
+              height = 70
             )
           ),
-        ),
-
-        # Line break to separate the table and new algorithm input
-        HTML("<br><br>"),
-
-        # Conditional panel for if a row wasn't selected
-        conditionalPanel(
-          condition = "input.currently_added_linkage_algorithms_rows_selected <= 0",
-
-          # Card for the run algorithms, archived algorithms, and published algorithms pages
-          div(style = "display: flex; justify-content: center; align-items: center;",
-            card(
-              width = 1,
-              height = 85,
-              full_screen = FALSE,
-              card_body(
-                fluidRow(
-                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
-                      actionButton("run_default_algorithm", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("file-waveform")),
-                    )
-                  ),
-                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("move_to_archived_algorithms", "Archived Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("box-archive")),
-                    )
-                  ),
-                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
-                      actionButton("move_to_published_algorithms", "Published Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("scroll")),
-                    )
-                  )
-                ),
-              )
-            )
-          ),
-
-          # Line break between sections
-          HTML("<br><br>"),
-
-          # Section for adding a new algorithm
-          h5(strong("Or, create an empty linkage algorithm here:")),
-          h6(p(strong("Note 1: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
-          h6(p(strong("Note 2: "), paste("One algorithm may be enabled at a time, creating a new algorithm will require you to enable it manually"))),
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              textAreaInput("linkage_algorithm_descriptor", label = "Algorithm Name/Descriptor:", value = "",
-                            width = validateCssUnit(500), resize = "none"),
-
-              # Add the popover manually
-              h1(tooltip(bs_icon("question-circle"),
-                         paste("The algorithm name/descriptor is a way to easily identify specific algorithms",
-                               "of two datasets. The name should be short, concise, and identifiable for the user."),
-                         placement = "right",
-                         options = list(container = "body")))
-            ))
-          ),
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              actionButton("add_linkage_algorithm", "Add Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-            ))
-          )
-        ),
-
-        # Conditional panel for if a row was selected
-        conditionalPanel(
-          condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
-          h5(strong("Update linkage algorithm here:")),
-          h6(p(strong("Note: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              textAreaInput("linkage_algorithm_descriptor_update", label = "Algorithm Name/Descriptor:", value = "",
-                            width = validateCssUnit(500), resize = "none"),
-
-              # Add the popover manually
-              h1(tooltip(bs_icon("question-circle"),
-                         paste("The algorithm name/descriptor is a way to easily identify specific algorithms",
-                               "of two datasets. The name should be short, concise, and identifiable for the user."),
-                         placement = "right",
-                         options = list(container = "body")))
-            ))
-          ),
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              actionButton("update_linkage_algorithm", "Update Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("pen")),
-            ))
-          )
-        )
-      ),
-
-      #White space for the final button
-      HTML("<br><br>"),
-    )
-  ),
-  #----
-  #-------------------------------------#
-
-  #-- ARCHIVED LINKAGE ALGORITHMS PAGE --#
-  #----
-  nav_panel(title = "Archived Linkage Algorithms", value = "archived_linkage_algorithms_page",
-    fluidPage(
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("archived_linkage_algorithms_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
-
-      # Line break
-      HTML("<br>"),
-
-      # Generate the table
-      h5(strong("Select an Archived Algorithm to Restore")),
-      h6(p(strong("Note: "), paste("An algorithm can't be restored if there is one enabled for testing that uses the same name/descriptor"))),
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-          dataTableOutput("archived_linkage_algorithms"),
-        )),
-      ),
-
-      # Line break
-      HTML("<br>"),
-
-      # Conditional panel for if a row was selected
-      conditionalPanel(
-        condition = "input.archived_linkage_algorithms_rows_selected > 0",
-
-        # Table for showing the algorithm details (so the user does not need to restore the algorithm first)
-        h5(strong("Details of selected algorithm")),
-        fluidRow(
-          # Card for the data table
-          card(
-            full_screen = TRUE,
-            height = 500,
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.9vw;",
-              dataTableOutput("archived_linkage_algorithms_details"),
-            )),
-          )
-        ),
-
-        # Line break
-        HTML("<br>"),
-
-        # Button for restoring the algorithm
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("restore_linkage_algorithm", "Restore Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-          ))
-        )
-      ),
-      #White space for the final button
-      HTML("<br><br>"),
-    )
-  ),
-  #----
-  #--------------------------------------#
-
-  #-- PUBLISHED LINKAGE ALGORITHMS PAGE --#
-  #----
-  nav_panel(title = "Published Linkage Algorithms", value = "published_linkage_algorithms_page",
-    fluidPage(
-      shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
-
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("published_linkage_algorithms_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
-
-      # Line break
-      HTML("<br>"),
-
-      # Generate the table
-      h5(strong("Select a published algorithm to unpublish")),
-      h6(p(strong("Note: "), paste("An algorithm can't be unpublished if there is one enabled for testing that uses the same name/descriptor"))),
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-          dataTableOutput("published_linkage_algorithms"),
-        )),
-      ),
-
-      # Line break
-      HTML("<br>"),
-
-      # Conditional panel for if a row WAS selected
-      conditionalPanel(
-        condition = "input.published_linkage_algorithms_rows_selected > 0",
-
-        # Table for showing the algorithm details (so the user does not need to restore the algorithm first)
-        h5(strong("Details of selected algorithm")),
-        fluidRow(
-          # Card for the data table
-          card(
-            full_screen = TRUE,
-            height = 500,
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.9vw;",
-              dataTableOutput("published_linkage_algorithms_details"),
-            )),
-          )
-        ),
-
-        # Un-publish button
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("unpublish_linkage_algorithm", "Unpublish Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-          ))
-        )
-      ),
-
-      # Conditional panel for if a row WASN'T selected
-      conditionalPanel(
-        condition = "input.published_linkage_algorithms_rows_selected <= 0",
-
-        # Title and subtitle for running & saving the published algorithms
-        h5(strong("Or, run all published algorithms and save linkage data to the output folder defined below")),
-        h6(p(strong("Note: "), paste("An algorithm can't be unpublished if there is one enabled for testing that uses the same name/descriptor"))),
-
-        # Create a fluid row for the output folder input & "RUN" button
-        div(style = "display: flex; justify-content: center; align-items: center;",
-          card(card_header("Add Linkage Output Fields", class = 'bg-dark'),
-            fluidRow(
-              # Choose output folder here (MAYBE SAVE THE USERS LAST USED FOLDER AND IF THEY WANT TO CHANGE IT THEY CAN DO IT HERE)
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
-                # Boxed text output for showing the uploaded folder name
-                div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                    textOutput("selected_published_algorithms_output_dir")
-                ),
-                # Upload Button
-                shinyDirButton("published_algorithms_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                helpText(HTML(paste0("Select a folder where all output will be saved.<br><br>Data will be saved as a singular <b>.RData</b> file ",
-                                     "containing a variety of linkage information, including the linked and unlinked records pairs, algorithm summary, ",
-                                     "performance measures, and missing data indicators.<br><br>")),
-                         style = "width: 400px;")
-              )),
-
-              # Run Button
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("run_published_linkage_algorithms", "Run & Save All Published Algorithms", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("circle-play")),
-              ))
-            )
-          )
-        )
-      ),
-
-      #White space for the final button
-      HTML("<br><br>")
-    )
-  ),
-  #----
-  #---------------------------------------#
-
-  #-- LINKAGE AUDITS PAGE --#
-  #----
-  nav_panel(title = "Linkage Audits", value = "audits_page",
-    fluidPage(
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("linkage_audits_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
-
-      # Line break to give the back button some space
-      HTML("<br>"),
-
-      # Render the data table of currently available iterations
-      h5(strong("Select A Saved Performance Entry to View & Export:")),
-
-      # UI date range input
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            dateRangeInput("audit_date_range", label = "Limit Audit Date Range", start = "1983-01-01", end = NULL),
-          )
-        )
-      ),
-
-      # Card for the data table
-      layout_column_wrap(
-        width = NULL,
-        style = css(grid_template_columns = '2fr 1fr;'),
-        height = 500,
-        # CARD FOR AUDIT SELECTION
-        card(
-          full_screen = TRUE,
-          height = 500,
-          page_fillable(
-            column(
-              width = 12,
-              div(
-                style = "margin-bottom: 10px;",  # Add spacing below the buttons
-                actionButton("select_all_audit", "Select All", class = "btn btn-primary btn-sm"),
-                actionButton("select_none_audit", "Select None", class = "btn btn-secondary btn-sm")
+        id = 'main_navbar',
+        #-- HOME PAGE --#
+        #----
+        nav_panel(title = "Home", value = "home_page",
+          fluidPage(
+            HTML("<br><br>"),
+            accordion(
+              accordion_panel(title = "Welcome",
+                "Welcome to the Data Linkage GUI. From this application you can create, modify, and use linkage algorithms on uploaded
+                datasets you may end up providing. You are currently on the Home/Welcome page where you are encouraged to read from the
+                various dropdowns to understand what the application has to offer and where you can access specific pages."
               ),
-              dataTableOutput("algorithm_specific_audits"),
-            )
-          )
-        ),
-        # CARD FOR DEFINITIONS
-        card(
-          height = 500,
-          uiOutput("selected_algorithm_performances_measures")
-        )
-      ),
+              accordion_panel(title = "Step 1: Prepare Datasets",
+                "The datasets page should be your first stop upon starting the application for the first time, or upon coming back after
+                a long time not using the application. On this page, you can view the uploaded datasets, select an existing dataset to update,
+                or add a new dataset.",
 
-      # If A ROW IS SELECTED, the user can export the results by clicking the button
-      conditionalPanel(
-        # THIS WAS BROKEN BEFORE, IF SOMETHING KEEPS BREAKING JUST USE "input.algorithm_specific_audits_rows_selected > 0"!
-        condition = "typeof input.algorithm_specific_audits_rows_selected !== 'undefined' && input.algorithm_specific_audits_rows_selected.length > 0",
+                HTML("<br><br>"), # Line break
 
-        # Export Audit Button
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              actionButton("export_selected_audit", label = "Export Audit", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("file-export"))
-            )
-          ),
-        )
-      ),
+                "The page will keep a record of the local file location of the dataset when adding your uploaded file so that data linkage may
+                be ran from the application. When using the same SQLite file on other PCs, this file location should updated by clicking on the
+                desired row and uploading the file from the new location.",
 
-      # Line break at the bottom
-      HTML("<br><br>")
-    )
-  ),
-  #----
-  #-------------------------#
+                HTML("<br><br>"), # Line break
 
-  #-- VIEW LINKAGE ITERATIONS PAGE --#
-  #----
-  nav_panel(title = "View Linkage Iterations", value = "view_linkage_iterations_page",
-    fluidPage(
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("view_linkage_iterations_back",  "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
+                "When uploading a file, you can see the uploaded files field names and class types before submitting the dataset so that you
+                can verify the dataset you're uploading is valid."
+              ),
+              accordion_panel(title = "Step 2: Review Linkage Methods",
+                "The linkage methods page should be your next stop after reviewing, updating, or adding datasets, and provides a table of the
+                currently usable linkage methods that can be used when creating the individual passes of a linkage algorithm in the next step.",
 
-      # Line break to give the back button some space
-      HTML("<br>"),
+                HTML("<br><br>"), # Line break
 
-      # Render the data table of currently available iterations
-      h5(strong("Select An Existing Iteration to Update, or to Enable/Disable:")),
-      h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
-      card(full_screen = TRUE, card_header("Current Iterations", class = "bg-dark"), height = 500,
-        dataTableOutput("currently_added_linkage_iterations")
-      ),
+                HTML("Additionally, you may create your own linkage class in R and create a method here to have the package dynamically call your custom
+                      linkage class. To do so, you must follow the naming and return guidelines found on the <b>datalink</b> GitHub page."),
 
-      # If now row is selected, the user may either create a new iteration, or add a previously used iteration
-      # belonging to the same algorithm.
-      conditionalPanel(
-        condition = "input.currently_added_linkage_iterations_rows_selected <= 0",
+                HTML("<br><br>"), # Line break
 
-        #-- Firstly, the user can create a brand new iteration to add --#
+                "After the class is successfully created, the Implementation/Class Name input should match the name of the R class you created EXACTLY,
+                filling in the other information to your liking which will be output when generating the optional linkage reports, and for selecting
+                a linkage method in a later algorithm creation step."
+              ),
+              accordion_panel(title = "Step 3: Create & Modify Your Algorithms",
+                "The linkage algorithms page is the third and final stop after reviewing all the datasets and linkage methods available for use.
+                This page allows you to select a left and right dataset that you'd like to link, followed by the creation or modification of empty
+                linkage algorithms.",
 
-        # Line break between the table
-        HTML("<br>"),
+                HTML("<br><br>"), # Line break
 
-        # Create a card for the buttons
-        h5(strong("Or, create a brand new linkage iteration from scratch here:")),
-        div(style = "display: flex; justify-content: center; align-items: center;",
-          card(
-            width = 1,
-            height = 125,
-            full_screen = FALSE,
-            card_header("Create New Linkage Iteration", class = "bg-dark"),
-            card_body(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("add_new_linkage_iteration", "Add New Iteration", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-                  )
-                ),
-              )
-            )
-          )
-        ),
+                "From the existing algorithms, select one to perform any varying number of metadata related modifications such as adding, modifying,
+                or dropping passes from the algorithm, adding ground truth variables, or selecting which fields should be output.",
 
-        #-- Or, the user can select from an existing iteration, making any small changes that they'd like --#
+                HTML("<br><br>"), # Line break
 
-        # Line break between the previous card
-        HTML("<br>"),
+                "Once an algorithm is completed to your liking, you may progress to the Run Algorithm(s) page and select from your list of created algorithms
+                on which you'd like to run, tailoring all kinds of output to personal preference.",
 
-        h5(strong("Or, select a previously used iteration to use here:")),
-        # CARD FOR EXISTING LINKAGE ITERATIONS
-        card(full_screen = TRUE, card_header("Previously Used Linkage Iterations", class = "bg-dark"), height = 500,
-          card_body(
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  dataTableOutput("previously_used_iterations"),
-                )
+                HTML("<br><br>"), # Line break
+
+                "To see what other pages are accessible from the linkage algorithms page, consider looking at the other drop down in case you are having
+                trouble any specific page."
+              ),
+              accordion_panel(title = "Additional Actions",
+                "If you are having trouble finding a specific page within the GUI, consider finding the page title here and follow the steps outlined below.",
+
+                HTML("<br><br>"), # Line break
+
+                # RUN ALGORITHM(S) PAGE
+                h5(strong("Run Algorithm(s) Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Run Algorithm(s) Page Button</li>
+                      </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # REGNERATE REPORT PAGE
+                h5(strong("Regenerate Report(s) Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm To Regenerate Report Of</li>
+                        <li>Selected Linkage Algorithm > Regenerate Report Button</li>
+                      </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # GROUND TRUTH VARIABLES PAGE
+                h5(strong("Ground Truth Variables Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm</li>
+                        <li>Selected Linkage Algorithm > Ground Truth Variables Button</li>
+                     </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # ALGORITHM OUTPUT PAGE
+                h5(strong("Algorithm Output Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm</li>
+                        <li>Selected Linkage Algorithm > Algorithm Output Button</li>
+                     </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # SAVED PERFORMANCE MEASURES PAGE
+                h5(strong("Saved Performance Measures Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm</li>
+                        <li>Selected Linkage Algorithm > Saved Performance Measures Button</li>
+                     </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # ALGORITHM PASSES
+                h5(strong("Algorithm Passes Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm</li>
+                        <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
+                      </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # MODIFY ALGORITHM PASSES/ITERATIONS PAGE
+                h5(strong("Modify Algorithm Passes/Iterations Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm</li>
+                        <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
+                        <li>Algorithm Passes > Add New Iteration Button</li>
+                        <li><b>OR,</b> Selecting an Existing Iteration and Pressing the Modify Button</li>
+                        <li><b>OR,</b> Selecting a Previously Used Iteration and Pressing the Review And Add Iteration Button</li>
+                      </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # CREATE LINKAGE RULE PAGE
+                h5(strong("Create Linkage Rule Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm</li>
+                        <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
+                        <li>Algorithm Passes > Modify Algorithm Passes/Iteration Page</li>
+                        <li>Step 3: Select the Blocking Variables > Pencil Button Next to Linkage Rules</li>
+                        <li>Linkage Rules Pop-up > Create New Linkage Rule Button</li>
+                      </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # ADD/MODIFY COMPARISON METHODS AND PARAMETERS PAGE
+                h5(strong("Add and Modify Comparison Methods & Parameters Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm</li>
+                        <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
+                        <li>Algorithm Passes > Modify Algorithm Passes/Iteration Page</li>
+                        <li>Step 4: Select the Matching Variables > Pencil Button Next to Comparison Rules</li>
+                        <li>Comparison Rules Pop-up > Create Comparison Method Button</li>
+                      </ul>"),
+
+                HTML("<br>"), # Line break
+
+                # ADD/MODIFY ACCEPTANCE METHODS AND PARAMETERS PAGE
+                h5(strong("Add and Modify Acceptance Methods & Parameters Page")),
+                HTML("<ul>
+                        <li>Home > Linkage Algorithms Tab</li>
+                        <li>Linkage Algorithms > Select Existing Algorithm</li>
+                        <li>Selected Linkage Algorithm > Algorithm Passes Button</li>
+                        <li>Algorithm Passes > Modify Algorithm Passes/Iteration Page</li>
+                        <li>Step 6: Select the Acceptance Rule > Pencil Button Next to Acceptance Rule</li>
+                        <li>Acceptance Rules Pop-up > Create Acceptance Method Button</li>
+                      </ul>"),
               ),
             ),
-            # If a row is selected, allow them to review and add the iteration
+
+            HTML("<br><br>"), # Line break
+          )
+        ),
+        #----
+        #---------------#
+
+        #-- DATASETS PAGE --#
+        #----
+        nav_panel(title = "Datasets", value = "datasets_page",
+          fluidPage(
+            h5(strong("Select An Existing Dataset to Update:")),
+            h6(p(strong("NOTE: "), "For datasets that use the same dataset code/prefix, only one be enabled at a time.")),
+            dataTableOutput("currently_added_datasets"),
+
+            # If the user has selected a row, then we can either UPDATE or TOGGLE a dataset
             conditionalPanel(
-              condition = "input.previously_used_iterations_rows_selected > 0",
+              condition = "input.currently_added_datasets_rows_selected > 0",
               fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("add_existing_linkage_iteration", "Review And Add Iteration", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-                  )
+                  actionButton("toggle_dataset", "Toggle Selected Dataset", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-off")),
+
+                  # Add the popover manually
+                  h1(tooltip(bs_icon("question-circle"),
+                                paste("Toggle whether a dataset is available to be used in data linkage.",
+                                      "If a dataset is Enabled, you may select/view/add/modify linkage algorithms",
+                                      "and passes using that dataset, and may also use the dataset to perform data linkage.",
+                                      "If Disabled, the dataset, algorithms, and passes will be ignored, and it",
+                                      "may not be used for data linkage."),
+                                placement = "right",
+                                options = list(container = "body"))),
+                ))
+              ),
+              HTML("<br><br>"),
+              h5(strong("Update the Dataset Information & View Dataset Fields Here:")),
+
+              # Create a column layout to separate the user inputs and dataset fields
+              layout_column_wrap(
+                width = 1/2,
+                height = 550,
+                # Card for the user inputs
+                card(card_header("Update Dataset Information", class = "bg-dark"),
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; align-items: center;",
+                       textAreaInput("update_dataset_code", label = "Dataset Code/File Prefix:", value = "",
+                                     width = validateCssUnit(500), resize = "none"),
+
+                       # Add the popover manually
+                       h1(tooltip(bs_icon("question-circle"),
+                                  paste("The dataset code is the prefix of the source dataset that you will be using",
+                                        "during the data linkage process. The prefix you enter here should match the",
+                                        "prefix of the file you are using using EXACTLY."),
+                                  placement = "right",
+                                  options = list(container = "body")))
+                     )),
+                     column(width = 12, div(style = "display: flex; align-items: center;",
+                       textAreaInput("update_dataset_name", label = "Dataset Name:", value = "",
+                                     width = validateCssUnit(500), resize = "none"),
+
+                       # Add the popover manually
+                       h1(tooltip(bs_icon("question-circle"),
+                                  paste("The dataset name should be an identifiable name for the dataset that you can",
+                                        "reasonably identify. The ideal name is the full expanded name of the dataset",
+                                        "that you plan on storing."),
+                                  placement = "right",
+                                  options = list(container = "body")))
+                     )),
+                     column(width = 12, div(style = "display: flex; align-items: center;",
+                       numericInput("update_dataset_vers", label = "Dataset Version:",
+                                    value = NULL, width = validateCssUnit(500)),
+
+                       # Add the popover manually
+                       h1(tooltip(bs_icon("question-circle"),
+                                  paste("The dataset version number can help differentiate dataset names additionally",
+                                          "while also allowing for storing different versions of the same dataset."),
+                                 placement = "right",
+                                 options = list(container = "body")))
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the uploaded file name
+                      div(style = "margin-right: 10px;", "Uploaded File (Path):"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded file name
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                        textOutput("uploaded_file_name_update")
+                      ),
+                      # Upload button
+                      actionButton("update_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
+
+                      # Add the popover manually
+                      h1(tooltip(bs_icon("question-circle"),
+                                 paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                                       "The column names will be grabbed from the first row in the source dataset for",
+                                       "future use when creating linkage algorithms and passes."),
+                                 placement = "right",
+                                 options = list(container = "body")))
+                    ))
+                  ),
                 ),
-              )
-            )
-          )
-        )
-      ),
 
-      # If a row IS selected, they may modify it, or enable/disable the iteration
-      conditionalPanel(
-        condition = "input.currently_added_linkage_iterations_rows_selected > 0",
+                # Card for viewing the selected fields
+                card(card_header("View Selected Dataset Fields", class = "bg-dark"),
+                  dataTableOutput("selected_dataset_fields")
+                )
+              ),
 
-        # Create a card for the buttons
-        div(style = "display: flex; justify-content: center; align-items: center;",
-          card(
-            width = 1,
-            height = 125,
-            full_screen = FALSE,
-            card_header("Iteration Specific Information", class = "bg-dark"),
-            card_body(
               fluidRow(
-                column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                    actionButton("toggle_linkage_iteration", "Toggle Selected Iteration", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-off")),
-                  )
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("update_dataset", "Update Dataset", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("pen")),
+                ))
+              ),
+              HTML("<br>")
+            ),
+            # abbreviated
+            # If the user has no row selected, then we can ADD a new dataset
+            conditionalPanel(
+              condition = "input.currently_added_datasets_rows_selected <= 0",
+              HTML("<br>"),
+              h5(strong("Or, Add the Dataset Information & View Uploaded Fields Here:")),
+
+              # Create a column layout for the user inputs and viewable fields
+              layout_column_wrap(
+                width = 1/2,
+                height = 550,
+
+                # Card for the user inputs
+                card(card_header("Add Dataset Information", class = "bg-dark"),
+                 fluidRow(
+                   column(width = 12, div(style = "display: flex; align-items: center;",
+                     textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
+                                   width = validateCssUnit(500), resize = "none"),
+
+                     # Add the popover manually
+                     h1(tooltip(bs_icon("question-circle"),
+                                paste("The dataset code is the prefix of the source dataset that you will be using",
+                                      "during the data linkage process. The prefix you enter here should match the",
+                                      "prefix of the file you are using using EXACTLY."),
+                                placement = "right",
+                                options = list(container = "body")))
+                   )),
+                   column(width = 12, div(style = "display: flex; align-items: center;",
+                     textAreaInput("add_dataset_name", label = "Dataset Name:", value = "",
+                                   width = validateCssUnit(500), resize = "none"),
+
+                     # Add the popover manually
+                     h1(tooltip(bs_icon("question-circle"),
+                                paste("The dataset name should be an identifiable name for the dataset that you can",
+                                      "reasonably identify. The ideal name is the full expanded name of the dataset",
+                                      "that you plan on storing."),
+                                placement = "right",
+                                options = list(container = "body")))
+                   )),
+                   column(width = 12, div(style = "display: flex; align-items: center;",
+                     numericInput("add_dataset_version", label = "Dataset Version:",
+                                  value = NULL, width = validateCssUnit(500)),
+
+                     # Add the popover manually
+                     h1(tooltip(bs_icon("question-circle"),
+                                paste("The dataset version number can help differentiate dataset names additionally",
+                                      "while also allowing for storing different versions of the same dataset."),
+                                placement = "right",
+                                options = list(container = "body")))
+                   )),
+                   column(width = 12, div(style = "display: flex; align-items: center;",
+                     selectInput("add_dataset_is_fwf", label = "Is The Dataset of Fixed-Width Format?",
+                                 choices = list("No" = 1,
+                                                "Yes" = 2),
+                                 selected = 1,
+                                 width = validateCssUnit(500)),
+
+                     # Add the popover manually
+                     h1(tooltip(bs_icon("question-circle"),
+                                paste("If the dataset being used for linkage is fwf, select yes before uploading the",
+                                      "dataset so that the column widths can be extracted for confirmation."),
+                                placement = "right",
+                                options = list(container = "body")))
+                   )),
+                   column(width = 12, div(style = "display: flex; align-items: center;",
+                     fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                          # Label for the uploaded file name
+                          div(style = "margin-right: 10px;", "Uploaded File (Path):"),
+                        )),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          # Boxed text output for showing the uploaded file name
+                          div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                            textOutput("uploaded_file_name")
+                          ),
+                          # Upload button
+                          actionButton("add_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                                           "The column names will be grabbed from the first row in the source dataset for",
+                                           "future use when creating linkage algorithms and passes."),
+                                     placement = "right",
+                                       options = list(container = "body")))
+                        ))
+                      )
+                    ))
+                  ),
                 ),
-                column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                    actionButton("modify_linkage_iteration", "Modify Selected Iteration", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("file-pen")),
-                  )
-                ),
-              )
+                # Card for viewing the uploaded fields
+                card(card_header("View Uploaded Dataset Fields", class = "bg-dark"),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    dataTableOutput("uploaded_dataset_fields"),
+                  )),
+
+                  # If the user has submitted a dataset file, they can also change the widths (IF A ROW IS SELECTED)
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      numericInput("update_field_width_input", label = "Field Width:",
+                                   value = NULL, width = validateCssUnit(300)),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("update_field_width_btn", "Update Field Width", class = "btn-warning"),
+                    ))
+                  ),
+                )
+              ),
+
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("add_dataset", "Add Dataset", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                ))
+              ),
+              HTML("<br><br>"),
             )
           )
-        )
-      )
-    )
-  ),
-  #----
-  #----------------------------------#
+        ),
+        #----
+        #-------------------#
 
-  #-- ADD LINKAGE ITERATIONS PAGE --#
-  #----
-  nav_panel(title = "Modify Linkage Iterations", value = "add_linkage_iterations_page",
-    fluidPage(
-      # CARD FOR GENERAL INFORMATION
-      h5(strong("Step 1: Enter General Information About The Linkage Iteration")),
-      h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
-      card(
-        width = 1,
-        height = 300,
-        full_screen = FALSE,
-        card_header("Create New Linkage Iteration", class = "bg-dark"),
-        card_body(
-          fluidRow(
-            column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
-                textAreaInput("add_iteration_name", label = "Iteration/Pass Name:", value = "",
+        #-- LINKAGE METHODS PAGE --#
+        #----
+        nav_panel(title = "Linkage Methods", value = "linkage_methods_page",
+          fluidPage(
+            # Generate the table
+            h5(strong("View the Currently Usable Linkage Methods:")),
+            h6(p(strong("NOTE: "), "Only one combination of implementation name and technique label can exist at a time.")),
+            dataTableOutput("currently_added_linkage_methods"),
+
+            # Line break
+            HTML("<br>"),
+
+            # Add linkage method fields here
+            h5(strong("Or, Add a New Linkage Method Here:")),
+            fluidRow(
+              column(width = 3, div(style = "display: flex; align-items: center;",
+                textAreaInput("add_implementation_name", label = "Implementation/Class Name:", value = "",
                               width = validateCssUnit(500), resize = "none"),
 
                 # Add the popover manually
                 h1(tooltip(bs_icon("question-circle"),
-                           paste("The iteration/pass name is a short descriptor to help identify what was linked",
-                                 "on what specific iteration/pass."),
+                           paste("The linkage implementation/class name should match the custom R script built",
+                                 "by yourself to be used for linkage EXACTLY. During linkage, the program will",
+                                 "try to source and call your custom class by searching for this exact name."),
                            placement = "right",
                            options = list(container = "body")))
-              )
-            ),
-            column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                numericInput("add_iteration_order", label = "Iteration Order/Priority:", value = NULL,
-                              width = validateCssUnit(500)),
+              )),
+              column(width = 3, div(style = "display: flex; align-items: center;",
+                textAreaInput("add_technique_label", label = "Linkage Method:", value = "",
+                              width = validateCssUnit(500), resize = "none"),
 
                 # Add the popover manually
                 h1(tooltip(bs_icon("question-circle"),
-                           paste("The iteration order determines the order in which the iterations/passes of",
-                                 "the selected algorithm are ran in."),
+                           paste("Within a linkage implementation, there are various techniques that can be used",
+                                 "(Deterministic, Probabilistic) and the program will pass to your class which",
+                                 "technique should be used."),
                            placement = "right",
                            options = list(container = "body")))
-              )
-            ),
-            column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
-                uiOutput("add_iteration_linkage_method_input"),
+              )),
+              column(width = 3, div(style = "display: flex; align-items: center;",
+                textAreaInput("add_implementation_desc", label = "Implementation Description:", value = "",
+                              width = validateCssUnit(500), resize = "none"),
 
                 # Add the popover manually
                 h1(tooltip(bs_icon("question-circle"),
-                           paste("The linkage method determines which class will perform the data linkage process."),
+                           paste("Short description of the linkage class being created including its method and name."),
                            placement = "right",
                            options = list(container = "body")))
-              )
+              )),
+              column(width = 3, div(style = "display: flex; align-items: center;",
+                numericInput("add_implementation_vers", label = "Implementation Version:",
+                             value = NULL, width = validateCssUnit(500)),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The implementation version can help differentiate implementations from",
+                                 "other implementations with similar names and techniques."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+            ),
+            HTML("<br>"),
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_method", "Add Linkage Method", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+              ))
             )
           )
-        )
-      ),
+        ),
+        #----
+        #--------------------------#
 
-      # Line break between the previous card
-      HTML("<br>"),
+        #-- TESTING LINKAGE ALGORITHMS PAGE --#
+        #----
+        nav_panel(title = "Testable Linkage Algorithms", value = "linkage_algorithms_page",
+          fluidPage(
+            # Two select inputs for choosing which datasets we want to be using
+            h5(strong("Select a Left and Right Dataset To View or Add Linkage Algorithms:")),
+            h6(p(strong("Note: "), paste("The left and right dataset must be distinct."))),
+            fluidRow(
+              column(width = 6, div(style = "display: flex; justify-content: right; align-items: right;",
+                uiOutput("linkage_algorithm_left_dataset_input"),
+              )),
+              column(width = 6, div(style = "display: flex; justify-content: left; align-items: left;",
+                uiOutput("linkage_algorithm_right_dataset_input"),
+              ))
+            ),
 
-      # CARD FOR GENERAL INFORMATION
-      h5(strong("Step 2: Select a Name Standardization Dataset")),
-      h6(p(strong("NOTE: "), "Name standardization will only be applied if the user selects the 'Standardize Names' linkage rule.")),
-      # Create a card for editing/viewing algorithm output information
-      #column(width = 6, offset = 3,  # Control the card's width and center it
-      div(style = "display: flex; justify-content: center; align-items: center;",
-        card(
-          width = 1,
-          height = 150,
-          full_screen = FALSE,
-          card_header("Create New Linkage Iteration", class = "bg-dark"),
-          card_body(
+            # Line break to give the input and table some space
+            HTML("<br><br>"),
+
+            # Once the user selects their LEFT and RIGHT dataset, show them the table of linkage algorithms
+            conditionalPanel(
+              condition = "input.linkage_algorithm_left_dataset != '' && input.linkage_algorithm_right_dataset != ''
+                          && input.linkage_algorithm_left_dataset != input.linkage_algorithm_right_dataset",
+
+              # Generate the table
+              h5(strong("Select a Row to either Enable/Disable the Algorithm, View/Modify Passes, or View/Modify Ground Truth Variables:")),
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  dataTableOutput("currently_added_linkage_algorithms"),
+                )),
+              ),
+              # If a row WAS selected
+              conditionalPanel(
+                condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
+
+                HTML("<br>"), # White space
+
+                # Column layout for all buttons
+                layout_column_wrap(
+                  width = 1/4,
+                  height = 185,
+                  heights_equal = "all",
+
+                  # Card for Regenerating Linkage Reports
+                  card(
+                    full_screen = FALSE,
+                    card_body(
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
+                            actionButton("run_algorithm_alt", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("file-waveform")),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                            actionButton("go_to_regenerate_report", "Regenerate Report...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
+                          )
+                        )
+                      )
+                    )
+                  ),
+
+                  # CARD FOR ARCHIVING AND PUBLISHING ALGORITHMS
+                  card(
+                    full_screen = FALSE,
+                    card_body(
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
+                            actionButton("archive_algorithm", "Archive Selected Algorithm", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("box-archive")),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                            actionButton("publish_algorithm", "Publish Selected Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("scroll")),
+                          )
+                        )
+                      )
+                    )
+                  ),
+
+                  # Create a card for the buttons
+                  card(
+                    full_screen = FALSE,
+                    card_body(
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            actionButton("toggle_algorithm", "Set as Default Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-on")),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                            actionButton("toggle_algorithm_for_testing", "Toggle for Testing", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-off")),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                            actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes...", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("list")),
+                          )
+                        )
+                      )
+                    )
+                  ),
+
+                  # Create a card for editing/viewing algorithm output information
+                  card(
+                    full_screen = FALSE,
+                    card_body(
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("square-check")),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                            actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("file-export")),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                            actionButton("linkage_algorithms_to_audits", "Performance Measures...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
+                          )
+                        )
+                      )
+                    )
+                  )
+                ),
+              ),
+
+              # Line break to separate the table and new algorithm input
+              HTML("<br><br>"),
+
+              # Conditional panel for if a row wasn't selected
+              conditionalPanel(
+                condition = "input.currently_added_linkage_algorithms_rows_selected <= 0",
+
+                # Card for the run algorithms, archived algorithms, and published algorithms pages
+                div(style = "display: flex; justify-content: center; align-items: center;",
+                  card(
+                    width = 1,
+                    height = 85,
+                    full_screen = FALSE,
+                    card_body(
+                      fluidRow(
+                        column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                            actionButton("run_default_algorithm", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("file-waveform")),
+                          )
+                        ),
+                        column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                            actionButton("move_to_archived_algorithms", "Archived Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("box-archive")),
+                          )
+                        ),
+                        column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                            actionButton("move_to_published_algorithms", "Published Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("scroll")),
+                          )
+                        )
+                      ),
+                    )
+                  )
+                ),
+
+                # Line break between sections
+                HTML("<br><br>"),
+
+                # Section for adding a new algorithm
+                h5(strong("Or, create an empty linkage algorithm here:")),
+                h6(p(strong("Note 1: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
+                h6(p(strong("Note 2: "), paste("One algorithm may be enabled at a time, creating a new algorithm will require you to enable it manually"))),
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    textAreaInput("linkage_algorithm_descriptor", label = "Algorithm Name/Descriptor:", value = "",
+                                  width = validateCssUnit(500), resize = "none"),
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("The algorithm name/descriptor is a way to easily identify specific algorithms",
+                                     "of two datasets. The name should be short, concise, and identifiable for the user."),
+                               placement = "right",
+                               options = list(container = "body")))
+                  ))
+                ),
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    actionButton("add_linkage_algorithm", "Add Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                  ))
+                )
+              ),
+
+              # Conditional panel for if a row was selected
+              conditionalPanel(
+                condition = "input.currently_added_linkage_algorithms_rows_selected > 0",
+                h5(strong("Update linkage algorithm here:")),
+                h6(p(strong("Note: "), paste("Algorithm name/descriptor must be unique to the algorithm."))),
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    textAreaInput("linkage_algorithm_descriptor_update", label = "Algorithm Name/Descriptor:", value = "",
+                                  width = validateCssUnit(500), resize = "none"),
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("The algorithm name/descriptor is a way to easily identify specific algorithms",
+                                     "of two datasets. The name should be short, concise, and identifiable for the user."),
+                               placement = "right",
+                               options = list(container = "body")))
+                  ))
+                ),
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    actionButton("update_linkage_algorithm", "Update Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("pen")),
+                  ))
+                )
+              )
+            ),
+
+            #White space for the final button
+            HTML("<br><br>"),
+          )
+        ),
+        #----
+        #-------------------------------------#
+
+        #-- ARCHIVED LINKAGE ALGORITHMS PAGE --#
+        #----
+        nav_panel(title = "Archived Linkage Algorithms", value = "archived_linkage_algorithms_page",
+          fluidPage(
+            # Put the back button on this page in the top left corner
             fluidRow(
               column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                # Label for the selected dataset
-                div(style = "margin-right: 10px;", "Standardization Dataset:"),
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                # Boxed text output for showing the selected dataset
-                div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                  textOutput("selected_standardization_dataset")
-                ),
-                # Add standardization dataset button
-                actionButton("prepare_standardization_dataset", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                # Remove standardization dataset button
-                actionButton("remove_standardization_dataset", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                actionButton("archived_linkage_algorithms_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
               ))
-            )
-          )
-        )
-      ),
-
-      # Line break between the previous card
-      HTML("<br>"),
-
-      # CARD FOR BLOCKING VARIABLES
-      h5(strong("Step 3: Select the Blocking Variables")),
-      h6(p(strong("NOTE: "), "Blocking variables cannot contain duplicate pairs.")),
-      # CARD FOR BLOCKING VARIABLES
-      card(full_screen = TRUE, card_header("Blocking Variables", class = "bg-dark"), height = 400,
-        card_body(
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                dataTableOutput("add_blocking_variables_table"),
-              )
             ),
-          ),
-          # If NO ROW IS SELECTED, allow them to add blocking variables
-          conditionalPanel(
-            condition = "input.add_blocking_variables_table_rows_selected <= 0",
-            fluidRow(
-              column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
-                  uiOutput("add_left_blocking_field_input"),
-                )
-              ),
-              column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("add_right_blocking_field_input"),
-                )
-              ),
-              column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Linkage Rules:"),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                          textOutput("blocking_linkage_rules_add")
-                      ),
-                      # Add linkage rule button
-                      actionButton("prepare_blocking_linkage_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                      # Remove linkage rule button
-                      actionButton("remove_blocking_linkage_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
-                    ))
-                  )
-                )
-              )
-            ),
+
+            # Line break
+            HTML("<br>"),
+
+            # Generate the table
+            h5(strong("Select an Archived Algorithm to Restore")),
+            h6(p(strong("Note: "), paste("An algorithm can't be restored if there is one enabled for testing that uses the same name/descriptor"))),
             fluidRow(
               column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  actionButton("prepare_blocking_variables", "Add Blocking Variables", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-                )
-              )
-            )
-          ),
-          # If a row IS selected, allow them to update or drop blocking variables
-          conditionalPanel(
-            condition = "input.add_blocking_variables_table_rows_selected > 0",
-            fluidRow(
-              column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
-                  uiOutput("update_left_blocking_field_input"),
-                )
-              ),
-              column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("update_right_blocking_field_input"),
-                )
-              ),
-              column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Linkage Rules:"),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                          textOutput("blocking_linkage_rules_update")
-                      ),
-                      # Add linkage rule button
-                      actionButton("prepare_blocking_linkage_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                      # Remove linkage rule button
-                      actionButton("remove_blocking_linkage_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
-                    ))
-                  )
-                )
-              )
+                dataTableOutput("archived_linkage_algorithms"),
+              )),
             ),
-            fluidRow(
-              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                  actionButton("prepare_blocking_variables_update", "Update Blocking Variables", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
-                )
-              ),
-              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                  actionButton("drop_blocking_variables", "Drop Blocking Variables", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
-                )
-              )
-            )
-          )
-        )
-      ),
 
-      # LINE BREAK BETWEEN CARDS
-      HTML("<br>"),
+            # Line break
+            HTML("<br>"),
 
-      # CARD FOR MATCHING VARIABLES
-      h5(strong("Step 4: Select the Matching Variables")),
-      h6(p(strong("NOTE: "), "Matching variables cannot contain duplicate pairs.")),
-      card(full_screen = TRUE, card_header("Matching Variables", class = "bg-dark"), height = 400,
-        card_body(
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                dataTableOutput("add_matching_variables_table"),
-              )
-            ),
-          ),
-          # If a row IS NOT selected, allow them to add matching variables
-          conditionalPanel(
-            condition = "input.add_matching_variables_table_rows_selected <= 0",
-            fluidRow(
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("add_left_matching_field_input"),
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("add_right_matching_field_input"),
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Linkage Rules:"),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                        textOutput("matching_linkage_rules_add")
-                      ),
-                      # Add linkage rule button
-                      actionButton("prepare_matching_linkage_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                      # Remove linkage rule button
-                      actionButton("remove_matching_linkage_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
-                    ))
-                  )
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Comparison Rules:"),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                          textOutput("matching_comparison_rules_add")
-                      ),
-                      # Add comparison rule button
-                      actionButton("prepare_matching_comparison_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                      # Remove comparison rule button
-                      actionButton("remove_matching_comparison_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
-                    ))
-                  )
-                )
-              )
-            ),
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  actionButton("prepare_matching_variables", "Add Matching Variables", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-                )
-              )
-            )
-          ),
-          # If a row IS selected, allow them to update or drop matching variables
-          conditionalPanel(
-            condition = "input.add_matching_variables_table_rows_selected > 0",
-            fluidRow(
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("update_left_matching_field_input"),
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("update_right_matching_field_input"),
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Linkage Rules:"),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                          textOutput("matching_linkage_rules_update")
-                      ),
-                      # Add linkage rule button
-                      actionButton("prepare_matching_linkage_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                      # Remove linkage rule button
-                      actionButton("remove_matching_linkage_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
-                    ))
-                  )
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Comparison Rules:"),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                          textOutput("matching_comparison_rules_update")
-                      ),
-                      # Add comparison rule button
-                      actionButton("prepare_matching_comparison_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                      # Remove comparison rule button
-                      actionButton("remove_matching_comparison_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
-                    ))
-                  )
-                )
-              )
-            ),
-            fluidRow(
-              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                  actionButton("prepare_matching_variables_update", "Update Matching Variables", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
-                )
-              ),
-              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                  actionButton("drop_matching_variables", "Drop Matching Variables", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
-                )
-              )
-            )
-          )
-        )
-      ),
+            # Conditional panel for if a row was selected
+            conditionalPanel(
+              condition = "input.archived_linkage_algorithms_rows_selected > 0",
 
-      # LINE BREAK BETWEEN CARDS
-      HTML("<br>"),
-
-      # CARD FOR PREVIWING THE PASS
-      h5(strong("Step 5: Preview the Algorithm & Passes")),
-      card(card_header("Preview Algorithm Pass", class = "bg-dark"), height = 150,
-        card_body(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-              actionButton("preview_algorithm", "Save and Preview The Passes", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("floppy-disk")),
-            )
-          )
-        )
-      ),
-
-      # LINE BREAK BETWEEN CARDS
-      HTML("<br>"),
-
-      # CARD FOR ACCEPTANCE RULE
-      h5(strong("Step 6: Select the Acceptance Rule")),
-      card(card_header("Acceptance Rule", class = "bg-dark"), height = 150,
-        card_body(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              # Table for showing the algorithm details (so the user does not need to restore the algorithm first)
+              h5(strong("Details of selected algorithm")),
               fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                   # Label for the uploaded file name
-                   div(style = "margin-right: 10px;", "Acceptance Rule:"),
-                )),
+                # Card for the data table
+                card(
+                  full_screen = TRUE,
+                  height = 500,
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.9vw;",
+                    dataTableOutput("archived_linkage_algorithms_details"),
+                  )),
+                )
+              ),
+
+              # Line break
+              HTML("<br>"),
+
+              # Button for restoring the algorithm
+              fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                   # Boxed text output for showing the uploaded file name
-                   div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                     textOutput("selected_iteration_acceptance_rule")
-                   ),
-                   # Add acceptance rule button
-                   actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                   # Remove acceptance rule button
-                   actionButton("remove_iteration_acceptance_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                  actionButton("restore_linkage_algorithm", "Restore Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
                 ))
               )
-            )
-          )
-        )
-      ),
-
-      # Two buttons for returning w/out saving, and for adding the new iteration
-      fluidRow(
-        column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-            actionButton("return_from_add_iterations", "Return Without Saving", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("rectangle-xmark")),
+            ),
+            #White space for the final button
+            HTML("<br><br>"),
           )
         ),
-        column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-            actionButton("save_iteration", "Save and Modify Iteration", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("floppy-disk")),
-          )
-        ),
-      ),
+        #----
+        #--------------------------------------#
 
-      # Final line break
-      HTML("<br><br>")
-    )
-  ),
-  #----
-  #---------------------------------#
-
-  #-- GROUND TRUTH VARIABLES PAGE --#
-  #----
-  nav_panel(title = "Ground Truth Variables", value = "ground_truth_variables_page",
-    fluidPage(
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("modify_ground_truth_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
-
-      # Line break to give the back button some space
-      HTML("<br>"),
-
-      # Render the data table of this algorithms ground truth variables
-      h5(strong("Select A Pair of Ground Truth Variables to Drop:")),
-      h6(p(strong("NOTE: "), "No duplicate ground truth pairs are allowed.")),
-      dataTableOutput("currently_added_ground_truth_variables"),
-
-      # If now row is selected, the user can enter a new pair of ground truth variables + linkage rules
-      conditionalPanel(
-        condition = "input.currently_added_ground_truth_variables_rows_selected <= 0",
-
-        # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
-        card(width = 1, height = 350, full_screen = FALSE, card_header("Add Ground Truth Variables", class = "bg-dark"),
+        #-- PUBLISHED LINKAGE ALGORITHMS PAGE --#
+        #----
+        nav_panel(title = "Published Linkage Algorithms", value = "published_linkage_algorithms_page",
           fluidPage(
+            shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
+
+            # Put the back button on this page in the top left corner
             fluidRow(
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("ground_truth_left_field_input"),
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("published_linkage_algorithms_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
+
+            # Line break
+            HTML("<br>"),
+
+            # Generate the table
+            h5(strong("Select a published algorithm to unpublish")),
+            h6(p(strong("Note: "), paste("An algorithm can't be unpublished if there is one enabled for testing that uses the same name/descriptor"))),
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                dataTableOutput("published_linkage_algorithms"),
+              )),
+            ),
+
+            # Line break
+            HTML("<br>"),
+
+            # Conditional panel for if a row WAS selected
+            conditionalPanel(
+              condition = "input.published_linkage_algorithms_rows_selected > 0",
+
+              # Table for showing the algorithm details (so the user does not need to restore the algorithm first)
+              h5(strong("Details of selected algorithm")),
+              fluidRow(
+                # Card for the data table
+                card(
+                  full_screen = TRUE,
+                  height = 500,
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.9vw;",
+                    dataTableOutput("published_linkage_algorithms_details"),
+                  )),
                 )
               ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-                  uiOutput("ground_truth_right_field_input"),
-                )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+
+              # Un-publish button
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("unpublish_linkage_algorithm", "Unpublish Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                ))
+              )
+            ),
+
+            # Conditional panel for if a row WASN'T selected
+            conditionalPanel(
+              condition = "input.published_linkage_algorithms_rows_selected <= 0",
+
+              # Title and subtitle for running & saving the published algorithms
+              h5(strong("Or, run all published algorithms and save linkage data to the output folder defined below")),
+              h6(p(strong("Note: "), paste("An algorithm can't be unpublished if there is one enabled for testing that uses the same name/descriptor"))),
+
+              # Create a fluid row for the output folder input & "RUN" button
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(card_header("Add Linkage Output Fields", class = 'bg-dark'),
                   fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Comparison Rule:"),
+                    # Choose output folder here (MAYBE SAVE THE USERS LAST USED FOLDER AND IF THEY WANT TO CHANGE IT THEY CAN DO IT HERE)
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                      # Boxed text output for showing the uploaded folder name
+                      div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("selected_published_algorithms_output_dir")
+                      ),
+                      # Upload Button
+                      shinyDirButton("published_algorithms_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
                     )),
                     column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                        textOutput("selected_ground_truth_comparison_rule")
-                      ),
-                      # Add linkage rule button
-                      actionButton("prepare_ground_truth_comparison_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
-                      # Remove linkage rule button
-                      actionButton("remove_ground_truth_comparison_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                      helpText(HTML(paste0("Select a folder where all output will be saved.<br><br>Data will be saved as a singular <b>.RData</b> file ",
+                                           "containing a variety of linkage information, including the linked and unlinked records pairs, algorithm summary, ",
+                                           "performance measures, and missing data indicators.<br><br>")),
+                               style = "width: 400px;")
+                    )),
+
+                    # Run Button
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      actionButton("run_published_linkage_algorithms", "Run & Save All Published Algorithms", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("circle-play")),
                     ))
                   )
                 )
-              ),
-              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px;",
-                  actionButton("add_ground_truth", "Add Ground Truth Pair", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-                )
               )
-            )
+            ),
+
+            #White space for the final button
+            HTML("<br><br>")
           )
-        )
-      ),
-      # If a row is selected, the user can drop the selected pair of ground truth variables
-      conditionalPanel(
-        condition = "input.currently_added_ground_truth_variables_rows_selected > 0",
-
-        # Show a card for users to drop the selected row
-        div(style = "display: flex; justify-content: center; align-items: center;",
-          card(width = 0.25, max_height = 125, full_screen = FALSE, card_header("Drop Ground Truth Variables", class = "bg-dark"),
-            fluidPage(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  actionButton("drop_ground_truth", "Drop Ground Truth Pair", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  ),
-  #----
-  #---------------------------------#
-
-  #-- LINKAGE ALGORITHM OUTPUT FIELDS PAGE --#
-  #----
-  nav_panel(title = "Linkage Algorithm Output Fields", value = "linkage_algorithm_output_page",
-    fluidPage(
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("linkage_algorithm_output_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
-
-      # Line break to give the back button some space
-      HTML("<br>"),
-
-      # Render the data table of this algorithms ground truth variables
-      h5(strong("Select The Linkage Algorithm Output Field(s) to Drop:")),
-      h6(p(strong("NOTE: "), "No duplicate fields allowed.")),
-      dataTableOutput("currently_added_algorithm_output_fields"),
-
-      # Line break
-      HTML("<br>"),
-
-      # If no row is selected, the user can enter a new output field + type OR use another algorithms output fields
-      conditionalPanel(
-        condition = "input.currently_added_algorithm_output_fields_rows_selected <= 0",
-
-        # Select between manually adding output fields, or use an existing algorithms output fields
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-              radioButtons("algorithm_output_add_type", strong("Select Output Field Add Type:"),
-                           c("Manually Add Output Fields" = 1,
-                             "Use Existing Algorithms Output Fields" = 2),
-                           width = validateCssUnit(500))
-            )
-          ),
         ),
+        #----
+        #---------------------------------------#
 
-        # If the user would like to manually add output fields:
-        conditionalPanel(
-          condition = 'input.algorithm_output_add_type == 1',
+        #-- LINKAGE AUDITS PAGE --#
+        #----
+        nav_panel(title = "Linkage Audits", value = "audits_page",
+          fluidPage(
+            # Put the back button on this page in the top left corner
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("linkage_audits_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
 
-          # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
-          layout_column_wrap(
-            width = 1/2,
-            height = 550,
-            # CARD FOR SELECTING THE FIELD TYPE
-            card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
-              fluidPage(
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      selectInput("linkage_algorithm_output_field_type", label = "Field Type:",
-                      choices = list("Generic/Pass-Through" = 1,
-                                     "Date (Year)" = 2,
-                                     "Age" = 3,
-                                     "Postal Code Initials" = 4,
-                                     "Name Length" = 5,
-                                     "Number of Names" = 6,
-                                     "Derived Age" = 7,
-                                     "Standardized Values" = 8,
-                                     "Forward Sortation Area (FSA)" = 9),
-                      selected = 1,
-                      width = validateCssUnit(500)),
-                    )
-                  ),
+            # Line break to give the back button some space
+            HTML("<br>"),
+
+            # Render the data table of currently available iterations
+            h5(strong("Select A Saved Performance Entry to View & Export:")),
+
+            # UI date range input
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  dateRangeInput("audit_date_range", label = "Limit Audit Date Range", start = "1983-01-01", end = NULL),
                 )
               )
             ),
-            # CARD FOR THE INPUT UI
-            card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
-              fluidPage(
+
+            # Card for the data table
+            layout_column_wrap(
+              width = NULL,
+              style = css(grid_template_columns = '2fr 1fr;'),
+              height = 500,
+              # CARD FOR AUDIT SELECTION
+              card(
+                full_screen = TRUE,
+                height = 500,
+                page_fillable(
+                  column(
+                    width = 12,
+                    div(
+                      style = "margin-bottom: 10px;",  # Add spacing below the buttons
+                      actionButton("select_all_audit", "Select All", class = "btn btn-primary btn-sm"),
+                      actionButton("select_none_audit", "Select None", class = "btn btn-secondary btn-sm")
+                    ),
+                    dataTableOutput("algorithm_specific_audits"),
+                  )
+                )
+              ),
+              # CARD FOR DEFINITIONS
+              card(
+                height = 500,
+                uiOutput("selected_algorithm_performances_measures")
+              )
+            ),
+
+            # If A ROW IS SELECTED, the user can export the results by clicking the button
+            conditionalPanel(
+              # THIS WAS BROKEN BEFORE, IF SOMETHING KEEPS BREAKING JUST USE "input.algorithm_specific_audits_rows_selected > 0"!
+              condition = "typeof input.algorithm_specific_audits_rows_selected !== 'undefined' && input.algorithm_specific_audits_rows_selected.length > 0",
+
+              # Export Audit Button
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    actionButton("export_selected_audit", label = "Export Audit", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("file-export"))
+                  )
+                ),
+              )
+            ),
+
+            # Line break at the bottom
+            HTML("<br><br>")
+          )
+        ),
+        #----
+        #-------------------------#
+
+        #-- VIEW LINKAGE ITERATIONS PAGE --#
+        #----
+        nav_panel(title = "View Linkage Iterations", value = "view_linkage_iterations_page",
+          fluidPage(
+            # Put the back button on this page in the top left corner
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("view_linkage_iterations_back",  "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
+
+            # Line break to give the back button some space
+            HTML("<br>"),
+
+            # Render the data table of currently available iterations
+            h5(strong("Select An Existing Iteration to Update, or to Enable/Disable:")),
+            h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
+            card(full_screen = TRUE, card_header("Current Iterations", class = "bg-dark"), height = 500,
+              dataTableOutput("currently_added_linkage_iterations")
+            ),
+
+            # If now row is selected, the user may either create a new iteration, or add a previously used iteration
+            # belonging to the same algorithm.
+            conditionalPanel(
+              condition = "input.currently_added_linkage_iterations_rows_selected <= 0",
+
+              #-- Firstly, the user can create a brand new iteration to add --#
+
+              # Line break between the table
+              HTML("<br>"),
+
+              # Create a card for the buttons
+              h5(strong("Or, create a brand new linkage iteration from scratch here:")),
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = 1,
+                  height = 80,
+                  full_screen = FALSE,
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          actionButton("add_new_linkage_iteration", "Add New Iteration", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                        )
+                      ),
+                    )
+                  )
+                )
+              ),
+
+              #-- Or, the user can select from an existing iteration, making any small changes that they'd like --#
+
+              # Line break between the previous card
+              HTML("<br>"),
+
+              h5(strong("Or, select a previously used iteration to use here:")),
+              # CARD FOR EXISTING LINKAGE ITERATIONS
+              card(full_screen = TRUE, card_header("Previously Used Linkage Iterations", class = "bg-dark"), height = 500,
+                card_body(
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        dataTableOutput("previously_used_iterations"),
+                      )
+                    ),
+                  ),
+                  # If a row is selected, allow them to review and add the iteration
+                  conditionalPanel(
+                    condition = "input.previously_used_iterations_rows_selected > 0",
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          actionButton("add_existing_linkage_iteration", "Review And Add Iteration", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                        )
+                      ),
+                    )
+                  )
+                )
+              )
+            ),
+
+            # If a row IS selected, they may modify it, or enable/disable the iteration
+            conditionalPanel(
+              condition = "input.currently_added_linkage_iterations_rows_selected > 0",
+
+              # Create a card for the buttons
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = 1,
+                  height = 125,
+                  full_screen = FALSE,
+                  card_header("Iteration Specific Information", class = "bg-dark"),
+                  card_body(
+                    fluidRow(
+                      column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                          actionButton("toggle_linkage_iteration", "Toggle Selected Iteration", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-off")),
+                        )
+                      ),
+                      column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                          actionButton("modify_linkage_iteration", "Modify Selected Iteration", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("file-pen")),
+                        )
+                      ),
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ),
+        #----
+        #----------------------------------#
+
+        #-- ADD LINKAGE ITERATIONS PAGE --#
+        #----
+        nav_panel(title = "Modify Linkage Iterations", value = "add_linkage_iterations_page",
+          fluidPage(
+            # CARD FOR GENERAL INFORMATION
+            h5(strong("Step 1: Enter General Information About The Linkage Iteration")),
+            h6(p(strong("NOTE: "), "Iterations cannot contain the same name.")),
+            card(
+              width = 1,
+              height = 300,
+              full_screen = FALSE,
+              card_header("Create New Linkage Iteration", class = "bg-dark"),
+              card_body(
                 fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
+                  column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                      textAreaInput("add_iteration_name", label = "Iteration/Pass Name:", value = "",
                                     width = validateCssUnit(500), resize = "none"),
+
+                      # Add the popover manually
+                      h1(tooltip(bs_icon("question-circle"),
+                                 paste("The iteration/pass name is a short descriptor to help identify what was linked",
+                                       "on what specific iteration/pass."),
+                                 placement = "right",
+                                 options = list(container = "body")))
                     )
                   ),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      uiOutput("linkage_algorithm_output_field_input"),
+                  column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                      numericInput("add_iteration_order", label = "Iteration Order/Priority:", value = NULL,
+                                    width = validateCssUnit(500)),
+
+                      # Add the popover manually
+                      h1(tooltip(bs_icon("question-circle"),
+                                 paste("The iteration order determines the order in which the iterations/passes of",
+                                       "the selected algorithm are ran in."),
+                                 placement = "right",
+                                 options = list(container = "body")))
                     )
                   ),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("add_linkage_algorithm_output_field", "Add Output Field", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                  column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                      uiOutput("add_iteration_linkage_method_input"),
+
+                      # Add the popover manually
+                      h1(tooltip(bs_icon("question-circle"),
+                                 paste("The linkage method determines which class will perform the data linkage process."),
+                                 placement = "right",
+                                 options = list(container = "body")))
                     )
                   )
                 )
               )
             ),
+
+            # Line break between the previous card
+            HTML("<br>"),
+
+            # CARD FOR GENERAL INFORMATION
+            h5(strong("Step 2: Select a Name Standardization Dataset")),
+            h6(p(strong("NOTE: "), "Name standardization will only be applied if the user selects the 'Standardize Names' linkage rule.")),
+            # Create a card for editing/viewing algorithm output information
+            #column(width = 6, offset = 3,  # Control the card's width and center it
+            div(style = "display: flex; justify-content: center; align-items: center;",
+              card(
+                width = 1,
+                height = 150,
+                full_screen = FALSE,
+                card_header("Create New Linkage Iteration", class = "bg-dark"),
+                card_body(
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                      # Label for the selected dataset
+                      div(style = "margin-right: 10px;", "Standardization Dataset:"),
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the selected dataset
+                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                        textOutput("selected_standardization_dataset")
+                      ),
+                      # Add standardization dataset button
+                      actionButton("prepare_standardization_dataset", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                      # Remove standardization dataset button
+                      actionButton("remove_standardization_dataset", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                    ))
+                  )
+                )
+              )
+            ),
+
+            # Line break between the previous card
+            HTML("<br>"),
+
+            # CARD FOR BLOCKING VARIABLES
+            h5(strong("Step 3: Select the Blocking Variables")),
+            h6(p(strong("NOTE: "), "Blocking variables cannot contain duplicate pairs.")),
+            # CARD FOR BLOCKING VARIABLES
+            card(full_screen = TRUE, card_header("Blocking Variables", class = "bg-dark"), height = 400,
+              card_body(
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      dataTableOutput("add_blocking_variables_table"),
+                    )
+                  ),
+                ),
+                # If NO ROW IS SELECTED, allow them to add blocking variables
+                conditionalPanel(
+                  condition = "input.add_blocking_variables_table_rows_selected <= 0",
+                  fluidRow(
+                    column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                        uiOutput("add_left_blocking_field_input"),
+                      )
+                    ),
+                    column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("add_right_blocking_field_input"),
+                      )
+                    ),
+                    column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                        fluidRow(
+                          column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                            # Label for the uploaded file name
+                            div(style = "margin-right: 10px;", "Linkage Rules:"),
+                          )),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            # Boxed text output for showing the uploaded file name
+                            div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                                textOutput("blocking_linkage_rules_add")
+                            ),
+                            # Add linkage rule button
+                            actionButton("prepare_blocking_linkage_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                            # Remove linkage rule button
+                            actionButton("remove_blocking_linkage_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                          ))
+                        )
+                      )
+                    )
+                  ),
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        actionButton("prepare_blocking_variables", "Add Blocking Variables", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                      )
+                    )
+                  )
+                ),
+                # If a row IS selected, allow them to update or drop blocking variables
+                conditionalPanel(
+                  condition = "input.add_blocking_variables_table_rows_selected > 0",
+                  fluidRow(
+                    column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
+                        uiOutput("update_left_blocking_field_input"),
+                      )
+                    ),
+                    column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("update_right_blocking_field_input"),
+                      )
+                    ),
+                    column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                        fluidRow(
+                          column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                            # Label for the uploaded file name
+                            div(style = "margin-right: 10px;", "Linkage Rules:"),
+                          )),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            # Boxed text output for showing the uploaded file name
+                            div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                                textOutput("blocking_linkage_rules_update")
+                            ),
+                            # Add linkage rule button
+                            actionButton("prepare_blocking_linkage_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                            # Remove linkage rule button
+                            actionButton("remove_blocking_linkage_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                          ))
+                        )
+                      )
+                    )
+                  ),
+                  fluidRow(
+                    column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                        actionButton("prepare_blocking_variables_update", "Update Blocking Variables", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+                      )
+                    ),
+                    column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                        actionButton("drop_blocking_variables", "Drop Blocking Variables", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+
+            # LINE BREAK BETWEEN CARDS
+            HTML("<br>"),
+
+            # CARD FOR MATCHING VARIABLES
+            h5(strong("Step 4: Select the Matching Variables")),
+            h6(p(strong("NOTE: "), "Matching variables cannot contain duplicate pairs.")),
+            card(full_screen = TRUE, card_header("Matching Variables", class = "bg-dark"), height = 400,
+              card_body(
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      dataTableOutput("add_matching_variables_table"),
+                    )
+                  ),
+                ),
+                # If a row IS NOT selected, allow them to add matching variables
+                conditionalPanel(
+                  condition = "input.add_matching_variables_table_rows_selected <= 0",
+                  fluidRow(
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("add_left_matching_field_input"),
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("add_right_matching_field_input"),
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        fluidRow(
+                          column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                            # Label for the uploaded file name
+                            div(style = "margin-right: 10px;", "Linkage Rules:"),
+                          )),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            # Boxed text output for showing the uploaded file name
+                            div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                              textOutput("matching_linkage_rules_add")
+                            ),
+                            # Add linkage rule button
+                            actionButton("prepare_matching_linkage_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                            # Remove linkage rule button
+                            actionButton("remove_matching_linkage_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                          ))
+                        )
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        fluidRow(
+                          column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                            # Label for the uploaded file name
+                            div(style = "margin-right: 10px;", "Comparison Rules:"),
+                          )),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            # Boxed text output for showing the uploaded file name
+                            div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                                textOutput("matching_comparison_rules_add")
+                            ),
+                            # Add comparison rule button
+                            actionButton("prepare_matching_comparison_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                            # Remove comparison rule button
+                            actionButton("remove_matching_comparison_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                          ))
+                        )
+                      )
+                    )
+                  ),
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        actionButton("prepare_matching_variables", "Add Matching Variables", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                      )
+                    )
+                  )
+                ),
+                # If a row IS selected, allow them to update or drop matching variables
+                conditionalPanel(
+                  condition = "input.add_matching_variables_table_rows_selected > 0",
+                  fluidRow(
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("update_left_matching_field_input"),
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("update_right_matching_field_input"),
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        fluidRow(
+                          column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                            # Label for the uploaded file name
+                            div(style = "margin-right: 10px;", "Linkage Rules:"),
+                          )),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            # Boxed text output for showing the uploaded file name
+                            div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                                textOutput("matching_linkage_rules_update")
+                            ),
+                            # Add linkage rule button
+                            actionButton("prepare_matching_linkage_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                            # Remove linkage rule button
+                            actionButton("remove_matching_linkage_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                          ))
+                        )
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        fluidRow(
+                          column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                            # Label for the uploaded file name
+                            div(style = "margin-right: 10px;", "Comparison Rules:"),
+                          )),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            # Boxed text output for showing the uploaded file name
+                            div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                                textOutput("matching_comparison_rules_update")
+                            ),
+                            # Add comparison rule button
+                            actionButton("prepare_matching_comparison_rule_update", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                            # Remove comparison rule button
+                            actionButton("remove_matching_comparison_rule_update", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                          ))
+                        )
+                      )
+                    )
+                  ),
+                  fluidRow(
+                    column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                        actionButton("prepare_matching_variables_update", "Update Matching Variables", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+                      )
+                    ),
+                    column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                        actionButton("drop_matching_variables", "Drop Matching Variables", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+
+            # LINE BREAK BETWEEN CARDS
+            HTML("<br>"),
+
+            # CARD FOR PREVIWING THE PASS
+            h5(strong("Step 5: Preview the Algorithm & Passes")),
+            card(card_header("Preview Algorithm Pass", class = "bg-dark"), height = 150,
+              card_body(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                    actionButton("preview_algorithm", "Save and Preview The Passes", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("floppy-disk")),
+                  )
+                )
+              )
+            ),
+
+            # LINE BREAK BETWEEN CARDS
+            HTML("<br>"),
+
+            # CARD FOR ACCEPTANCE RULE
+            h5(strong("Step 6: Select the Acceptance Rule")),
+            card(card_header("Acceptance Rule", class = "bg-dark"), height = 150,
+              card_body(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                         # Label for the uploaded file name
+                         div(style = "margin-right: 10px;", "Acceptance Rule:"),
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                         # Boxed text output for showing the uploaded file name
+                         div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                           textOutput("selected_iteration_acceptance_rule")
+                         ),
+                         # Add acceptance rule button
+                         actionButton("prepare_iteration_acceptance_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                         # Remove acceptance rule button
+                         actionButton("remove_iteration_acceptance_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                      ))
+                    )
+                  )
+                )
+              )
+            ),
+
+            # Two buttons for returning w/out saving, and for adding the new iteration
+            fluidRow(
+              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                  actionButton("return_from_add_iterations", "Return Without Saving", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("rectangle-xmark")),
+                )
+              ),
+              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                  actionButton("save_iteration", "Save and Modify Iteration", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("floppy-disk")),
+                )
+              ),
+            ),
+
+            # Final line break
+            HTML("<br><br>")
           )
         ),
+        #----
+        #---------------------------------#
 
-        # If the user would like to use a previous algorithms output fields
-        conditionalPanel(
-          condition = 'input.algorithm_output_add_type == 2',
+        #-- GROUND TRUTH VARIABLES PAGE --#
+        #----
+        nav_panel(title = "Ground Truth Variables", value = "ground_truth_variables_page",
+          fluidPage(
+            # Put the back button on this page in the top left corner
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("modify_ground_truth_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
 
-          # CARD FOR SELECTING THE FIELD TYPE
-          card(full_screen = TRUE, card_header("Use Existing Algorithm's Output Fields", class = 'bg-dark'),
-          height = 600,
-            fluidPage(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    uiOutput("usable_previous_algorithm_outputs")
-                  )
-                ),
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    dataTableOutput("selected_algorithm_output_fields")
-                  )
-                ),
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("use_selected_algorithms_fields", "Use Selected Algorithm's Output Fields", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("plus")),
+            # Line break to give the back button some space
+            HTML("<br>"),
+
+            # Render the data table of this algorithms ground truth variables
+            h5(strong("Select A Pair of Ground Truth Variables to Drop:")),
+            h6(p(strong("NOTE: "), "No duplicate ground truth pairs are allowed.")),
+            dataTableOutput("currently_added_ground_truth_variables"),
+
+            # If now row is selected, the user can enter a new pair of ground truth variables + linkage rules
+            conditionalPanel(
+              condition = "input.currently_added_ground_truth_variables_rows_selected <= 0",
+
+              # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
+              card(width = 1, height = 350, full_screen = FALSE, card_header("Add Ground Truth Variables", class = "bg-dark"),
+                fluidPage(
+                  fluidRow(
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("ground_truth_left_field_input"),
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("ground_truth_right_field_input"),
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                        fluidRow(
+                          column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                            # Label for the uploaded file name
+                            div(style = "margin-right: 10px;", "Comparison Rule:"),
+                          )),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            # Boxed text output for showing the uploaded file name
+                            div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                              textOutput("selected_ground_truth_comparison_rule")
+                            ),
+                            # Add linkage rule button
+                            actionButton("prepare_ground_truth_comparison_rule", label = "", shiny::icon("pencil"), class = "btn-circle btn-green"),
+                            # Remove linkage rule button
+                            actionButton("remove_ground_truth_comparison_rule", label = "", shiny::icon("eraser"), class = "btn-circle btn-red"),
+                          ))
+                        )
+                      )
+                    ),
+                    column(width = 3, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px;",
+                        actionButton("add_ground_truth", "Add Ground Truth Pair", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                      )
+                    )
                   )
                 )
               )
-            )
-          ),
-        )
-      ),
-      # If a row is selected, the user can drop the selected pair of ground truth variables
-      conditionalPanel(
-        condition = "input.currently_added_algorithm_output_fields_rows_selected > 0",
+            ),
+            # If a row is selected, the user can drop the selected pair of ground truth variables
+            conditionalPanel(
+              condition = "input.currently_added_ground_truth_variables_rows_selected > 0",
 
-        # Show a card for users to drop the selected row
-        div(style = "display: flex; justify-content: center; align-items: center;",
-          card(width = 0.25, max_height = 125, full_screen = FALSE, card_header("Drop Linkage Output Fields", class = 'bg-dark'),
-            fluidPage(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  actionButton("drop_linkage_algorithm_output_field", "Drop Output Field", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
+              # Show a card for users to drop the selected row
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(width = 0.25, max_height = 125, full_screen = FALSE, card_header("Drop Ground Truth Variables", class = "bg-dark"),
+                  fluidPage(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        actionButton("drop_ground_truth", "Drop Ground Truth Pair", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
+                      )
+                    )
+                  )
                 )
               )
             )
           )
-        )
-      )
-    )
-  ),
-  #----
-  #------------------------------------------#
+        ),
+        #----
+        #---------------------------------#
 
-  #-- ACCEPTANCE METHODS PAGE --#
-  #----
-  nav_panel(title = "Acceptance Methods", value = "acceptance_methods_page",
-    fluidPage(
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("acceptance_methods_back", "Return to Modify Iterations Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
+        #-- LINKAGE ALGORITHM OUTPUT FIELDS PAGE --#
+        #----
+        nav_panel(title = "Linkage Algorithm Output Fields", value = "linkage_algorithm_output_page",
+          fluidPage(
+            # Put the back button on this page in the top left corner
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("linkage_algorithm_output_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
 
-      # Line break to give the back button some space
-      HTML("<br>"),
+            # Line break to give the back button some space
+            HTML("<br>"),
 
-      # Generate the table
-      h5(strong("Select an Existing Method To Update or Add a Rule To:")),
-      h6(p(strong("NOTE: "), "No acceptance methods can share the same the same name, and no parameters can share the same name within methods.")),
-      dataTableOutput("currently_added_acceptance_methods_and_parameters"),
+            # Render the data table of this algorithms ground truth variables
+            h5(strong("Select The Linkage Algorithm Output Field(s) to Drop:")),
+            h6(p(strong("NOTE: "), "No duplicate fields allowed.")),
+            dataTableOutput("currently_added_algorithm_output_fields"),
 
-      # Line break
-      HTML("<br>"),
+            # Line break
+            HTML("<br>"),
 
-      # If no row is selected, the user can enter a new method and parameters
-      conditionalPanel(
-        condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected <= 0",
+            # If no row is selected, the user can enter a new output field + type OR use another algorithms output fields
+            conditionalPanel(
+              condition = "input.currently_added_algorithm_output_fields_rows_selected <= 0",
 
-        h5(strong("Or, Add a New Acceptance Method and Parameters Here:")),
-        layout_column_wrap(
-          width = 1/2,
-          height = 500,
-          # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Acceptance Method General Information", class = "bg-dark",
-               tooltip(bs_icon("question-circle"),
-                       paste("Within this card, you can enter general information about the acceptance",
-                             "method that you want to add, which includes the name of the method and a",
-                             "short description of what the expected values are."),
-                       placement = "right",
-                       options = list(container = "body"))),
-            fluidPage(
+              # Select between manually adding output fields, or use an existing algorithms output fields
               fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  textAreaInput("add_acceptance_method_name", label = "Acceptance Method Name:", value = "",
-                                width = validateCssUnit(500), resize = "none"),
+                    radioButtons("algorithm_output_add_type", strong("Select Output Field Add Type:"),
+                                 c("Manually Add Output Fields" = 1,
+                                   "Use Existing Algorithms Output Fields" = 2),
+                                 width = validateCssUnit(500))
+                  )
+                ),
+              ),
 
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The acceptance method name should be descriptive and easy to identify for",
-                                   "later linkage iteration and acceptance rule creation."),
-                             placement = "right",
-                             options = list(container = "body")))
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  textAreaInput("add_acceptance_method_desc", label = "Acceptance Method Description:", value = "",
-                                width = validateCssUnit(500), resize = "none"),
-
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The acceptance method description should be short and concise, and should",
-                                   "detail the expected inputs for the parameters and how the acceptance method",
-                                   "would work."),
-                             placement = "right",
-                             options = list(container = "body")))
-                ))
-              )
-            )
-          ),
-
-          # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information", class = "bg-dark",
-               tooltip(bs_icon("question-circle"),
-                       paste("Within this card, you can add parameters that belong to the acceptance method",
-                             "you are wanting to add, each parameter consists of a key which is how it would",
-                             "called from R, and a short description of the parameter. You may add as many",
-                             "parameters as you would like for the method being constructed."),
-                       placement = "right",
-                       options = list(container = "body"))),
-            fluidPage(
-              # Generate the table
-              h5(strong("Parameters to be Added:")),
-              h6(p(strong("NOTE: "), "No parameters can share the same name.")),
-              dataTableOutput("acceptance_parameters_to_add"),
-
-              # IF NO ROW IS SELECTED, STORE A PARAMETER THAT IS TO BE ADDED
+              # If the user would like to manually add output fields:
               conditionalPanel(
-                condition = "input.acceptance_parameters_to_add_rows_selected <= 0",
-                fluidRow(
-                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                    textAreaInput("add_acceptance_parameter_key", label = "Acceptance Parameter Key:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
+                condition = 'input.algorithm_output_add_type == 1',
 
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The acceptance parameter key should be separated by underscores, and is how",
-                                     "you would expect to retrieve the parameter value from this key value pair label."),
-                               placement = "right",
-                               options = list(container = "body")))
-                  )),
-                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                    textAreaInput("add_acceptance_parameter_desc", label = "Acceptance Parameter Description:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The acceptance parameter description should be brief and should explain how each",
-                                     "key is used during data linkage and what values it should expect."),
-                               placement = "right",
-                               options = list(container = "body")))
-                  ))
-                ),
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("prepare_acceptance_method_parameters_to_add", "Add Acceptance Parameter", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-                  ))
-                )
-              ),
-              # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED OR DROPPED
-              conditionalPanel(
-                condition = "input.acceptance_parameters_to_add_rows_selected > 0",
-                fluidRow(
-                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                    textAreaInput("update_acceptance_parameter_key", label = "Update Parameter Key:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The acceptance parameter key should be separated by underscores, and is how",
-                                     "you would expect to retrieve the parameter value from this key value pair label."),
-                               placement = "right",
-                               options = list(container = "body")))
-                  )),
-                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                    textAreaInput("update_acceptance_parameter_desc", label = "Update Parameter Description:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The acceptance parameter description should be brief and should explain how each",
-                                     "key is used during data linkage and what values it should expect."),
-                               placement = "right",
-                               options = list(container = "body")))
-                  ))
-                ),
-                fluidRow(
-                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: right;",
-                    actionButton("update_prepared_acceptance_method_parameters_to_add", "Update Acceptance Parameter", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
-                  )),
-                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: left;",
-                    actionButton("drop_prepared_acceptance_method_parameters_to_add", "Drop Acceptance Parameter", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
-                  ))
-                )
-              )
-            )
-          )
-        ),
-        HTML("<br>"),
-        # After the user finishes adding everything they need, they can add new method and
-        # parameters
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("add_acceptance_method_and_parameters", "Add Acceptance Method & Parameters", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("plus")),
-          ))
-        ),
-        # Final line break
-        HTML("<br><br>")
-      ),
-      # If a row is selected, you may update the acceptance method name, descriptions + parameter names and description.
-      # You are, however, unable to delete parameter keys or acceptance methods after they've been created.
-      # You may also click a button which brings you to a page for adding a new rule
-      conditionalPanel(
-        condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected > 0",
-
-        h5(strong("Update the Selected Acceptance Method and Parameters Here:")),
-        layout_column_wrap(
-          width = 1/2,
-          height = 500,
-          # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Acceptance Method General Information", class = "bg-dark",
-                                               tooltip(bs_icon("question-circle"),
-                                                       paste("Within this card, you can enter general information about the acceptance",
-                                                             "method that you want to add, which includes the name of the method and a",
-                                                             "short description of what the expected values are."),
-                                                       placement = "right",
-                                                       options = list(container = "body"))),
-           fluidPage(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  textAreaInput("update_acceptance_method_name", label = "Acceptance Method Name:", value = "",
-                                width = validateCssUnit(500), resize = "none"),
-
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The acceptance method name should be descriptive and easy to identify for",
-                                   "later linkage iteration and acceptance rule creation."),
-                             placement = "right",
-                             options = list(container = "body")))
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  textAreaInput("update_acceptance_method_desc", label = "Acceptance Method Description:", value = "",
-                                width = validateCssUnit(500), resize = "none"),
-
-                  # Add the popover manually
-                  h1(tooltip(bs_icon("question-circle"),
-                             paste("The acceptance method description should be short and concise, and should",
-                                   "detail the expected inputs for the parameters and how the acceptance method",
-                                   "would work."),
-                             placement = "right",
-                             options = list(container = "body")))
-                ))
-              )
-            )
-          ),
-
-          # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Acceptance Method Parameter Information", class = "bg-dark",
-                                               tooltip(bs_icon("question-circle"),
-                                                       paste("Within this card, you can add parameters that belong to the acceptance method",
-                                                             "you are wanting to add, each parameter consists of a key which is how it would",
-                                                             "called from R, and a short description of the parameter. You may add as many",
-                                                             "parameters as you would like for the method being constructed."),
-                                                       placement = "right",
-                                                       options = list(container = "body"))),
-           fluidPage(
-             # Generate the table
-             h5(strong("Parameters to be Updated (Select a Row to Update the Key and Description):")),
-             h6(p(strong("NOTE: "), "No parameters can share the same name.")),
-             dataTableOutput("acceptance_parameters_to_update"),
-
-             # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED
-             conditionalPanel(
-                condition = "input.acceptance_parameters_to_update_rows_selected > 0",
-                fluidRow(
-                  column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                    textAreaInput("acceptance_parameter_key_update", label = "Update Parameter Key:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The acceptance parameter key should be separated by underscores, and is how",
-                                     "you would expect to retrieve the parameter value from this key value pair label."),
-                               placement = "right",
-                               options = list(container = "body")))
-                  )),
-                  column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                    textAreaInput("acceptance_parameter_desc_update", label = "Update Parameter Description:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The acceptance parameter description should be brief and should explain how each",
-                                     "key is used during data linkage and what values it should expect."),
-                               placement = "right",
-                               options = list(container = "body")))
-                  ))
-                ),
-                fluidRow(
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    actionButton("update_prepared_acceptance_method_parameters_to_update", "Update Acceptance Parameter", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
-                  )),
-                )
-              )
-            )
-          )
-        ),
-        HTML("<br>"),
-        # After the user finishes adding everything they need, they can update the acceptance method & parameters
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("update_acceptance_method_and_parameters", "Update Acceptance Method & Parameters", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("pen")),
-          ))
-        ),
-        # Final line break
-        HTML("<br><br>")
-      )
-    )
-  ),
-  #----
-  #-----------------------------#
-
-  #-- COMPARISON METHODS PAGE --#
-  #----
-  nav_panel(title = "Comparison Methods", value = "comparison_methods_page",
-    fluidPage(
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("comparison_methods_back", "Return to Modify Iterations Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
-
-      # Line break to give the back button some space
-      HTML("<br>"),
-
-      # Generate the table
-      h5(strong("Select an Existing Method To Update or Add a Rule To:")),
-      h6(p(strong("NOTE: "), "No comparison methods can share the same the same name, and no parameters can share the same name within methods.")),
-      dataTableOutput("currently_added_comparison_methods_and_parameters"),
-
-      # Line break
-      HTML("<br>"),
-
-      # If no row is selected, the user can enter a new method and parameters
-      conditionalPanel(
-        condition = "input.currently_added_comparison_methods_and_parameters_rows_selected <= 0",
-
-        h5(strong("Or, Add a New Comparison Method and Parameters Here:")),
-        layout_column_wrap(
-          width = 1/2,
-          height = 500,
-          # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Comparison Method General Information", class = "bg-dark",
-                                   tooltip(bs_icon("question-circle"),
-                                           paste("Within this card, you can enter general information about the comparison",
-                                                 "method that you want to add, which includes the name of the method and a",
-                                                 "short description of what the expected values are."),
-                                           placement = "right",
-                                           options = list(container = "body"))),
-             fluidPage(
-               fluidRow(
-                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    textAreaInput("add_comparison_method_name", label = "Comparison Method Name:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The comparison method name should be descriptive and easy to identify for",
-                                     "later linkage iteration and comparison rule creation."),
-                               placement = "right",
-                               options = list(container = "body")))
-                 )),
-                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    textAreaInput("add_comparison_method_desc", label = "Comparison Method Description:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The comparison method description should be short and concise, and should",
-                                     "detail the expected inputs for the parameters and how the comparison method",
-                                     "would work."),
-                               placement = "right",
-                               options = list(container = "body")))
-                 ))
-               )
-             )
-          ),
-
-          # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Comparison Method Parameter Information", class = "bg-dark",
-                                   tooltip(bs_icon("question-circle"),
-                                           paste("Within this card, you can add parameters that belong to the comparison method",
-                                                 "you are wanting to add, each parameter consists of a key which is how it would",
-                                                 "called from R, and a short description of the parameter. You may add as many",
-                                                 "parameters as you would like for the method being constructed."),
-                                           placement = "right",
-                                           options = list(container = "body"))),
-             fluidPage(
-               # Generate the table
-               h5(strong("Parameters to be Added:")),
-               h6(p(strong("NOTE: "), "No parameters can share the same name.")),
-               dataTableOutput("comparison_parameters_to_add"),
-
-               # IF NO ROW IS SELECTED, STORE A PARAMETER THAT IS TO BE ADDED
-               conditionalPanel(
-                 condition = "input.comparison_parameters_to_add_rows_selected <= 0",
-                 fluidRow(
-                   column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                     textAreaInput("add_comparison_parameter_key", label = "Comparison Parameter Key:", value = "",
-                                   width = validateCssUnit(500), resize = "none"),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The comparison parameter key should be separated by underscores, and is how",
-                                      "you would expect to retrieve the parameter value from this key value pair label."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   )),
-                   column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                     textAreaInput("add_comparison_parameter_desc", label = "Comparison Parameter Description:", value = "",
-                                   width = validateCssUnit(500), resize = "none"),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The comparison parameter description should be brief and should explain how each",
-                                      "key is used during data linkage and what values it should expect."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   ))
-                 ),
-                 fluidRow(
-                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                     actionButton("prepare_comparison_method_parameters_to_add", "Add Comparison Parameter", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-                   ))
-                 )
-               ),
-               # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED OR DROPPED
-               conditionalPanel(
-                 condition = "input.comparison_parameters_to_add_rows_selected > 0",
-                 fluidRow(
-                   column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                     textAreaInput("update_comparison_parameter_key", label = "Update Parameter Key:", value = "",
-                                   width = validateCssUnit(500), resize = "none"),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The comparison parameter key should be separated by underscores, and is how",
-                                      "you would expect to retrieve the parameter value from this key value pair label."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   )),
-                   column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                     textAreaInput("update_comparison_parameter_desc", label = "Update Parameter Description:", value = "",
-                                   width = validateCssUnit(500), resize = "none"),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The comparison parameter description should be brief and should explain how each",
-                                      "key is used during data linkage and what values it should expect."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   ))
-                 ),
-                 fluidRow(
-                   column(width = 6, div(style = "display: flex; justify-content: right; align-items: right;",
-                     actionButton("update_prepared_comparison_method_parameters_to_add", "Update Comparison Parameter", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
-                   )),
-                   column(width = 6, div(style = "display: flex; justify-content: left; align-items: left;",
-                     actionButton("drop_prepared_comparison_method_parameters_to_add", "Drop Comparison Parameter", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
-                   ))
-                 )
-               )
-             )
-          )
-        ),
-        HTML("<br>"),
-        # After the user finishes adding everything they need, they can add new method and
-        # parameters
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            actionButton("add_comparison_method_and_parameters", "Add Comparison Method & Parameters", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("plus")),
-          ))
-        ),
-        # Final line break
-        HTML("<br><br>")
-      ),
-      # If a row is selected, you may update the comparison method name, descriptions + parameter names and description.
-      # You are, however, unable to delete parameter keys or comparison methods after they've been created.
-      # You may also click a button which brings you to a page for adding a new rule
-      conditionalPanel(
-        condition = "input.currently_added_comparison_methods_and_parameters_rows_selected > 0",
-
-        h5(strong("Update the Selected Comparison Method and Parameters Here:")),
-        layout_column_wrap(
-          width = 1/2,
-          height = 500,
-          # CARD FOR ACCEPTANCE METHOD INFO
-          card(full_screen = TRUE, card_header("Comparison Method General Information", class = "bg-dark",
-                                   tooltip(bs_icon("question-circle"),
-                                           paste("Within this card, you can enter general information about the comparison",
-                                                 "method that you want to add, which includes the name of the method and a",
-                                                 "short description of what the expected values are."),
-                                           placement = "right",
-                                           options = list(container = "body"))),
-             fluidPage(
-               fluidRow(
-                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    textAreaInput("update_comparison_method_name", label = "Comparison Method Name:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The comparison method name should be descriptive and easy to identify for",
-                                     "later linkage iteration and comparison rule creation."),
-                               placement = "right",
-                               options = list(container = "body")))
-                 )),
-                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    textAreaInput("update_comparison_method_desc", label = "Comparison Method Description:", value = "",
-                                  width = validateCssUnit(500), resize = "none"),
-
-                    # Add the popover manually
-                    h1(tooltip(bs_icon("question-circle"),
-                               paste("The comparison method description should be short and concise, and should",
-                                     "detail the expected inputs for the parameters and how the comparison method",
-                                     "would work."),
-                               placement = "right",
-                               options = list(container = "body")))
-                 ))
-               )
-             )
-          ),
-
-          # CARD FOR ACCEPTANCE PARAMETER INFO
-          card(full_screen = TRUE, card_header("Comparison Method Parameter Information", class = "bg-dark",
-                                   tooltip(bs_icon("question-circle"),
-                                           paste("Within this card, you can add parameters that belong to the comparison method",
-                                                 "you are wanting to add, each parameter consists of a key which is how it would",
-                                                 "called from R, and a short description of the parameter. You may add as many",
-                                                 "parameters as you would like for the method being constructed."),
-                                           placement = "right",
-                                           options = list(container = "body"))),
-             fluidPage(
-               # Generate the table
-               h5(strong("Parameters to be Updated (Select a Row to Update the Key and Description):")),
-               h6(p(strong("NOTE: "), "No parameters can share the same name.")),
-               dataTableOutput("comparison_parameters_to_update"),
-
-               # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED
-               conditionalPanel(
-                 condition = "input.comparison_parameters_to_update_rows_selected > 0",
-                 fluidRow(
-                   column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
-                     textAreaInput("comparison_parameter_key_update", label = "Update Parameter Key:", value = "",
-                                   width = validateCssUnit(500), resize = "none"),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The comparison parameter key should be separated by underscores, and is how",
-                                      "you would expect to retrieve the parameter value from this key value pair label."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   )),
-                   column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
-                     textAreaInput("comparison_parameter_desc_update", label = "Update Parameter Description:", value = "",
-                                   width = validateCssUnit(500), resize = "none"),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The comparison parameter description should be brief and should explain how each",
-                                      "key is used during data linkage and what values it should expect."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   ))
-                 ),
-                 fluidRow(
-                   column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                     actionButton("update_prepared_comparison_method_parameters_to_update", "Update Comparison Parameter", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
-                   )),
-                 )
-               )
-             )
-          )
-        ),
-        HTML("<br>"),
-        # After the user finishes adding everything they need, they can update the comparison method & parameters
-        fluidRow(
-          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                                 actionButton("update_comparison_method_and_parameters", "Update Comparison Method & Parameters", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("pen")),
-          ))
-        ),
-        # Final line break
-        HTML("<br><br>")
-      )
-    )
-  ),
-  #----
-  #-----------------------------#
-
-  #-- LINKAGE RULES PAGE --#
-  #----
-  nav_panel(title = "Linkage Rules", value = "linkage_rule_page",
-    fluidPage(
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("linkage_rules_back", "Back", class = "btn-info"),
-        ))
-      ),
-
-      # Line break to give the back button some breathing room
-      HTML("<br><br>"),
-
-      # Generate the table
-      h5(strong("View From the Table of Existing Rules & Create a New Rule Below:")),
-      h6(p(strong("Note: "), paste("A rule cannot contain both numerical AND string rules, it can contain one or the other."))),
-      dataTableOutput("currently_added_linkage_rules"),
-
-      # Small line break
-      HTML("<br><br>"),
-
-      # Fluid row for the 4 inputs (alternate field, date variance, substring length, and name standardization)
-      fluidRow(
-        column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-          numericInput("add_alternate_field_number", label = "Alternative Field Value:",
-                       value = NULL, width = validateCssUnit(500)),
-
-          # Add the popover manually
-          h1(tooltip(bs_icon("question-circle"),
-                     paste("The alternative field number should be a positive number greater than 1, and is",
-                           "used to select which alternative value to use in place of the original value when",
-                           "performing blocking or matching."),
-                     placement = "right",
-                     options = list(container = "body")))
-        )),
-        column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-          numericInput("add_integer_value_variance", label = "Integer Value Variance:",
-                       value = NULL, width = validateCssUnit(500)),
-
-          # Add the popover manually
-          h1(tooltip(bs_icon("question-circle"),
-                     paste("The integer value variance should be a positive number greater than 0, and is",
-                           "used for date related fields. The number entered will be used to block on the",
-                           "original value, as well as plus and minus the integer you added to obtain a range",
-                           "of dates. Used for blocking keys primarily."),
-                     placement = "right",
-                     options = list(container = "body")))
-        )),
-        column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-          numericInput("add_substring_length", label = "Substring Length:",
-                       value = NULL, width = validateCssUnit(500)),
-
-          # Add the popover manually
-          h1(tooltip(bs_icon("question-circle"),
-                     paste("The substring length should be a positive number greater than 0, and is",
-                           "used to block or match on the first certain number of characters in a name."),
-                     placement = "right",
-                     options = list(container = "body")))
-        )),
-        column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
-          selectInput("add_name_standardization", label = "Standardize Names?",
-                      choices = list("No" = 1,
-                                     "Yes" = 2),
-                      selected = 1,
-                      width = validateCssUnit(500)),
-
-          # Add the popover manually
-          h1(tooltip(bs_icon("question-circle"),
-                     paste("If names are to be standardized, variations of names are converted to the most",
-                           "common spelling of that name. You must provide a CSV file when you begin the linkage",
-                           "process containing a column of the variant spellings, titled START, and a column",
-                           "of the common spelling it maps to, titled LABEL. A default CSV is provided on",
-                           "GitHub."),
-                     placement = "right",
-                     options = list(container = "body")))
-        ))
-      ),
-
-      # Submit Linkage Rule Button
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-          actionButton("add_linkage_rule", "Submit Linkage Rule Values", class = "btn-success"),
-        ))
-      ),
-    )
-  ),
-  #----
-  #------------------------#
-
-  #-- REGENERATE REPORTS PAGE --#
-  #----
-  nav_panel(title = "Regenerate Report", value = "regenerate_report_page",
-    fluidPage(
-      shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
-
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("regenerate_report_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
-
-      # Line break
-      HTML("<br>"),
-
-      ### STEP 1
-      h5(strong("Step 1: Select the Saved Data Date(s) to Regenerate")),
-      h6(p(strong("Note: "), paste("A minimum of one saved linkage data dates must be selected."))),
-      # Create a card for the output location
-      div(style = "display: flex; justify-content: center; align-items: center;",
-        card(
-          width = 1,
-          height = 400,
-          full_screen = FALSE,
-          card_header("Select Saved Data to Regenerate", class = 'bg-dark'),
-          card_body(
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                dataTableOutput("select_saved_data_to_regenerate"),
-              )),
-            ),
-          )
-        )
-      ),
-
-      # Line break
-      HTML("<br><br>"),
-
-      ### STEP 2
-      h5(strong("Step 2: Provide the Output Folder")),
-      # Create a card for the output location
-      div(style = "display: flex; justify-content: center; align-items: center;",
-          card(
-            width = 1,
-            height = 150,
-            full_screen = FALSE,
-            card_header("Supply Output Location", class = 'bg-dark'),
-            card_body(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
-                  # Boxed text output for showing the uploaded folder name
-                  div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                    textOutput("uploaded_regenerated_report_output_dir")
+                # Show a card input here which will allow users to select a left field, right field, and linkage rule to add
+                layout_column_wrap(
+                  width = 1/2,
+                  height = 550,
+                  # CARD FOR SELECTING THE FIELD TYPE
+                  card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+                    fluidPage(
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            selectInput("linkage_algorithm_output_field_type", label = "Field Type:",
+                            choices = list("Generic/Pass-Through" = 1,
+                                           "Date (Year)" = 2,
+                                           "Age" = 3,
+                                           "Postal Code Initials" = 4,
+                                           "Name Length" = 5,
+                                           "Number of Names" = 6,
+                                           "Derived Age" = 7,
+                                           "Standardized Values" = 8,
+                                           "Forward Sortation Area (FSA)" = 9),
+                            selected = 1,
+                            width = validateCssUnit(500)),
+                          )
+                        ),
+                      )
+                    )
                   ),
-                  # Upload Button
-                  shinyDirButton("regenerated_report_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
-                  helpText("Select a folder where the regenerated linkage report will be placed.")
-                ))
+                  # CARD FOR THE INPUT UI
+                  card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+                    fluidPage(
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
+                                          width = validateCssUnit(500), resize = "none"),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            uiOutput("linkage_algorithm_output_field_input"),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            actionButton("add_linkage_algorithm_output_field", "Add Output Field", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                          )
+                        )
+                      )
+                    )
+                  ),
+                )
               ),
-            )
-          )
-      ),
 
-      HTML("<br>"), # Spacing
+              # If the user would like to use a previous algorithms output fields
+              conditionalPanel(
+                condition = 'input.algorithm_output_add_type == 2',
 
-      ### STEP 3
-      h5(strong("Step 3: Regenerate Linkage Report")),
-      # Create a card for editing/viewing algorithm output information
-      div(style = "display: flex; justify-content: center; align-items: center;",
-          card(
-            width = 1,
-            height = 125,
-            full_screen = FALSE,
-            card_header("Regenerate Linkage Report for the Selected Algorithm", class = 'bg-dark'),
-            card_body(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  actionButton("regenerate_report_btn", "Regenerate Report", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("file-pdf"))
-                ))
-              ),
-            )
-          )
-      ),
-      HTML("<br>"), # Spacing
-    )
-  ),
-  #----
-  #-----------------------------#
-
-  #-- RUN LINKAGE ALGORITHM PAGE --#
-  #----
-  nav_panel(title = "Run Algorithm", value = "run_algorithm_page",
-    fluidPage(
-      shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
-
-      # Put the back button on this page in the top left corner
-      fluidRow(
-        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-          actionButton("run_algorithm_back", "Back", icon = shiny::icon("arrow-left-long")),
-        ))
-      ),
-
-      # Line break to give the back button some breathing room
-      HTML("<br><br>"),
-
-      ### STEP 1
-      h5(strong("Step 1: Select the Algorithm(s) to Run")),
-      h6(p(strong("Note: "), paste("A minimum of one algorithm must be selected."))),
-      # Create a card for the output location
-      div(style = "display: flex; justify-content: center; align-items: center;",
-        card(
-          width = 1,
-          height = 600,
-          full_screen = FALSE,
-          card_header("Select Algorithms to Run", class = 'bg-dark'),
-          page_fillable(
-            column(
-              width = 12,
-              div(
-                style = "margin-bottom: 10px;",  # Add spacing below the buttons
-                actionButton("select_all_run", "Select All", class = "btn btn-primary btn-sm"),
-                actionButton("select_none_run", "Select None", class = "btn btn-secondary btn-sm")
-              ),
-              dataTableOutput("select_linkage_algorithms_to_run"),
-            )
-          )
-        )
-      ),
-
-      HTML("<br>"), # Spacing
-
-      ### STEP 2
-      h5(strong("Step 2: Provide the Output Folder")),
-      # Create a card for the output location
-      div(style = "display: flex; justify-content: center; align-items: center;",
-        card(
-          width = 1,
-          height = 150,
-          full_screen = FALSE,
-          card_header("Supply Output Location", class = 'bg-dark'),
-          card_body(
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
-                # Boxed text output for showing the uploaded folder name
-                div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                  textOutput("uploaded_linkage_output_dir")
-                ),
-                # Upload Button
-                shinyDirButton("linkage_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
-                helpText("Select a folder where all output will be saved.")
-              ))
-            ),
-          )
-        )
-      ),
-
-      HTML("<br>"), # Spacing
-
-      ### STEP 2
-      h5(strong("Step 3: Select the Type of Linkage Quality Report")),
-      # Create a card for the linkage quality report type
-      div(style = "display: flex; justify-content: center; align-items: center;",
-        card(
-          width = 1,
-          height = 250,
-          full_screen = FALSE,
-          card_header("Report Type", class = 'bg-dark'),
-          card_body(
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                # Radio button for selecting report type
-                radioButtons(
-                  inputId = "linkage_report_type",
-                  label = "Choose Linkage Report Type:",
-                  choices = list(
-                    "No Report" = 1,
-                    "Intermediate Report" = 2,
-                    "Final Report" = 3
+                # CARD FOR SELECTING THE FIELD TYPE
+                card(full_screen = TRUE, card_header("Use Existing Algorithm's Output Fields", class = 'bg-dark'),
+                height = 600,
+                  fluidPage(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          uiOutput("usable_previous_algorithm_outputs")
+                        )
+                      ),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          dataTableOutput("selected_algorithm_output_fields")
+                        )
+                      ),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          actionButton("use_selected_algorithms_fields", "Use Selected Algorithm's Output Fields", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("plus")),
+                        )
+                      )
+                    )
                   )
                 ),
-                helpText("Select a report type to see more information about what is included in each.")
-              )),
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                # Boxed text output for showing the uploaded folder name
-                div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                   textOutput("linkage_report_type_help")
-                ),
-              ))
+              )
             ),
-          )
-        )
-      ),
+            # If a row is selected, the user can drop the selected pair of ground truth variables
+            conditionalPanel(
+              condition = "input.currently_added_algorithm_output_fields_rows_selected > 0",
 
-      HTML("<br>"), # Spacing
-
-      ### STEP 4
-      h5(strong("Step 4: Select Export Options")),
-      # Create a card for editing/viewing algorithm output information
-      column(width = 6, offset = 3,  # Control the card's width and center it
-        div(style = "display: flex; justify-content: center; align-items: center;",
-          card(
-            width = NULL,  # Remove the width inside the card and control it from the column
-            height = 460,
-            full_screen = FALSE,
-            card_header("Optional Export Options", class = 'bg-dark'),
-            card_body(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Per Pass CSV output of the linked pairs that were selected.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("output_linked_iterations_pairs", "Output Linked Iteration Pairs", FALSE)
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Per Pass CSV output of the unlinked pairs before pairs were selected.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("output_unlinked_iteration_pairs", "Output Unlinked Iteration Pairs", FALSE)
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Singular CSV output of each pass of the algorithm, including the fields used, acceptance threshold, and linkage rate.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("generate_algorithm_summary", "Algorithm Summary", FALSE)
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Singular CSV output of performance metrics calculated during the linkage process if a ground truth was provided for the algorithm.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("calculate_performance_measures", "Performance Measures", FALSE)
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Per Pass PNG plots of the linkage algorithm and its acceptance threshold distribution.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("generate_threshold_plots", "Histograms", FALSE)
-                )),
+              # Show a card for users to drop the selected row
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(width = 0.25, max_height = 125, full_screen = FALSE, card_header("Drop Linkage Output Fields", class = 'bg-dark'),
+                  fluidPage(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        actionButton("drop_linkage_algorithm_output_field", "Drop Output Field", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
+                      )
+                    )
+                  )
+                )
               )
             )
           )
-        )
-      ),
+        ),
+        #----
+        #------------------------------------------#
 
-      ### STEP 5
-      h5(strong("Step 5: Select Output Options")),
-      # Create a card for editing/viewing algorithm output information
-      column(width = 6, offset = 3,  # Control the card's width and center it
-        div(style = "display: flex; justify-content: center; align-items: center;",
-          card(
-            width = NULL,  # Remove the width inside the card and control it from the column
-            height = 300,
-            full_screen = FALSE,
-            card_header("Optional Output Options", class = 'bg-dark'),
-            card_body(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Includes the unlinked record pairs that appear in the linkage data or the linkage quality report.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("include_unlinked_records", "Unlinked Pairs in Final Output", FALSE)
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Collects missing data indicators of the output fields to be placed in the linkage report.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("create_missing_data_indicators", "Missing Data Indicators", FALSE)
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText("Collects and saves the linkage performance of the algorithms being ran, to be used for future auditing purposes.")
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("save_audit_performance", "Save Algorithm Performance", FALSE)
-                ))
-              )
-            )
-          )
-        )
-      ),
-
-      HTML("<br>"), # Spacing
-
-      ### STEP 6
-      h5(strong("Step 6: Retain Record Linkage Data")),
-      # Create a card for saving the results obtained during record linkage
-      column(width = 6, offset = 3,  # Control the card's width and center it
-        div(style = "display: flex; justify-content: center; align-items: center;",
-         card(
-            width = NULL,  # Remove the width inside the card and control it from the column
-            height = 170,
-            full_screen = FALSE,
-            card_header("Retain Record Linkage Results?", class = 'bg-dark'),
-            card_body(
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  helpText(paste0("Retain the linked data results that will be generated for the algorithms being ",
-                                  "ran in the packages 'AppData' folder to be used for regenerating future reports."))
-                )),
-                column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                  checkboxInput("save_all_linkage_results", "Save All Linkage Results?", FALSE)
-                ))
-              )
-            )
-          )
-        )
-      ),
-
-      HTML("<br>"), # Spacing
-
-      ### STEP 7
-      h5(strong("Step 7: Run Record Linkage for the Selected Algorithm(s)")),
-      # Create a card for editing/viewing algorithm output information
-      div(style = "display: flex; justify-content: center; align-items: center;",
-        card(
-          width = 1,
-          height = 150,
-          full_screen = FALSE,
-          card_header("Run Record Linkage", class = 'bg-dark'),
-          card_body(
+        #-- ACCEPTANCE METHODS PAGE --#
+        #----
+        nav_panel(title = "Acceptance Methods", value = "acceptance_methods_page",
+          fluidPage(
+            # Put the back button on this page in the top left corner
             fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                actionButton("run_linkage_btn", "Run Linkage", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("circle-play"))
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("acceptance_methods_back", "Return to Modify Iterations Page", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
+
+            # Line break to give the back button some space
+            HTML("<br>"),
+
+            # Generate the table
+            h5(strong("Select an Existing Method To Update or Add a Rule To:")),
+            h6(p(strong("NOTE: "), "No acceptance methods can share the same the same name, and no parameters can share the same name within methods.")),
+            dataTableOutput("currently_added_acceptance_methods_and_parameters"),
+
+            # Line break
+            HTML("<br>"),
+
+            # If no row is selected, the user can enter a new method and parameters
+            conditionalPanel(
+              condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected <= 0",
+
+              h5(strong("Or, Add a New Acceptance Method and Parameters Here:")),
+              layout_column_wrap(
+                width = 1/2,
+                height = 500,
+                # CARD FOR ACCEPTANCE METHOD INFO
+                card(full_screen = TRUE, card_header("Acceptance Method General Information", class = "bg-dark",
+                     tooltip(bs_icon("question-circle"),
+                             paste("Within this card, you can enter general information about the acceptance",
+                                   "method that you want to add, which includes the name of the method and a",
+                                   "short description of what the expected values are."),
+                             placement = "right",
+                             options = list(container = "body"))),
+                  fluidPage(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        textAreaInput("add_acceptance_method_name", label = "Acceptance Method Name:", value = "",
+                                      width = validateCssUnit(500), resize = "none"),
+
+                        # Add the popover manually
+                        h1(tooltip(bs_icon("question-circle"),
+                                   paste("The acceptance method name should be descriptive and easy to identify for",
+                                         "later linkage iteration and acceptance rule creation."),
+                                   placement = "right",
+                                   options = list(container = "body")))
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        textAreaInput("add_acceptance_method_desc", label = "Acceptance Method Description:", value = "",
+                                      width = validateCssUnit(500), resize = "none"),
+
+                        # Add the popover manually
+                        h1(tooltip(bs_icon("question-circle"),
+                                   paste("The acceptance method description should be short and concise, and should",
+                                         "detail the expected inputs for the parameters and how the acceptance method",
+                                         "would work."),
+                                   placement = "right",
+                                   options = list(container = "body")))
+                      ))
+                    )
+                  )
+                ),
+
+                # CARD FOR ACCEPTANCE PARAMETER INFO
+                card(full_screen = TRUE, card_header("Acceptance Method Parameter Information", class = "bg-dark",
+                     tooltip(bs_icon("question-circle"),
+                             paste("Within this card, you can add parameters that belong to the acceptance method",
+                                   "you are wanting to add, each parameter consists of a key which is how it would",
+                                   "called from R, and a short description of the parameter. You may add as many",
+                                   "parameters as you would like for the method being constructed."),
+                             placement = "right",
+                             options = list(container = "body"))),
+                  fluidPage(
+                    # Generate the table
+                    h5(strong("Parameters to be Added:")),
+                    h6(p(strong("NOTE: "), "No parameters can share the same name.")),
+                    dataTableOutput("acceptance_parameters_to_add"),
+
+                    # IF NO ROW IS SELECTED, STORE A PARAMETER THAT IS TO BE ADDED
+                    conditionalPanel(
+                      condition = "input.acceptance_parameters_to_add_rows_selected <= 0",
+                      fluidRow(
+                        column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                          textAreaInput("add_acceptance_parameter_key", label = "Acceptance Parameter Key:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The acceptance parameter key should be separated by underscores, and is how",
+                                           "you would expect to retrieve the parameter value from this key value pair label."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                        )),
+                        column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                          textAreaInput("add_acceptance_parameter_desc", label = "Acceptance Parameter Description:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The acceptance parameter description should be brief and should explain how each",
+                                           "key is used during data linkage and what values it should expect."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                        ))
+                      ),
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          actionButton("prepare_acceptance_method_parameters_to_add", "Add Acceptance Parameter", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                        ))
+                      )
+                    ),
+                    # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED OR DROPPED
+                    conditionalPanel(
+                      condition = "input.acceptance_parameters_to_add_rows_selected > 0",
+                      fluidRow(
+                        column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                          textAreaInput("update_acceptance_parameter_key", label = "Update Parameter Key:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The acceptance parameter key should be separated by underscores, and is how",
+                                           "you would expect to retrieve the parameter value from this key value pair label."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                        )),
+                        column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                          textAreaInput("update_acceptance_parameter_desc", label = "Update Parameter Description:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The acceptance parameter description should be brief and should explain how each",
+                                           "key is used during data linkage and what values it should expect."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                        ))
+                      ),
+                      fluidRow(
+                        column(width = 6, div(style = "display: flex; justify-content: right; align-items: right;",
+                          actionButton("update_prepared_acceptance_method_parameters_to_add", "Update Acceptance Parameter", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+                        )),
+                        column(width = 6, div(style = "display: flex; justify-content: left; align-items: left;",
+                          actionButton("drop_prepared_acceptance_method_parameters_to_add", "Drop Acceptance Parameter", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
+                        ))
+                      )
+                    )
+                  )
+                )
+              ),
+              HTML("<br>"),
+              # After the user finishes adding everything they need, they can add new method and
+              # parameters
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("add_acceptance_method_and_parameters", "Add Acceptance Method & Parameters", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("plus")),
+                ))
+              ),
+              # Final line break
+              HTML("<br><br>")
+            ),
+            # If a row is selected, you may update the acceptance method name, descriptions + parameter names and description.
+            # You are, however, unable to delete parameter keys or acceptance methods after they've been created.
+            # You may also click a button which brings you to a page for adding a new rule
+            conditionalPanel(
+              condition = "input.currently_added_acceptance_methods_and_parameters_rows_selected > 0",
+
+              h5(strong("Update the Selected Acceptance Method and Parameters Here:")),
+              layout_column_wrap(
+                width = 1/2,
+                height = 500,
+                # CARD FOR ACCEPTANCE METHOD INFO
+                card(full_screen = TRUE, card_header("Acceptance Method General Information", class = "bg-dark",
+                                                     tooltip(bs_icon("question-circle"),
+                                                             paste("Within this card, you can enter general information about the acceptance",
+                                                                   "method that you want to add, which includes the name of the method and a",
+                                                                   "short description of what the expected values are."),
+                                                             placement = "right",
+                                                             options = list(container = "body"))),
+                 fluidPage(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        textAreaInput("update_acceptance_method_name", label = "Acceptance Method Name:", value = "",
+                                      width = validateCssUnit(500), resize = "none"),
+
+                        # Add the popover manually
+                        h1(tooltip(bs_icon("question-circle"),
+                                   paste("The acceptance method name should be descriptive and easy to identify for",
+                                         "later linkage iteration and acceptance rule creation."),
+                                   placement = "right",
+                                   options = list(container = "body")))
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        textAreaInput("update_acceptance_method_desc", label = "Acceptance Method Description:", value = "",
+                                      width = validateCssUnit(500), resize = "none"),
+
+                        # Add the popover manually
+                        h1(tooltip(bs_icon("question-circle"),
+                                   paste("The acceptance method description should be short and concise, and should",
+                                         "detail the expected inputs for the parameters and how the acceptance method",
+                                         "would work."),
+                                   placement = "right",
+                                   options = list(container = "body")))
+                      ))
+                    )
+                  )
+                ),
+
+                # CARD FOR ACCEPTANCE PARAMETER INFO
+                card(full_screen = TRUE, card_header("Acceptance Method Parameter Information", class = "bg-dark",
+                                                     tooltip(bs_icon("question-circle"),
+                                                             paste("Within this card, you can add parameters that belong to the acceptance method",
+                                                                   "you are wanting to add, each parameter consists of a key which is how it would",
+                                                                   "called from R, and a short description of the parameter. You may add as many",
+                                                                   "parameters as you would like for the method being constructed."),
+                                                             placement = "right",
+                                                             options = list(container = "body"))),
+                 fluidPage(
+                   # Generate the table
+                   h5(strong("Parameters to be Updated (Select a Row to Update the Key and Description):")),
+                   h6(p(strong("NOTE: "), "No parameters can share the same name.")),
+                   dataTableOutput("acceptance_parameters_to_update"),
+
+                   # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED
+                   conditionalPanel(
+                      condition = "input.acceptance_parameters_to_update_rows_selected > 0",
+                      fluidRow(
+                        column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                          textAreaInput("acceptance_parameter_key_update", label = "Update Parameter Key:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The acceptance parameter key should be separated by underscores, and is how",
+                                           "you would expect to retrieve the parameter value from this key value pair label."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                        )),
+                        column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                          textAreaInput("acceptance_parameter_desc_update", label = "Update Parameter Description:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The acceptance parameter description should be brief and should explain how each",
+                                           "key is used during data linkage and what values it should expect."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                        ))
+                      ),
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          actionButton("update_prepared_acceptance_method_parameters_to_update", "Update Acceptance Parameter", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+                        )),
+                      )
+                    )
+                  )
+                )
+              ),
+              HTML("<br>"),
+              # After the user finishes adding everything they need, they can update the acceptance method & parameters
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("update_acceptance_method_and_parameters", "Update Acceptance Method & Parameters", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("pen")),
+                ))
+              ),
+              # Final line break
+              HTML("<br><br>")
+            )
+          )
+        ),
+        #----
+        #-----------------------------#
+
+        #-- COMPARISON METHODS PAGE --#
+        #----
+        nav_panel(title = "Comparison Methods", value = "comparison_methods_page",
+          fluidPage(
+            # Put the back button on this page in the top left corner
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("comparison_methods_back", "Return to Modify Iterations Page", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
+
+            # Line break to give the back button some space
+            HTML("<br>"),
+
+            # Generate the table
+            h5(strong("Select an Existing Method To Update or Add a Rule To:")),
+            h6(p(strong("NOTE: "), "No comparison methods can share the same the same name, and no parameters can share the same name within methods.")),
+            dataTableOutput("currently_added_comparison_methods_and_parameters"),
+
+            # Line break
+            HTML("<br>"),
+
+            # If no row is selected, the user can enter a new method and parameters
+            conditionalPanel(
+              condition = "input.currently_added_comparison_methods_and_parameters_rows_selected <= 0",
+
+              h5(strong("Or, Add a New Comparison Method and Parameters Here:")),
+              layout_column_wrap(
+                width = 1/2,
+                height = 500,
+                # CARD FOR ACCEPTANCE METHOD INFO
+                card(full_screen = TRUE, card_header("Comparison Method General Information", class = "bg-dark",
+                                         tooltip(bs_icon("question-circle"),
+                                                 paste("Within this card, you can enter general information about the comparison",
+                                                       "method that you want to add, which includes the name of the method and a",
+                                                       "short description of what the expected values are."),
+                                                 placement = "right",
+                                                 options = list(container = "body"))),
+                   fluidPage(
+                     fluidRow(
+                       column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          textAreaInput("add_comparison_method_name", label = "Comparison Method Name:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The comparison method name should be descriptive and easy to identify for",
+                                           "later linkage iteration and comparison rule creation."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                       )),
+                       column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          textAreaInput("add_comparison_method_desc", label = "Comparison Method Description:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The comparison method description should be short and concise, and should",
+                                           "detail the expected inputs for the parameters and how the comparison method",
+                                           "would work."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                       ))
+                     )
+                   )
+                ),
+
+                # CARD FOR ACCEPTANCE PARAMETER INFO
+                card(full_screen = TRUE, card_header("Comparison Method Parameter Information", class = "bg-dark",
+                                         tooltip(bs_icon("question-circle"),
+                                                 paste("Within this card, you can add parameters that belong to the comparison method",
+                                                       "you are wanting to add, each parameter consists of a key which is how it would",
+                                                       "called from R, and a short description of the parameter. You may add as many",
+                                                       "parameters as you would like for the method being constructed."),
+                                                 placement = "right",
+                                                 options = list(container = "body"))),
+                   fluidPage(
+                     # Generate the table
+                     h5(strong("Parameters to be Added:")),
+                     h6(p(strong("NOTE: "), "No parameters can share the same name.")),
+                     dataTableOutput("comparison_parameters_to_add"),
+
+                     # IF NO ROW IS SELECTED, STORE A PARAMETER THAT IS TO BE ADDED
+                     conditionalPanel(
+                       condition = "input.comparison_parameters_to_add_rows_selected <= 0",
+                       fluidRow(
+                         column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                           textAreaInput("add_comparison_parameter_key", label = "Comparison Parameter Key:", value = "",
+                                         width = validateCssUnit(500), resize = "none"),
+
+                           # Add the popover manually
+                           h1(tooltip(bs_icon("question-circle"),
+                                      paste("The comparison parameter key should be separated by underscores, and is how",
+                                            "you would expect to retrieve the parameter value from this key value pair label."),
+                                      placement = "right",
+                                      options = list(container = "body")))
+                         )),
+                         column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                           textAreaInput("add_comparison_parameter_desc", label = "Comparison Parameter Description:", value = "",
+                                         width = validateCssUnit(500), resize = "none"),
+
+                           # Add the popover manually
+                           h1(tooltip(bs_icon("question-circle"),
+                                      paste("The comparison parameter description should be brief and should explain how each",
+                                            "key is used during data linkage and what values it should expect."),
+                                      placement = "right",
+                                      options = list(container = "body")))
+                         ))
+                       ),
+                       fluidRow(
+                         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                           actionButton("prepare_comparison_method_parameters_to_add", "Add Comparison Parameter", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                         ))
+                       )
+                     ),
+                     # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED OR DROPPED
+                     conditionalPanel(
+                       condition = "input.comparison_parameters_to_add_rows_selected > 0",
+                       fluidRow(
+                         column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                           textAreaInput("update_comparison_parameter_key", label = "Update Parameter Key:", value = "",
+                                         width = validateCssUnit(500), resize = "none"),
+
+                           # Add the popover manually
+                           h1(tooltip(bs_icon("question-circle"),
+                                      paste("The comparison parameter key should be separated by underscores, and is how",
+                                            "you would expect to retrieve the parameter value from this key value pair label."),
+                                      placement = "right",
+                                      options = list(container = "body")))
+                         )),
+                         column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                           textAreaInput("update_comparison_parameter_desc", label = "Update Parameter Description:", value = "",
+                                         width = validateCssUnit(500), resize = "none"),
+
+                           # Add the popover manually
+                           h1(tooltip(bs_icon("question-circle"),
+                                      paste("The comparison parameter description should be brief and should explain how each",
+                                            "key is used during data linkage and what values it should expect."),
+                                      placement = "right",
+                                      options = list(container = "body")))
+                         ))
+                       ),
+                       fluidRow(
+                         column(width = 6, div(style = "display: flex; justify-content: right; align-items: right;",
+                           actionButton("update_prepared_comparison_method_parameters_to_add", "Update Comparison Parameter", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+                         )),
+                         column(width = 6, div(style = "display: flex; justify-content: left; align-items: left;",
+                           actionButton("drop_prepared_comparison_method_parameters_to_add", "Drop Comparison Parameter", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("trash-can")),
+                         ))
+                       )
+                     )
+                   )
+                )
+              ),
+              HTML("<br>"),
+              # After the user finishes adding everything they need, they can add new method and
+              # parameters
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("add_comparison_method_and_parameters", "Add Comparison Method & Parameters", class = "btn-success", width = validateCssUnit(400), icon = shiny::icon("plus")),
+                ))
+              ),
+              # Final line break
+              HTML("<br><br>")
+            ),
+            # If a row is selected, you may update the comparison method name, descriptions + parameter names and description.
+            # You are, however, unable to delete parameter keys or comparison methods after they've been created.
+            # You may also click a button which brings you to a page for adding a new rule
+            conditionalPanel(
+              condition = "input.currently_added_comparison_methods_and_parameters_rows_selected > 0",
+
+              h5(strong("Update the Selected Comparison Method and Parameters Here:")),
+              layout_column_wrap(
+                width = 1/2,
+                height = 500,
+                # CARD FOR ACCEPTANCE METHOD INFO
+                card(full_screen = TRUE, card_header("Comparison Method General Information", class = "bg-dark",
+                                         tooltip(bs_icon("question-circle"),
+                                                 paste("Within this card, you can enter general information about the comparison",
+                                                       "method that you want to add, which includes the name of the method and a",
+                                                       "short description of what the expected values are."),
+                                                 placement = "right",
+                                                 options = list(container = "body"))),
+                   fluidPage(
+                     fluidRow(
+                       column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          textAreaInput("update_comparison_method_name", label = "Comparison Method Name:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The comparison method name should be descriptive and easy to identify for",
+                                           "later linkage iteration and comparison rule creation."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                       )),
+                       column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          textAreaInput("update_comparison_method_desc", label = "Comparison Method Description:", value = "",
+                                        width = validateCssUnit(500), resize = "none"),
+
+                          # Add the popover manually
+                          h1(tooltip(bs_icon("question-circle"),
+                                     paste("The comparison method description should be short and concise, and should",
+                                           "detail the expected inputs for the parameters and how the comparison method",
+                                           "would work."),
+                                     placement = "right",
+                                     options = list(container = "body")))
+                       ))
+                     )
+                   )
+                ),
+
+                # CARD FOR ACCEPTANCE PARAMETER INFO
+                card(full_screen = TRUE, card_header("Comparison Method Parameter Information", class = "bg-dark",
+                                         tooltip(bs_icon("question-circle"),
+                                                 paste("Within this card, you can add parameters that belong to the comparison method",
+                                                       "you are wanting to add, each parameter consists of a key which is how it would",
+                                                       "called from R, and a short description of the parameter. You may add as many",
+                                                       "parameters as you would like for the method being constructed."),
+                                                 placement = "right",
+                                                 options = list(container = "body"))),
+                   fluidPage(
+                     # Generate the table
+                     h5(strong("Parameters to be Updated (Select a Row to Update the Key and Description):")),
+                     h6(p(strong("NOTE: "), "No parameters can share the same name.")),
+                     dataTableOutput("comparison_parameters_to_update"),
+
+                     # IF A ROW IS SELECTED, ALLOW IT TO BE UPDATED
+                     conditionalPanel(
+                       condition = "input.comparison_parameters_to_update_rows_selected > 0",
+                       fluidRow(
+                         column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                           textAreaInput("comparison_parameter_key_update", label = "Update Parameter Key:", value = "",
+                                         width = validateCssUnit(500), resize = "none"),
+
+                           # Add the popover manually
+                           h1(tooltip(bs_icon("question-circle"),
+                                      paste("The comparison parameter key should be separated by underscores, and is how",
+                                            "you would expect to retrieve the parameter value from this key value pair label."),
+                                      placement = "right",
+                                      options = list(container = "body")))
+                         )),
+                         column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                           textAreaInput("comparison_parameter_desc_update", label = "Update Parameter Description:", value = "",
+                                         width = validateCssUnit(500), resize = "none"),
+
+                           # Add the popover manually
+                           h1(tooltip(bs_icon("question-circle"),
+                                      paste("The comparison parameter description should be brief and should explain how each",
+                                            "key is used during data linkage and what values it should expect."),
+                                      placement = "right",
+                                      options = list(container = "body")))
+                         ))
+                       ),
+                       fluidRow(
+                         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                           actionButton("update_prepared_comparison_method_parameters_to_update", "Update Comparison Parameter", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+                         )),
+                       )
+                     )
+                   )
+                )
+              ),
+              HTML("<br>"),
+              # After the user finishes adding everything they need, they can update the comparison method & parameters
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                                       actionButton("update_comparison_method_and_parameters", "Update Comparison Method & Parameters", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("pen")),
+                ))
+              ),
+              # Final line break
+              HTML("<br><br>")
+            )
+          )
+        ),
+        #----
+        #-----------------------------#
+
+        #-- LINKAGE RULES PAGE --#
+        #----
+        nav_panel(title = "Linkage Rules", value = "linkage_rule_page",
+          fluidPage(
+            # Put the back button on this page in the top left corner
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("linkage_rules_back", "Back", class = "btn-info"),
+              ))
+            ),
+
+            # Line break to give the back button some breathing room
+            HTML("<br><br>"),
+
+            # Generate the table
+            h5(strong("View From the Table of Existing Rules & Create a New Rule Below:")),
+            h6(p(strong("Note: "), paste("A rule cannot contain both numerical AND string rules, it can contain one or the other."))),
+            dataTableOutput("currently_added_linkage_rules"),
+
+            # Small line break
+            HTML("<br><br>"),
+
+            # Fluid row for the 4 inputs (alternate field, date variance, substring length, and name standardization)
+            fluidRow(
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                numericInput("add_alternate_field_number", label = "Alternative Field Value:",
+                             value = NULL, width = validateCssUnit(500)),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The alternative field number should be a positive number greater than 1, and is",
+                                 "used to select which alternative value to use in place of the original value when",
+                                 "performing blocking or matching."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                numericInput("add_integer_value_variance", label = "Integer Value Variance:",
+                             value = NULL, width = validateCssUnit(500)),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The integer value variance should be a positive number greater than 0, and is",
+                                 "used for date related fields. The number entered will be used to block on the",
+                                 "original value, as well as plus and minus the integer you added to obtain a range",
+                                 "of dates. Used for blocking keys primarily."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                numericInput("add_substring_length", label = "Substring Length:",
+                             value = NULL, width = validateCssUnit(500)),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The substring length should be a positive number greater than 0, and is",
+                                 "used to block or match on the first certain number of characters in a name."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 3, div(style = "display: flex; justify-content: center; align-items: center;",
+                selectInput("add_name_standardization", label = "Standardize Names?",
+                            choices = list("No" = 1,
+                                           "Yes" = 2),
+                            selected = 1,
+                            width = validateCssUnit(500)),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("If names are to be standardized, variations of names are converted to the most",
+                                 "common spelling of that name. You must provide a CSV file when you begin the linkage",
+                                 "process containing a column of the variant spellings, titled START, and a column",
+                                 "of the common spelling it maps to, titled LABEL. A default CSV is provided on",
+                                 "GitHub."),
+                           placement = "right",
+                           options = list(container = "body")))
+              ))
+            ),
+
+            # Submit Linkage Rule Button
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_rule", "Submit Linkage Rule Values", class = "btn-success"),
               ))
             ),
           )
+        ),
+        #----
+        #------------------------#
+
+        #-- REGENERATE REPORTS PAGE --#
+        #----
+        nav_panel(title = "Regenerate Report", value = "regenerate_report_page",
+          fluidPage(
+            shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
+
+            # Put the back button on this page in the top left corner
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("regenerate_report_back", "Return to Testable Algorithms Page", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
+
+            # Line break
+            HTML("<br>"),
+
+            ### STEP 1
+            h5(strong("Step 1: Select the Saved Data Date(s) to Regenerate")),
+            h6(p(strong("Note: "), paste("A minimum of one saved linkage data dates must be selected."))),
+            # Create a card for the output location
+            div(style = "display: flex; justify-content: center; align-items: center;",
+              card(
+                width = 1,
+                height = 400,
+                full_screen = FALSE,
+                card_header("Select Saved Data to Regenerate", class = 'bg-dark'),
+                card_body(
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      dataTableOutput("select_saved_data_to_regenerate"),
+                    )),
+                  ),
+                )
+              )
+            ),
+
+            # Line break
+            HTML("<br><br>"),
+
+            ### STEP 2
+            h5(strong("Step 2: Provide the Output Folder")),
+            # Create a card for the output location
+            div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = 1,
+                  height = 150,
+                  full_screen = FALSE,
+                  card_header("Supply Output Location", class = 'bg-dark'),
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                        # Boxed text output for showing the uploaded folder name
+                        div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                          textOutput("uploaded_regenerated_report_output_dir")
+                        ),
+                        # Upload Button
+                        shinyDirButton("regenerated_report_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                        helpText("Select a folder where the regenerated linkage report will be placed.")
+                      ))
+                    ),
+                  )
+                )
+            ),
+
+            HTML("<br>"), # Spacing
+
+            ### STEP 3
+            h5(strong("Step 3: Regenerate Linkage Report")),
+            # Create a card for editing/viewing algorithm output information
+            div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = 1,
+                  height = 125,
+                  full_screen = FALSE,
+                  card_header("Regenerate Linkage Report for the Selected Algorithm", class = 'bg-dark'),
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        actionButton("regenerate_report_btn", "Regenerate Report", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("file-pdf"))
+                      ))
+                    ),
+                  )
+                )
+            ),
+            HTML("<br>"), # Spacing
+          )
+        ),
+        #----
+        #-----------------------------#
+
+        #-- RUN LINKAGE ALGORITHM PAGE --#
+        #----
+        nav_panel(title = "Run Algorithm", value = "run_algorithm_page",
+          fluidPage(
+            shinyjs::useShinyjs(), # Added this so that we can disable buttons (IF IT BREAKS THINGS DELETE IT)
+
+            # Put the back button on this page in the top left corner
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                actionButton("run_algorithm_back", "Back", icon = shiny::icon("arrow-left-long")),
+              ))
+            ),
+
+            # Line break to give the back button some breathing room
+            HTML("<br><br>"),
+
+            ### STEP 1
+            h5(strong("Step 1: Select the Algorithm(s) to Run")),
+            h6(p(strong("Note: "), paste("A minimum of one algorithm must be selected."))),
+            # Create a card for the output location
+            div(style = "display: flex; justify-content: center; align-items: center;",
+              card(
+                width = 1,
+                height = 600,
+                full_screen = FALSE,
+                card_header("Select Algorithms to Run", class = 'bg-dark'),
+                page_fillable(
+                  column(
+                    width = 12,
+                    div(
+                      style = "margin-bottom: 10px;",  # Add spacing below the buttons
+                      actionButton("select_all_run", "Select All", class = "btn btn-primary btn-sm"),
+                      actionButton("select_none_run", "Select None", class = "btn btn-secondary btn-sm")
+                    ),
+                    dataTableOutput("select_linkage_algorithms_to_run"),
+                  )
+                )
+              )
+            ),
+
+            HTML("<br>"), # Spacing
+
+            ### STEP 2
+            h5(strong("Step 2: Provide the Output Folder")),
+            # Create a card for the output location
+            div(style = "display: flex; justify-content: center; align-items: center;",
+              card(
+                width = 1,
+                height = 150,
+                full_screen = FALSE,
+                card_header("Supply Output Location", class = 'bg-dark'),
+                card_body(
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                      # Boxed text output for showing the uploaded folder name
+                      div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                        textOutput("uploaded_linkage_output_dir")
+                      ),
+                      # Upload Button
+                      shinyDirButton("linkage_output_dir", label = "", icon = icon("folder-open"), title = 'Please Select a Directory')
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
+                      helpText("Select a folder where all output will be saved.")
+                    ))
+                  ),
+                )
+              )
+            ),
+
+            HTML("<br>"), # Spacing
+
+            ### STEP 2
+            h5(strong("Step 3: Select the Type of Linkage Quality Report")),
+            # Create a card for the linkage quality report type
+            div(style = "display: flex; justify-content: center; align-items: center;",
+              card(
+                width = 1,
+                height = 250,
+                full_screen = FALSE,
+                card_header("Report Type", class = 'bg-dark'),
+                card_body(
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Radio button for selecting report type
+                      radioButtons(
+                        inputId = "linkage_report_type",
+                        label = "Choose Linkage Report Type:",
+                        choices = list(
+                          "No Report" = 1,
+                          "Intermediate Report" = 2,
+                          "Final Report" = 3
+                        )
+                      ),
+                      helpText("Select a report type to see more information about what is included in each.")
+                    )),
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                      # Boxed text output for showing the uploaded folder name
+                      div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
+                         textOutput("linkage_report_type_help")
+                      ),
+                    ))
+                  ),
+                )
+              )
+            ),
+
+            HTML("<br>"), # Spacing
+
+            ### STEP 4
+            h5(strong("Step 4: Select Export Options")),
+            # Create a card for editing/viewing algorithm output information
+            column(width = 6, offset = 3,  # Control the card's width and center it
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = NULL,  # Remove the width inside the card and control it from the column
+                  height = 460,
+                  full_screen = FALSE,
+                  card_header("Optional Export Options", class = 'bg-dark'),
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Per Pass CSV output of the linked pairs that were selected.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("output_linked_iterations_pairs", "Output Linked Iteration Pairs", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Per Pass CSV output of the unlinked pairs before pairs were selected.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("output_unlinked_iteration_pairs", "Output Unlinked Iteration Pairs", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Singular CSV output of each pass of the algorithm, including the fields used, acceptance threshold, and linkage rate.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("generate_algorithm_summary", "Algorithm Summary", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Singular CSV output of performance metrics calculated during the linkage process if a ground truth was provided for the algorithm.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("calculate_performance_measures", "Performance Measures", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Per Pass PNG plots of the linkage algorithm and its acceptance threshold distribution.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("generate_threshold_plots", "Histograms", FALSE)
+                      )),
+                    )
+                  )
+                )
+              )
+            ),
+
+            ### STEP 5
+            h5(strong("Step 5: Select Output Options")),
+            # Create a card for editing/viewing algorithm output information
+            column(width = 6, offset = 3,  # Control the card's width and center it
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = NULL,  # Remove the width inside the card and control it from the column
+                  height = 300,
+                  full_screen = FALSE,
+                  card_header("Optional Output Options", class = 'bg-dark'),
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Includes the unlinked record pairs that appear in the linkage data or the linkage quality report.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("include_unlinked_records", "Unlinked Pairs in Final Output", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Collects missing data indicators of the output fields to be placed in the linkage report.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("create_missing_data_indicators", "Missing Data Indicators", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Collects and saves the linkage performance of the algorithms being ran, to be used for future auditing purposes.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("save_audit_performance", "Save Algorithm Performance", FALSE)
+                      ))
+                    )
+                  )
+                )
+              )
+            ),
+
+            HTML("<br>"), # Spacing
+
+            ### STEP 6
+            h5(strong("Step 6: Retain Record Linkage Data")),
+            # Create a card for saving the results obtained during record linkage
+            column(width = 6, offset = 3,  # Control the card's width and center it
+              div(style = "display: flex; justify-content: center; align-items: center;",
+               card(
+                  width = NULL,  # Remove the width inside the card and control it from the column
+                  height = 170,
+                  full_screen = FALSE,
+                  card_header("Retain Record Linkage Results?", class = 'bg-dark'),
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText(paste0("Retain the linked data results that will be generated for the algorithms being ",
+                                        "ran in the packages 'AppData' folder to be used for regenerating future reports."))
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("save_all_linkage_results", "Save All Linkage Results?", FALSE)
+                      ))
+                    )
+                  )
+                )
+              )
+            ),
+
+            HTML("<br>"), # Spacing
+
+            ### STEP 7
+            h5(strong("Step 7: Run Record Linkage for the Selected Algorithm(s)")),
+            # Create a card for editing/viewing algorithm output information
+            div(style = "display: flex; justify-content: center; align-items: center;",
+              card(
+                width = 1,
+                height = 150,
+                full_screen = FALSE,
+                card_header("Run Record Linkage", class = 'bg-dark'),
+                card_body(
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                      actionButton("run_linkage_btn", "Run Linkage", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("circle-play"))
+                    ))
+                  ),
+                )
+              )
+            ),
+
+            HTML("<br>"), # Spacing
+          )
+        ),
+        #----
+        #--------------------------------#
+
+        nav_spacer(),
+        nav_menu(
+          title = "Links",
+          align = "right",
+          nav_item(tags$a("GitHub", href = "https://github.com/CHIMB/datalink"))
         )
-      ),
-
-      HTML("<br>"), # Spacing
+      )
     )
-  ),
-  #----
-  #--------------------------------#
-
-  nav_spacer(),
-  nav_menu(
-    title = "Links",
-    align = "right",
-    nav_item(tags$a("GitHub", href = "https://github.com/CHIMB/datalink"))
   )
+  #------------------#
 )
-
 # Script/Server
 linkage_server <- function(input, output, session, linkage_metadata_conn, metadata_file_path, username){
+  # Change loading screen
+  hideElement("loading_screen")
+  showElement("loading_screen_2")
+
   #-- HIDING PAGES EVENTS --#
   # Initially hide some tabs we don't need the users to access
   nav_hide('main_navbar', 'linkage_rule_page')
@@ -2837,6 +3054,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     removeModal()
   })
   #-------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_2")
+  showElement("loading_screen_3")
 
   #-- DATASETS PAGE EVENTS --#
   #----
@@ -3543,6 +3764,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Re-render data tables and reset UI
     #----#
+    output$linkage_algorithm_left_dataset_input <- renderUI({
+      get_left_datasets_linkage_algorithms()
+    })
+    output$linkage_algorithm_right_dataset_input <- renderUI({
+      get_right_datasets_linkage_algorithms()
+    })
     output$currently_added_datasets <- renderDataTable({
       get_datasets()
     })
@@ -3553,9 +3780,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     showNotification("Dataset Successfully Updated", type = "message", closeButton = FALSE)
     #----#
   })
-
   #----
   #--------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_3")
+  showElement("loading_screen_4")
 
   #-- LINKAGE METHODS PAGE EVENTS --#
   #----
@@ -3649,6 +3879,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   })
   #----
   #---------------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_4")
+  showElement("loading_screen_5")
 
   #-- LINKAGE ALGORITHMS PAGE EVENTS --#
   #----
@@ -4464,6 +4698,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #----
   #------------------------------------#
 
+  # Show the next loading screen
+  hideElement("loading_screen_5")
+  showElement("loading_screen_6")
+
   #-- ARCHIVED LINKAGE ALGORITHMS PAGE EVENTS --#
   #----
   # Set up global variables for this page
@@ -4729,6 +4967,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   })
   #----
   #---------------------------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_6")
+  showElement("loading_screen_7")
 
   #-- PUBLISHED LINKAGE ALGORITHMS PAGE EVENTS --#
   #----
@@ -5143,6 +5385,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #----
   #----------------------------------------------#
 
+  # Show the next loading screen
+  hideElement("loading_screen_7")
+  showElement("loading_screen_8")
+
   #-- VIEW/EXPORT LINKAGE AUDITS PAGE EVENTS --#
   #----
   # Global variables for the linkage audits page
@@ -5520,6 +5766,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   })
   #----
   #--------------------------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_8")
+  showElement("loading_screen_9")
 
   #-- MODIFY GROUND TRUTH VARIABLES PAGE EVENTS --#
   #----
@@ -6017,6 +6267,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   #----
   #-----------------------------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_9")
+  showElement("loading_screen_10")
 
   #-- LINKAGE ALGORITHM OUTPUT FIELDS PAGE EVENTS --#
   #----
@@ -6747,6 +7001,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   })
   #----
   #-------------------------------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_10")
+  showElement("loading_screen_11")
 
   #-- VIEW LINKAGE ITERATIONS PAGE EVENTS --#
   #----
@@ -7510,6 +7768,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   })
   #----
   #-----------------------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_11")
+  showElement("loading_screen_12")
 
   #-- ADD LINKAGE ITERATION PAGE EVENTS --#
   #----
@@ -10978,6 +11240,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #----
   #---------------------------------------#
 
+  # Show the next loading screen
+  hideElement("loading_screen_12")
+  showElement("loading_screen_13")
+
   #-- ACCEPTANCE METHODS & PARAMETERS PAGE EVENTS --#
   #----
   acceptance_methods_return_page <- "home_page"
@@ -11779,6 +12045,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #----
   #----------------------------------#
 
+  # Show the next loading screen
+  hideElement("loading_screen_13")
+  showElement("loading_screen_14")
+
   #-- COMPARISON METHODS & PARAMETERS PAGE EVENTS --#
   #----
   comparison_methods_return_page  <- "home_page"
@@ -12574,6 +12844,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #----
   #----------------------------------#
 
+  # Show the next loading screen
+  hideElement("loading_screen_14")
+  showElement("loading_screen_15")
+
   #-- LINKAGE RULES PAGE EVENTS --#
   #----
   linkage_rules_return_page  <- "home_page"
@@ -12766,6 +13040,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   })
   #----
   #-------------------------------#
+
+  # Show the next loading screen
+  hideElement("loading_screen_15")
+  showElement("loading_screen_16")
 
   #-- REGENERATE REPORT PAGE EVENTS --#
   #----
@@ -13214,6 +13492,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #----
   #-----------------------------------#
 
+  # Show the next loading screen
+  hideElement("loading_screen_16")
+  showElement("loading_screen_17")
+
   #-- RUN LINKAGE ALGORITHMS PAGE EVENTS --#
   #----
   # Variables for this page
@@ -13518,6 +13800,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   })
   #----
   #----------------------------------------#
+
+  # Show the main content and hide the loading screen
+  hideElement("loading_screen_17")
+  showElement("main_content")
 }
 
 #' Start Linkage Metadata UI
