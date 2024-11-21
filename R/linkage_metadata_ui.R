@@ -4920,14 +4920,29 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Error handling - don't allow user to have two algorithms enabled with the same name
     #----#
-    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND archived = 0 AND published = 0;')
-    dbBind(get_query, list(algorithm_name))
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ?
+                                                     AND dataset_id_left = ? AND dataset_id_right = ?
+                                                     AND archived = 0 AND published = 0;')
+    dbBind(get_query, list(algorithm_name, left_dataset_id, right_dataset_id))
     output_df <- dbFetch(get_query)
     enabled_databases <- nrow(output_df)
     dbClearResult(get_query)
 
     if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
-      showNotification("Failed to Restore Algorithm - Algorithm Name is Being Used by a Testing Algorithm", type = "error", closeButton = FALSE)
+      showNotification("Failed to Restore Algorithm - Algorithm Name is Being Used by a Testable Algorithm", type = "error", closeButton = FALSE)
+      return()
+    }
+
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ?
+                                                     AND dataset_id_left = ? AND dataset_id_right = ?
+                                                     AND archived = 0 AND published = 1;')
+    dbBind(get_query, list(algorithm_name, left_dataset_id, right_dataset_id))
+    output_df <- dbFetch(get_query)
+    enabled_databases <- nrow(output_df)
+    dbClearResult(get_query)
+
+    if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
+      showNotification("Failed to Restore Algorithm - Algorithm Name is Being Used by a Published Algorithm", type = "error", closeButton = FALSE)
       return()
     }
     #----#
@@ -5225,7 +5240,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     dbClearResult(get_query)
 
     if(is.na(enabled_databases) || is.null(enabled_databases) || enabled_databases != 0){
-      showNotification("Failed to Unpublish Algorithm - Algorithm Name is Being Used by a Testing Algorithm", type = "error", closeButton = FALSE)
+      showNotification("Failed to Unpublish Algorithm - Algorithm Name is Being Used by a Testable Algorithm", type = "error", closeButton = FALSE)
       return()
     }
     #----#
