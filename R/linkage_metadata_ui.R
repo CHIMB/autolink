@@ -6372,7 +6372,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   # Renders the UI for the left ground truth field add select input
   output$linkage_algorithm_output_field_input <- renderUI({
-    get_algorithm_output_fields_input()
+
   })
 
   # Checks which field type the user selected and changes the UI input
@@ -10353,7 +10353,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   # Generates the dynamic comparison rule inputs
   observeEvent(input$update_comparison_method_iteration_rows_selected, {
-    selected_row <- input$add_comparison_method_iteration_rows_selected
+    selected_row <- input$update_comparison_method_iteration_rows_selected
 
     if (!is.null(selected_row)) {
       # Perform a query to get the comparison methods
