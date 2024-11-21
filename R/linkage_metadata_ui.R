@@ -3143,15 +3143,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
            # Read only the first row from an older Excel file
            readxl::read_excel(file_path, n_max = 1) %>% colnames()
          },
-         "json" = {
-           # For JSON, read the first object's keys (assuming it's an array of objects)
-           json_data <- jsonlite::fromJSON(file_path, simplifyDataFrame = TRUE)
-           if (is.data.frame(json_data)) {
-             colnames(json_data)
-           } else {
-             stop("Unsupported JSON format - expecting an array of objects")
-           }
-         },
          stop("Unsupported file format")  # Error if unsupported file type
       )
     },
@@ -3175,27 +3166,27 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     tryCatch({
       # Based on file extension, attempt to read only the first row (column names)
       column_types <- switch(tolower(file_extension),
-                             "csv" = {
-                               # Read only the header from a CSV file
-                               sapply(data.table::fread(file_path, nrows = 100), class)
-                             },
-                             "txt" = {
-                               # Read only the header from a TXT file
-                               sapply(data.table::fread(file_path, nrows = 100), class)
-                             },
-                             "sas7bdat" = {
-                               # Read only the header from a SAS7BDAT file
-                               sapply(haven::read_sas(file_path, n_max = 100), class)
-                             },
-                             "xlsx" = {
-                               # Read only the first row from an Excel file
-                               sapply(readxl::read_excel(file_path, n_max = 100), class)
-                             },
-                             "xls" = {
-                               # Read only the first row from an older Excel file
-                               sapply(readxl::read_excel(file_path, n_max = 100), class)
-                             },
-                             stop("Unsupported file format")  # Error if unsupported file type
+         "csv" = {
+           # Read only the header from a CSV file
+           sapply(data.table::fread(file_path, nrows = 100), class)
+         },
+         "txt" = {
+           # Read only the header from a TXT file
+           sapply(data.table::fread(file_path, nrows = 100), class)
+         },
+         "sas7bdat" = {
+           # Read only the header from a SAS7BDAT file
+           sapply(haven::read_sas(file_path, n_max = 100), class)
+         },
+         "xlsx" = {
+           # Read only the first row from an Excel file
+           sapply(readxl::read_excel(file_path, n_max = 100), class)
+         },
+         "xls" = {
+           # Read only the first row from an older Excel file
+           sapply(readxl::read_excel(file_path, n_max = 100), class)
+         },
+         stop("Unsupported file format")  # Error if unsupported file type
       )
 
       # Extract the first element of each variable
@@ -13802,6 +13793,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #----------------------------------------#
 
   # Show the main content and hide the loading screen
+  Sys.sleep(2)
   hideElement("loading_screen_17")
   showElement("main_content")
 }
