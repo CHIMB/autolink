@@ -14,7 +14,7 @@ dataset, to help data analysts achieve an ideal and successful linkage
 rate.
 
 This package would be most beneficial in the field of data science,
-specifically data-linkage and data analysis as the `datalink` package
+specifically data-linkage and data analysis as the `autolink` package
 would help make algorithm design and the testing process more
 streamlined, as the end-user of the package would not be required to
 make any programmatic changes to an R script and instead would only need
