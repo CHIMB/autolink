@@ -3621,7 +3621,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
         # Generate the linkage quality report
         final_linkage_quality_report(output_df, algorithm_name, "", datasets$left_dataset_name,
-                                     paste0("the ", datasets$right_dataset_name), output_dir, username, "datalink (Record Linkage)",
+                                     paste0("the ", datasets$right_dataset_name), output_dir, username, "autolink (Record Linkage)",
                                      "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                      algorithm_summary_data = algo_summary, algorithm_summary_tbl_footnotes = algo_summary_footnotes,
                                      performance_measures_data = performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
@@ -3830,7 +3830,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       if(nrow(intermediate_performance_measures_df) <= 0){
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
                                             report_title, "", datasets$left_dataset_name, paste0("the ", datasets$right_dataset_name),
-                                            output_dir, username, "datalink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
+                                            output_dir, username, "autolink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
       }
@@ -3840,7 +3840,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
                                             report_title, "", datasets$left_dataset_name, paste0("the ", datasets$right_dataset_name),
-                                            output_dir, username, "datalink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
+                                            output_dir, username, "autolink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
                                             performance_measures_data = intermediate_performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
                                             ground_truth = ground_truth_fields,

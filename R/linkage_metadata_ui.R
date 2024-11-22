@@ -409,7 +409,7 @@ linkage_ui <- fluidPage(
                 HTML("<br><br>"), # Line break
 
                 HTML("Additionally, you may create your own linkage class in R and create a method here to have the package dynamically call your custom
-                      linkage class. To do so, you must follow the naming and return guidelines found on the <b>datalink</b> GitHub page."),
+                      linkage class. To do so, you must follow the naming and return guidelines found on the <b>autolink</b> GitHub page."),
 
                 HTML("<br><br>"), # Line break
 
@@ -3006,7 +3006,7 @@ linkage_ui <- fluidPage(
         nav_menu(
           title = "Links",
           align = "right",
-          nav_item(tags$a("GitHub", href = "https://github.com/CHIMB/datalink"))
+          nav_item(tags$a("GitHub", href = "https://github.com/CHIMB/autolink"))
         )
       )
     )
@@ -6813,7 +6813,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           standardization_id <- df$standardization_file_id
 
           # Save as .rds in package data folder
-          saveRDS(standardization_dataset, file.path(system.file(package = "datalink", "data"), file_name))
+          saveRDS(standardization_dataset, file.path(system.file(package = "autolink", "data"), file_name))
         }
         else{
           # Read in the CSV
@@ -6842,7 +6842,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           standardization_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS standardization_file_id;")$standardization_file_id
 
           # Save as .rds in package data folder
-          saveRDS(standardization_dataset, file.path(system.file(package = "datalink", "data"), standardization_file))
+          saveRDS(standardization_dataset, file.path(system.file(package = "autolink", "data"), standardization_file))
         }
 
         # Create a new entry query for entering into the database
@@ -8414,7 +8414,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                                   WHERE standardization_file_id = ', choice))$standardization_file_name
 
         # Get the file path
-        file_path <- file.path(system.file(package = "datalink", "data"), dataset_file)
+        file_path <- file.path(system.file(package = "autolink", "data"), dataset_file)
 
         # If the file path does not exist, drop it from the vector
         if(!file.exists(file_path)){
@@ -8560,7 +8560,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       standardization_file_id <- df$standardization_file_id
 
       # Save as .rds in package data folder
-      saveRDS(name_standardization_dataset, file.path(system.file(package = "datalink", "data"), file_name))
+      saveRDS(name_standardization_dataset, file.path(system.file(package = "autolink", "data"), file_name))
 
       # Save the uploaded dataset and select it
       standardization_dataset_to_add <<- standardization_file_id
@@ -8599,7 +8599,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       standardization_file_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS standardization_file_id;")$standardization_file_id
 
       # Save as .rds in package data folder
-      saveRDS(name_standardization_dataset, file.path(system.file(package = "datalink", "data"), name_standardization_file))
+      saveRDS(name_standardization_dataset, file.path(system.file(package = "autolink", "data"), name_standardization_file))
 
       # Save the uploaded dataset and select it, then return
       standardization_dataset_to_add <<- standardization_file_id
@@ -13065,7 +13065,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     algorithm_id_to_regenerate <- algorithm_ids_to_regenerate[1]
 
     # Get the saved data
-    all_data_files <- list.files(system.file(package = "datalink", "data"))
+    all_data_files <- list.files(system.file(package = "autolink", "data"))
 
     # Keep only data files that have our Algorithm ID in brackets
     for(index in 1:length(all_data_files)){
@@ -13238,7 +13238,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         current_step <- current_step + 1
 
         # Get the file path where the .RData file should be
-        saved_file_path <- file.path(system.file(package = "datalink", "data"), saved_data)
+        saved_file_path <- file.path(system.file(package = "autolink", "data"), saved_data)
 
         # Make sure the file exists
         if(!file.exists(saved_file_path)){
@@ -13457,7 +13457,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
             cleaned_filename <- gsub("\\s*\\[.*\\]|\\.RData$", "", saved_data)
 
             final_linkage_quality_report(linked_data, algorithm_name, "", left_dataset_name,
-                                         paste0("the ", right_dataset_name), output_dir, username, "datalink (Record Linkage)",
+                                         paste0("the ", right_dataset_name), output_dir, username, "autolink (Record Linkage)",
                                          "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                          algorithm_summary_data = algorithm_summary, algorithm_summary_tbl_footnotes = algorithm_footers,
                                          performance_measures_data = performance_measures, performance_measures_tbl_footnotes = performance_measures_footnotes,
@@ -13758,7 +13758,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
             # Construct the file name and path
             file_name <- paste0(algorithm_name, " [", algorithm_id, "] (", generated_timestamp, ").RData")
-            file_path <- file.path(system.file(package = "datalink", "data"), file_name)
+            file_path <- file.path(system.file(package = "autolink", "data"), file_name)
 
             # Save the data for this algorithm
             save(linked_data, algorithm_id, algorithm_name, algorithm_summ,
@@ -13884,7 +13884,7 @@ start_linkage_metadata_ui <- function(metadata_file_path, username){
   shinyjs::useShinyjs()
 
   # Add a resource path
-  addResourcePath("figures", system.file("help/figures", package = "datalink"))
+  addResourcePath("figures", system.file("help/figures", package = "autolink"))
 
   # Start the Shiny Application
   shinyApp(ui = linkage_ui,
