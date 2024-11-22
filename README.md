@@ -7,7 +7,7 @@
 
 # Introduction
 
-`datalink` provides an easy and user friendly way for data analysts to
+`autolink` provides an easy and user friendly way for data analysts to
 develop linkage algorithms and use them to perform data linkage tests.
 With the package allowing for testing out multiple algorithms per
 dataset, to help data analysts achieve an ideal and successful linkage
@@ -26,7 +26,7 @@ achieved.
 
 ## R Studio Installation
 
-To install `datalink` from GitHub, begin by installing and loading the
+To install `autolink` from GitHub, begin by installing and loading the
 `devtools` package:
 
 ``` r
@@ -38,12 +38,12 @@ Afterwards, you may install the automated data linkage package using
 `install_github()`:
 
 ``` r
-devtools::install_github("CHIMB/datalink")
+devtools::install_github("CHIMB/autolink")
 ```
 
 ## Local Installation
 
-To install `datalink` locally from GitHub, select the most recent
+To install `autolink` locally from GitHub, select the most recent
 release from the right-hand tab on the GitHub repository page. Download
 the <b>Source code (zip)</b> file, then move over to RStudio. You may
 then run the code:
@@ -62,10 +62,10 @@ USAGE/INSTRUCTIONS WILL GO HERE
 For more details on how the architecture of the package is structured
 and how the stored algorithms are pulled and used to link data, consider
 reading the [<b>Developer Facing Documentation
-(448.3KB)</b>](https://github.com/CHIMB/datalink/blob/main/docs/).
+(448.3KB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/).
 
 For more details on how to work function calls, how to navigate the
 pages of the user interfaces, and how to make changes, or add new
 information to the metadata, consider reading the [<b>User Facing
 Documentation
-(1.5MB)</b>](https://github.com/CHIMB/datalink/blob/main/docs/).
+(1.5MB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/).
