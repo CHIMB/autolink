@@ -9180,7 +9180,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     #----#
   })
 
-  # Selecting a linkage rule for ADDING blocking keys
+  # Selecting one or more linkage rules for ADDING blocking keys
   observeEvent(input$prepare_blocking_linkage_rule, {
     showModal(modalDialog(
       title = "Choose Linkage Rule",
@@ -9188,144 +9188,34 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       footer = NULL,
       fluidRow(
         # Linkage rule table
-        h5(strong("Select a Linkage Rule Below to Use for the Blocking Variables:")),
+        h5(strong("Enter Inputs for One or More Linkage Rules:")),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            dataTableOutput("blocking_keys_add_linkage_rules"),
+            numericInput("add_linkage_rule_alt_field_blocking", label = "Alternative Field:", value = NULL)
           )
         ),
-
-        # If NO row is selected, the user may add a new linkage rule by clicking
-        # a button that will take them to the linkage rule page
-        conditionalPanel(
-          condition = "input.blocking_keys_add_linkage_rules_rows_selected <= 0",
-          HTML("<br>"),
-          h5(strong("Or, Create a New Rule Here:")),
-
-          # Button for going to the linkage rules page from this modal
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("blocking_keys_add_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
-              )
-            ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("add_linkage_rule_int_variance_blocking", label = "Date Variance:", value = NULL)
           )
         ),
-
-        # If a row IS SELECTED, the user can then click then choose that rule
-        conditionalPanel(
-          condition = "input.blocking_keys_add_linkage_rules_rows_selected > 0",
-          HTML("<br>"),
-
-          # Button for preparing the selected linkage rule to add
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("blocking_keys_add_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
-              )
-            ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("add_linkage_rule_name_substring_blocking", label = "Name Substring:", value = NULL)
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            selectInput("add_linkage_rule_standardize_names_blocking", label = "Standardize Names?",
+                        choices = c("No" = 0, "Yes" = 1))
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("add_linkage_rule_blocking", "Use Linkage Rules", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus"))
           )
         ),
       ),
-      size = "l"  # Large modal size to fit both tables
+      size = "s"  # Large modal size to fit both tables
     ))
   })
 
-  # Brings the user to the linkage rules page
-  observeEvent(input$blocking_keys_add_linkage_rules_to_linkage_rules, {
-
-    # Set the return page to the add linkage iterations page
-    linkage_rules_return_page <<- "add_linkage_iterations_page"
-
-    # Show the linkage rule page
-    nav_show("main_navbar", "linkage_rule_page")
-
-    # Brings you to the linkage rules page
-    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
-  })
-
-  # Selects the linkage rule the user wanted
-  observeEvent(input$blocking_keys_add_prepare_linkage_rule, {
-    # Get the selected row
-    selected_row <- input$blocking_keys_add_linkage_rules_rows_selected
-
-    # Query to get all linkage rule information from the 'linkage_rules' table
-    query <- paste('SELECT * FROM linkage_rules
-               ORDER BY linkage_rule_id ASC;')
-    df <- dbGetQuery(linkage_metadata_conn, query)
-
-    # Get the linkage rule
-    linkage_rule_id <- df[selected_row, "linkage_rule_id"]
-
-    # Set the global variable to the selected linkage rule id
-    blocking_linkage_rule_to_add <<- linkage_rule_id
-
-    # Render the UI output text
-    if(!is.na(linkage_rule_id)){
-      # Query to get the acceptance method name from the comparison_rules table
-      method_query <- paste('SELECT * FROM linkage_rules
-                           WHERE linkage_rule_id =', linkage_rule_id)
-      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
-
-      # We'll start with "Alternative Field"
-      alt_field_val <- method_df$alternate_field_value
-      if(!is.na(alt_field_val)){
-        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
-      }
-
-      # Next we'll handle the "Integer Variance"
-      int_variance <- method_df$integer_value_variance
-      if(!is.na(int_variance)){
-        method_df$integer_value_variance <- paste0("±", int_variance)
-      }
-
-      # Next we'll handle "Name Substring"
-      name_substring <- method_df$substring_length
-      if(!is.na(name_substring)){
-        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
-      }
-
-      # With standardized names, we'll replace the [0, 1] with [No, Yes]
-      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
-
-      # Rename the column names to be easier to read when printed in table format
-      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
-      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
-      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
-      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
-
-      # Drop the linkage_rule_id from the table
-      method_df <- subset(method_df, select = -c(linkage_rule_id))
-
-      # Initialize an empty list to store non-NA values
-      non_na_values <- list()
-
-      # Loop through each column in the current row
-      for (col_name in colnames(method_df)) {
-        value <- method_df[1, col_name]
-
-        # If the value is not NA, add it to the list
-        if (!is.na(value)) {
-          non_na_values <- c(non_na_values, paste0(value))
-        }
-      }
-
-      # Combine the non-NA values into a single string, separated by commas
-      combined_values <- paste(non_na_values, collapse = ", ")
-
-      # Render the output text
-      output$blocking_linkage_rules_add <- renderText({
-        combined_values
-      })
-    }
-
-    # Dismiss the modal
-    removeModal()
-  })
-
-  # Generates the table of linkage rules
-  output$blocking_keys_add_linkage_rules <- renderDataTable({
-    get_linkage_rules()
-  })
-
-  # Selecting a linkage rule for UPDATING blocking keys
+  # Selecting one or more linkage rules for UPDATING blocking keys
   observeEvent(input$prepare_blocking_linkage_rule_update, {
     showModal(modalDialog(
       title = "Choose Linkage Rule",
@@ -9333,74 +9223,246 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       footer = NULL,
       fluidRow(
         # Linkage rule table
-        h5(strong("Select a Linkage Rule Below to Use for the Blocking Variables:")),
+        h5(strong("Enter Inputs for One or More Linkage Rules:")),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            dataTableOutput("blocking_keys_update_linkage_rules"),
+            numericInput("update_linkage_rule_alt_field_blocking", label = "Alternative Field:", value = NULL)
           )
         ),
-
-        # If NO row is selected, the user may add a new linkage rule by clicking
-        # a button that will take them to the linkage rule page
-        conditionalPanel(
-          condition = "input.blocking_keys_update_linkage_rules_rows_selected <= 0",
-          HTML("<br>"),
-          h5(strong("Or, Create a New Rule Here:")),
-
-          # Button for going to the linkage rules page from this modal
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("blocking_keys_update_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
-              )
-            ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("update_linkage_rule_int_variance_blocking", label = "Date Variance:", value = NULL)
           )
         ),
-
-        # If a row IS SELECTED, the user can then click then choose that rule
-        conditionalPanel(
-          condition = "input.blocking_keys_update_linkage_rules_rows_selected > 0",
-          HTML("<br>"),
-
-          # Button for preparing the selected linkage rule to add
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("blocking_keys_update_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
-              )
-            ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("update_linkage_rule_name_substring_blocking", label = "Name Substring:", value = NULL)
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            selectInput("update_linkage_rule_standardize_names_blocking", label = "Standardize Names?",
+                        choices = c("No" = 0, "Yes" = 1))
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("update_linkage_rule_blocking", "Use Linkage Rules", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus"))
           )
         ),
       ),
-      size = "l"  # Large modal size to fit both tables
+      size = "s"  # Large modal size to fit both tables
     ))
   })
 
-  # Brings the user to the linkage rules page
-  observeEvent(input$blocking_keys_update_linkage_rules_to_linkage_rules, {
+  # Generic function for creating a new linkage rule (or using an existing one)
+  add_and_select_linkage_rule <- function(linkage_rule_global_id){
+    # Using the linkage rule ID, obtain the input values
+    if(linkage_rule_global_id == "blocking_linkage_rule_to_add"){
+      # Get the values the user provided
+      alternate_field_value  <- input$add_linkage_rule_alt_field_blocking
+      integer_value_variance <- input$add_linkage_rule_int_variance_blocking
+      substring_length       <- input$add_linkage_rule_name_substring_blocking
+      standardize_names      <- input$add_linkage_rule_standardize_names_blocking
+    }
+    else if (linkage_rule_global_id == "blocking_linkage_rule_to_update"){
+      # Get the values the user provided
+      alternate_field_value  <- input$update_linkage_rule_alt_field_blocking
+      integer_value_variance <- input$update_linkage_rule_int_variance_blocking
+      substring_length       <- input$update_linkage_rule_name_substring_blocking
+      standardize_names      <- input$update_linkage_rule_standardize_names_blocking
+    }
+    else if (linkage_rule_global_id == "matching_linkage_rule_to_add"){
+      # Get the values the user provided
+      alternate_field_value  <- input$add_linkage_rule_alt_field_matching
+      integer_value_variance <- input$add_linkage_rule_int_variance_matching
+      substring_length       <- input$add_linkage_rule_name_substring_matching
+      standardize_names      <- input$add_linkage_rule_standardize_names_matching
+    }
+    else if (linkage_rule_global_id == "matching_linkage_rule_to_update"){
+      # Get the values the user provided
+      alternate_field_value  <- input$update_linkage_rule_alt_field_matching
+      integer_value_variance <- input$update_linkage_rule_int_variance_matching
+      substring_length       <- input$update_linkage_rule_name_substring_matching
+      standardize_names      <- input$update_linkage_rule_standardize_names_matching
+    }
+    else{
+      return()
+    }
 
-    # Set the return page to the add linkage iterations page
-    linkage_rules_return_page <<- "add_linkage_iterations_page"
 
-    # Show the linkage rule page
-    nav_show("main_navbar", "linkage_rule_page")
+    # Error handle to make sure we don't end up putting invalid values into the 'Linkage Rules' table
+    #----#
+    # First, we'll make sure that the numeric values provided are actually numeric (can't even happen if we use a numericInput() in shiny)
+    if(!is.na(alternate_field_value) && is.na(suppressWarnings(as.numeric(alternate_field_value)))){
+      showNotification("Failed to Create Linkage Rule - Alternate Field Value Input is not Numeric", type = "error", closeButton = FALSE)
+      return()
+    }
+    if(!is.na(integer_value_variance) && is.na(suppressWarnings(as.numeric(integer_value_variance)))){
+      showNotification("Failed to Create Linkage Rule - Integer Value Variance Input is not Numeric", type = "error", closeButton = FALSE)
+      return()
+    }
+    if(!is.na(substring_length) && is.na(suppressWarnings(as.numeric(substring_length)))){
+      showNotification("Failed to Create Linkage Rule - Substring Length Input is not Numeric", type = "error", closeButton = FALSE)
+      return()
+    }
 
-    # Brings you to the linkage rules page
-    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
-  })
+    # Next, we'll make sure that if a numeric value is provided, that it is valid by setting it to default values (NA)
+    if(!is.na(alternate_field_value) && as.numeric(alternate_field_value) <= 0){
+      alternate_field_value <- NA
+    }
+    if(!is.na(integer_value_variance) && as.numeric(integer_value_variance) <= 0){
+      integer_value_variance <- NA
+    }
+    if(!is.na(substring_length) && as.numeric(substring_length) <= 0){
+      substring_length <- NA
+    }
+    if(standardize_names == 0){
+      standardize_names <- NA
+    }
 
-  # Selects the linkage rule the user wanted
-  observeEvent(input$blocking_keys_update_prepare_linkage_rule, {
-    # Get the selected row
-    selected_row <- input$blocking_keys_update_linkage_rules_rows_selected
+    # Next, if all values were left empty after this, we'll return throw an error
+    if(is.na(alternate_field_value) && is.na(integer_value_variance) && is.na(substring_length) && is.na(standardize_names)){
+      showNotification("Failed to Create Linkage Rule - All Inputs are Missing", type = "error", closeButton = FALSE)
+      return()
+    }
 
-    # Query to get all linkage rule information from the 'linkage_rules' table
-    query <- paste('SELECT * FROM linkage_rules
-               ORDER BY linkage_rule_id ASC;')
-    df <- dbGetQuery(linkage_metadata_conn, query)
+    # Next, we'll make sure that only one type of Name or Numerical rule can be chosen at a time
+    if(!is.na(integer_value_variance) && !is.na(substring_length)){
+      showNotification("Failed to Create Linkage Rule - Cannot Apply Both String and Numerical Rules to a Field (Drop One or the Other)", type = "error", closeButton = FALSE)
+      return()
+    }
+    if(!is.na(integer_value_variance) && !is.na(standardize_names)){
+      showNotification("Failed to Create Linkage Rule - Cannot Apply Both String and Numerical Rules to a Field (Drop One or the Other)", type = "error", closeButton = FALSE)
+      return()
+    }
 
-    # Get the linkage rule
-    linkage_rule_id <- df[selected_row, "linkage_rule_id"]
+    # Lastly, we'll make sure this rule doesn't already exist
+    # Modify the query to handle NULL values
+    get_query <- dbSendQuery(linkage_metadata_conn, '
+                              SELECT * FROM linkage_rules
+                              WHERE (alternate_field_value = ? OR (alternate_field_value IS NULL AND ? IS NULL))
+                              AND (integer_value_variance = ? OR (integer_value_variance IS NULL AND ? IS NULL))
+                              AND (substring_length = ? OR (substring_length IS NULL AND ? IS NULL))
+                              AND (standardize_names = ? OR (standardize_names IS NULL AND ? IS NULL));')
+    # Bind the values to the query
+    dbBind(get_query, list(alternate_field_value, alternate_field_value,
+                           integer_value_variance, integer_value_variance,
+                           substring_length, substring_length,
+                           standardize_names, standardize_names))
+    output_df <- dbFetch(get_query)
+    num_of_databases <- nrow(output_df)
+    dbClearResult(get_query)
 
-    # Set the global variable to the selected linkage rule id
-    blocking_linkage_rule_to_update <<- linkage_rule_id
+    if(num_of_databases != 0){
+      # Get the linkage rule ID
+      linkage_rule_id <- output_df$linkage_rule_id
+
+      # Render the UI output text
+      if(!is.na(linkage_rule_id)){
+        # Query to get the acceptance method name from the comparison_rules table
+        method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+        method_df <- dbGetQuery(linkage_metadata_conn, method_query)
+
+        # We'll start with "Alternative Field"
+        alt_field_val <- method_df$alternate_field_value
+        if(!is.na(alt_field_val)){
+          method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+        }
+
+        # Next we'll handle the "Integer Variance"
+        int_variance <- method_df$integer_value_variance
+        if(!is.na(int_variance)){
+          method_df$integer_value_variance <- paste0("±", int_variance)
+        }
+
+        # Next we'll handle "Name Substring"
+        name_substring <- method_df$substring_length
+        if(!is.na(name_substring)){
+          method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+        }
+
+        # With standardized names, we'll replace the [0, 1] with [No, Yes]
+        method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
+
+        # Rename the column names to be easier to read when printed in table format
+        names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+        names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
+        names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
+        names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
+
+        # Drop the linkage_rule_id from the table
+        method_df <- subset(method_df, select = -c(linkage_rule_id))
+
+        # Initialize an empty list to store non-NA values
+        non_na_values <- list()
+
+        # Loop through each column in the current row
+        for (col_name in colnames(method_df)) {
+          value <- method_df[1, col_name]
+
+          # If the value is not NA, add it to the list
+          if (!is.na(value)) {
+            non_na_values <- c(non_na_values, paste0(value))
+          }
+        }
+
+        # Combine the non-NA values into a single string, separated by commas
+        combined_values <- paste(non_na_values, collapse = ", ")
+      }
+
+      # Using the input ID, update the corresponding global variable
+      if(linkage_rule_global_id == "blocking_linkage_rule_to_add"){
+        # Update global variable
+        blocking_linkage_rule_to_add    <<- linkage_rule_id
+
+        # Render the output text
+        output$blocking_linkage_rules_add <- renderText({
+          combined_values
+        })
+      }
+      else if (linkage_rule_global_id == "blocking_linkage_rule_to_update"){
+        # Update global variable
+        blocking_linkage_rule_to_update <<- linkage_rule_id
+
+        # Render the output text
+        output$blocking_linkage_rules_update <- renderText({
+          combined_values
+        })
+      }
+      else if (linkage_rule_global_id == "matching_linkage_rule_to_add"){
+        # Update global variable
+        matching_linkage_rule_to_add    <<- linkage_rule_id
+
+        # Render the output text
+        output$matching_linkage_rules_add <- renderText({
+          combined_values
+        })
+      }
+      else if (linkage_rule_global_id == "matching_linkage_rule_to_update"){
+        # Update global variable
+        matching_linkage_rule_to_update <<- linkage_rule_id
+
+        # Render the output text
+        output$matching_linkage_rules_update <- renderText({
+          combined_values
+        })
+      }
+
+      # Close the modal
+      removeModal()
+
+      # Return
+      return()
+    }
+
+    # Add the new user provided values to the database as a new linkage rule
+    #----#
+    new_entry_query <- paste("INSERT INTO linkage_rules (alternate_field_value, integer_value_variance, substring_length, standardize_names)",
+                             "VALUES(?, ?, ?, ?);")
+    new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
+    dbBind(new_entry, list(alternate_field_value, integer_value_variance, substring_length, standardize_names))
+    dbClearResult(new_entry)
+
+    # Get the most recently inserted comparison_rule_id value
+    linkage_rule_id <- dbGetQuery(linkage_metadata_conn, "SELECT last_insert_rowid() AS linkage_rule_id;")$linkage_rule_id
+    #----#
 
     # Render the UI output text
     if(!is.na(linkage_rule_id)){
@@ -9454,21 +9516,60 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
       # Combine the non-NA values into a single string, separated by commas
       combined_values <- paste(non_na_values, collapse = ", ")
+    }
+
+    # Using the input ID, update the corresponding global variable
+    if(linkage_rule_global_id == "blocking_linkage_rule_to_add"){
+      # Update global variable
+      blocking_linkage_rule_to_add    <<- linkage_rule_id
+
+      # Render the output text
+      output$blocking_linkage_rules_add <- renderText({
+        combined_values
+      })
+    }
+    else if (linkage_rule_global_id == "blocking_linkage_rule_to_update"){
+      # Update global variable
+      blocking_linkage_rule_to_update <<- linkage_rule_id
 
       # Render the output text
       output$blocking_linkage_rules_update <- renderText({
         combined_values
       })
     }
+    else if (linkage_rule_global_id == "matching_linkage_rule_to_add"){
+      # Update global variable
+      matching_linkage_rule_to_add    <<- linkage_rule_id
 
-    # Dismiss the modal
+      # Render the output text
+      output$matching_linkage_rules_add <- renderText({
+        combined_values
+      })
+    }
+    else if (linkage_rule_global_id == "matching_linkage_rule_to_update"){
+      # Update global variable
+      matching_linkage_rule_to_update <<- linkage_rule_id
+
+      # Render the output text
+      output$matching_linkage_rules_update <- renderText({
+        combined_values
+      })
+    }
+
+    # Remove the modal
     removeModal()
+  }
+
+  # Calls the generic linkage rule function when adding blocking linkage rules
+  observeEvent(input$add_linkage_rule_blocking, {
+    add_and_select_linkage_rule("blocking_linkage_rule_to_add")
   })
 
-  # Generates the table of linkage rules
-  output$blocking_keys_update_linkage_rules <- renderDataTable({
-    get_linkage_rules()
+  # Calls the generic linkage rule function when updating blocking linkage rules
+  observeEvent(input$update_linkage_rule_blocking, {
+    add_and_select_linkage_rule("blocking_linkage_rule_to_update")
   })
+
   #---------------------------------#
 
   #-- MATCHING KEY RELATED EVENTS --#
@@ -9731,7 +9832,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     #----#
   })
 
-  # Selecting a linkage rule for ADDING matching keys
+  # Selecting one or more linkage rules for ADDING blocking keys
   observeEvent(input$prepare_matching_linkage_rule, {
     showModal(modalDialog(
       title = "Choose Linkage Rule",
@@ -9739,144 +9840,34 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       footer = NULL,
       fluidRow(
         # Linkage rule table
-        h5(strong("Select a Linkage Rule Below to Use for the Matching Variables:")),
+        h5(strong("Enter Inputs for One or More Linkage Rules:")),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            dataTableOutput("matching_keys_add_linkage_rules"),
+            numericInput("add_linkage_rule_alt_field_matching", label = "Alternative Field:", value = NULL)
           )
         ),
-
-        # If NO row is selected, the user may add a new linkage rule by clicking
-        # a button that will take them to the linkage rule page
-        conditionalPanel(
-          condition = "input.matching_keys_add_linkage_rules_rows_selected <= 0",
-          HTML("<br>"),
-          h5(strong("Or, Create a New Rule Here:")),
-
-          # Button for going to the linkage rules page from this modal
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("matching_keys_add_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
-              )
-            ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("add_linkage_rule_int_variance_matching", label = "Date Variance:", value = NULL)
           )
         ),
-
-        # If a row IS SELECTED, the user can then click then choose that rule
-        conditionalPanel(
-          condition = "input.matching_keys_add_linkage_rules_rows_selected > 0",
-          HTML("<br>"),
-
-          # Button for preparing the selected linkage rule to add
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("matching_keys_add_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
-              )
-            ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("add_linkage_rule_name_substring_matching", label = "Name Substring:", value = NULL)
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            selectInput("add_linkage_rule_standardize_names_matching", label = "Standardize Names?",
+                        choices = c("No" = 0, "Yes" = 1))
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("add_linkage_rule_matching", "Use Linkage Rules", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus"))
           )
         ),
       ),
-      size = "l"  # Large modal size to fit both tables
+      size = "s"  # Large modal size to fit both tables
     ))
   })
 
-  # Brings the user to the linkage rules page
-  observeEvent(input$matching_keys_add_linkage_rules_to_linkage_rules, {
-
-    # Set the return page to the add linkage iterations page
-    linkage_rules_return_page <<- "add_linkage_iterations_page"
-
-    # Show the linkage rule page
-    nav_show("main_navbar", "linkage_rule_page")
-
-    # Brings you to the linkage rules page
-    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
-  })
-
-  # Selects the linkage rule the user wanted
-  observeEvent(input$matching_keys_add_prepare_linkage_rule, {
-    # Get the selected row
-    selected_row <- input$matching_keys_add_linkage_rules_rows_selected
-
-    # Query to get all linkage rule information from the 'linkage_rules' table
-    query <- paste('SELECT * FROM linkage_rules
-               ORDER BY linkage_rule_id ASC;')
-    df <- dbGetQuery(linkage_metadata_conn, query)
-
-    # Get the linkage rule
-    linkage_rule_id <- df[selected_row, "linkage_rule_id"]
-
-    # Set the global variable to the selected linkage rule id
-    matching_linkage_rule_to_add <<- linkage_rule_id
-
-    # Render the UI output text
-    if(!is.na(linkage_rule_id)){
-      # Query to get the acceptance method name from the comparison_rules table
-      method_query <- paste('SELECT * FROM linkage_rules
-                           WHERE linkage_rule_id =', linkage_rule_id)
-      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
-
-      # We'll start with "Alternative Field"
-      alt_field_val <- method_df$alternate_field_value
-      if(!is.na(alt_field_val)){
-        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
-      }
-
-      # Next we'll handle the "Integer Variance"
-      int_variance <- method_df$integer_value_variance
-      if(!is.na(int_variance)){
-        method_df$integer_value_variance <- paste0("±", int_variance)
-      }
-
-      # Next we'll handle "Name Substring"
-      name_substring <- method_df$substring_length
-      if(!is.na(name_substring)){
-        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
-      }
-
-      # With standardized names, we'll replace the [0, 1] with [No, Yes]
-      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
-
-      # Rename the column names to be easier to read when printed in table format
-      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
-      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
-      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
-      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
-
-      # Drop the linkage_rule_id from the table
-      method_df <- subset(method_df, select = -c(linkage_rule_id))
-
-      # Initialize an empty list to store non-NA values
-      non_na_values <- list()
-
-      # Loop through each column in the current row
-      for (col_name in colnames(method_df)) {
-        value <- method_df[1, col_name]
-
-        # If the value is not NA, add it to the list
-        if (!is.na(value)) {
-          non_na_values <- c(non_na_values, paste0(value))
-        }
-      }
-
-      # Combine the non-NA values into a single string, separated by commas
-      combined_values <- paste(non_na_values, collapse = ", ")
-
-      # Render the output text
-      output$matching_linkage_rules_add <- renderText({
-        combined_values
-      })
-    }
-
-    # Dismiss the modal
-    removeModal()
-  })
-
-  # Generates the table of linkage rules
-  output$matching_keys_add_linkage_rules <- renderDataTable({
-    get_linkage_rules()
-  })
-
-  # Selecting a linkage rule for UPDATING matching keys
+  # Selecting one or more linkage rules for UPDATING blocking keys
   observeEvent(input$prepare_matching_linkage_rule_update, {
     showModal(modalDialog(
       title = "Choose Linkage Rule",
@@ -9884,141 +9875,41 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       footer = NULL,
       fluidRow(
         # Linkage rule table
-        h5(strong("Select a Linkage Rule Below to Use for the Matching Variables:")),
+        h5(strong("Enter Inputs for One or More Linkage Rules:")),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            dataTableOutput("matching_keys_update_linkage_rules"),
+            numericInput("update_linkage_rule_alt_field_matching", label = "Alternative Field:", value = NULL)
           )
         ),
-
-        # If NO row is selected, the user may add a new linkage rule by clicking
-        # a button that will take them to the linkage rule page
-        conditionalPanel(
-          condition = "input.matching_keys_update_linkage_rules_rows_selected <= 0",
-          HTML("<br>"),
-          h5(strong("Or, Create a New Rule Here:")),
-
-          # Button for going to the linkage rules page from this modal
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("matching_keys_update_linkage_rules_to_linkage_rules", "Create New Linkage Rule", class = "btn-info"),
-              )
-            ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("update_linkage_rule_int_variance_matching", label = "Date Variance:", value = NULL)
           )
         ),
-
-        # If a row IS SELECTED, the user can then click then choose that rule
-        conditionalPanel(
-          condition = "input.matching_keys_update_linkage_rules_rows_selected > 0",
-          HTML("<br>"),
-
-          # Button for preparing the selected linkage rule to add
-          fluidRow(
-            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("matching_keys_update_prepare_linkage_rule", "Add Linkage Rule", class = "btn-success"),
-              )
-            ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("update_linkage_rule_name_substring_matching", label = "Name Substring:", value = NULL)
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            selectInput("update_linkage_rule_standardize_names_matching", label = "Standardize Names?",
+                         choices = c("No" = 0, "Yes" = 1))
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("update_linkage_rule_matching", "Use Linkage Rules", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus"))
           )
         ),
       ),
-      size = "l"  # Large modal size to fit both tables
+      size = "s"  # Large modal size to fit both tables
     ))
   })
 
-  # Brings the user to the linkage rules page
-  observeEvent(input$matching_keys_update_linkage_rules_to_linkage_rules, {
-
-    # Set the return page to the add linkage iterations page
-    linkage_rules_return_page <<- "add_linkage_iterations_page"
-
-    # Show the linkage rule page
-    nav_show("main_navbar", "linkage_rule_page")
-
-    # Brings you to the linkage rules page
-    updateNavbarPage(session, "main_navbar", selected = "linkage_rule_page")
+  # Calls the generic linkage rule function when adding blocking linkage rules
+  observeEvent(input$add_linkage_rule_matching, {
+    add_and_select_linkage_rule("matching_linkage_rule_to_add")
   })
 
-  # Selects the linkage rule the user wanted
-  observeEvent(input$matching_keys_update_prepare_linkage_rule, {
-    # Get the selected row
-    selected_row <- input$matching_keys_update_linkage_rules_rows_selected
-
-    # Query to get all linkage rule information from the 'linkage_rules' table
-    query <- paste('SELECT * FROM linkage_rules
-               ORDER BY linkage_rule_id ASC;')
-    df <- dbGetQuery(linkage_metadata_conn, query)
-
-    # Get the linkage rule
-    linkage_rule_id <- df[selected_row, "linkage_rule_id"] # If this breaks, use "df$linkage_rule_id[selected_row]"
-
-    # Set the global variable to the selected linkage rule id
-    matching_linkage_rule_to_update <<- linkage_rule_id
-
-    # Render the UI output text
-    if(!is.na(linkage_rule_id)){
-      # Query to get the acceptance method name from the comparison_rules table
-      method_query <- paste('SELECT * FROM linkage_rules
-                           WHERE linkage_rule_id =', linkage_rule_id)
-      method_df <- dbGetQuery(linkage_metadata_conn, method_query)
-
-      # We'll start with "Alternative Field"
-      alt_field_val <- method_df$alternate_field_value
-      if(!is.na(alt_field_val)){
-        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
-      }
-
-      # Next we'll handle the "Integer Variance"
-      int_variance <- method_df$integer_value_variance
-      if(!is.na(int_variance)){
-        method_df$integer_value_variance <- paste0("±", int_variance)
-      }
-
-      # Next we'll handle "Name Substring"
-      name_substring <- method_df$substring_length
-      if(!is.na(name_substring)){
-        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
-      }
-
-      # With standardized names, we'll replace the [0, 1] with [No, Yes]
-      method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
-
-      # Rename the column names to be easier to read when printed in table format
-      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
-      names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
-      names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
-      names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
-
-      # Drop the linkage_rule_id from the table
-      method_df <- subset(method_df, select = -c(linkage_rule_id))
-
-      # Initialize an empty list to store non-NA values
-      non_na_values <- list()
-
-      # Loop through each column in the current row
-      for (col_name in colnames(method_df)) {
-        value <- method_df[1, col_name]
-
-        # If the value is not NA, add it to the list
-        if (!is.na(value)) {
-          non_na_values <- c(non_na_values, paste0(value))
-        }
-      }
-
-      # Combine the non-NA values into a single string, separated by commas
-      combined_values <- paste(non_na_values, collapse = ", ")
-
-      # Render the output text
-      output$matching_linkage_rules_update <- renderText({
-        combined_values
-      })
-    }
-
-    # Dismiss the modal
-    removeModal()
-  })
-
-  # Generates the table of linkage rules
-  output$matching_keys_update_linkage_rules <- renderDataTable({
-    get_linkage_rules()
+  # Calls the generic linkage rule function when updating blocking linkage rules
+  observeEvent(input$update_linkage_rule_matching, {
+    add_and_select_linkage_rule("matching_linkage_rule_to_update")
   })
 
   ### ADDING COMPARISON RULE

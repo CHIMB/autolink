@@ -656,7 +656,7 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
                               params = list(standardize_id))$standardization_file_name
 
       # Get the file name and see if its available to be loaded
-      file_path <- file.path(system.file(package = "datalink", "data"), file_name)
+      file_path <- file.path(system.file(package = "autolink", "data"), file_name)
 
       # Read in the standardization data frame
       standardization_df_input <- data.frame()
@@ -859,7 +859,7 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
 #' Get Standardized Names
 #'
 #' The get_standardized_names() function will take in an integer iteration ID
-#' which will grab the .rds dataset file from the datalink packages 'data' folder, the
+#' which will grab the .rds dataset file from the autolink packages 'data' folder, the
 #' data should contain two columns, one of variant spellings of a name called 'unique',
 #' and a column 'common' which is the most common spelling of that name which it will be
 #' standardized to. If no spelling is found, the name is replaced with NA
@@ -881,7 +881,7 @@ get_standardized_names <- function(linkage_db, iteration_id, data_field, lookupv
                           params = list(iteration_id))
 
   # Get the file_path
-  file_path <- file.path(system.file(package = "datalink", "data"), file_name)
+  file_path <- file.path(system.file(package = "autolink", "data"), file_name)
 
   # Read in the standardization data frame
   standardization_df <- data.frame()
@@ -890,8 +890,8 @@ get_standardized_names <- function(linkage_db, iteration_id, data_field, lookupv
   }
   else{
     # Load the internal dataset without affecting the global environment
-    data("datalink_standardized_names", package = "datalink", envir = environment())
-    standardization_df <- datalink_standardized_names
+    data("autolink_standardized_names", package = "autolink", envir = environment())
+    standardization_df <- autolink_standardized_names
   }
 
   # Get the common standardized names
