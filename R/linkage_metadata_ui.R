@@ -11711,7 +11711,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
   # Show the next loading screen
   hideElement("loading_screen_13")
-  showElement("loading_screen_14")
+  showElement("loading_screen_15")
 
   #-- COMPARISON METHODS & PARAMETERS PAGE EVENTS --#
   #----
@@ -12276,203 +12276,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   #-------------------------------------------------#
 
   # Show the next loading screen
-  hideElement("loading_screen_14")
-  showElement("loading_screen_15")
-
-  #-- LINKAGE RULES PAGE EVENTS --#
-  #----
-  linkage_rules_return_page  <- "home_page"
-
-  # Back button will bring you back to whichever page you came from
-  observeEvent(input$linkage_rules_back, {
-    # Show the page we need to return to
-    nav_show("main_navbar", linkage_rules_return_page)
-
-    # Return to the page you came from
-    updateNavbarPage(session, "main_navbar", selected = linkage_rules_return_page)
-  })
-
-  # Gets the linkage rules from the database and puts them into a data table
-  get_linkage_rules <- function(){
-    # Query to get all linkage rule information from the 'linkage_rules' table
-    query <- paste('SELECT * FROM linkage_rules
-               ORDER BY linkage_rule_id ASC;')
-    df <- dbGetQuery(linkage_metadata_conn, query)
-
-    # For each row in the data frame, we're going to make the rules easier to read and select
-    for(row_num in 1:nrow(df)){
-      # Get the current row
-      row <- df[row_num,]
-
-      # We'll start with "Alternative Field"
-      alt_field_val <- row$alternate_field_value
-      if(is.na(alt_field_val)){
-        row$alternate_field_value <- "1st Field Value"
-      }
-      else{
-        row$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
-      }
-
-      # Next we'll handle the "Integer Variance"
-      int_variance <- row$integer_value_variance
-      if(is.na(int_variance)){
-        row$integer_value_variance <- "±0"
-      }
-      else{
-        row$integer_value_variance <- paste0("±", int_variance)
-        row$substring_length <- "Does Not Apply"
-        row$standardize_names <- "Does Not Apply"
-      }
-
-      # Next we'll handle "Name Substring"
-      name_substring <- row$substring_length
-      if(is.na(name_substring) && is.na(int_variance)){
-        row$substring_length <- "Entire Name"
-      }else if (!is.na(name_substring) && is.na(int_variance)){
-        row$substring_length <- paste0("First ", name_substring, " character(s)")
-      }
-
-      # Re-enter our modified row back into the linkage rules
-      df[row_num,] <- row
-    }
-
-    # With standardized names, we'll replace the [0, 1] with [No, Yes]
-    df[is.na(df)] <- "No"
-    df$standardize_names <- str_replace(df$standardize_names, "1", "Yes")
-
-    # With our data frame, we'll rename some of the columns to look better
-    names(df)[names(df) == 'alternate_field_value'] <- 'Alternative Field'
-    names(df)[names(df) == 'integer_value_variance'] <- 'Integer Variance'
-    names(df)[names(df) == 'substring_length'] <- 'Name Substring'
-    names(df)[names(df) == 'standardize_names'] <- 'Standardize Names'
-
-    # Drop the linkage_rule_id
-    df <- subset(df, select = -c(linkage_rule_id))
-
-    # Put it into a data table now
-    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
-  }
-
-  # Renders the data table of comparison parameters that are to be added
-  output$currently_added_linkage_rules <- renderDataTable({
-    get_linkage_rules()
-  })
-
-  # Adds a new linkage rule to the database
-  observeEvent(input$add_linkage_rule, {
-    # Get the values the user provided
-    alternate_field_value  <- input$add_alternate_field_number
-    integer_value_variance <- input$add_integer_value_variance
-    substring_length       <- input$add_substring_length
-    standardize_names      <- input$add_name_standardization
-
-    # Error handle to make sure we don't end up putting invalid values into the 'Linkage Rules' table
-    #----#
-    # First, we'll make sure that the numeric values provided are actually numeric (can't even happen if we use a numericInput() in shiny)
-    if(!is.na(alternate_field_value) && is.na(suppressWarnings(as.numeric(alternate_field_value)))){
-      showNotification("Failed to Create Linkage Rule - Alternate Field Value Input is not Numeric", type = "error", closeButton = FALSE)
-      return()
-    }
-    if(!is.na(integer_value_variance) && is.na(suppressWarnings(as.numeric(integer_value_variance)))){
-      showNotification("Failed to Create Linkage Rule - Integer Value Variance Input is not Numeric", type = "error", closeButton = FALSE)
-      return()
-    }
-    if(!is.na(substring_length) && is.na(suppressWarnings(as.numeric(substring_length)))){
-      showNotification("Failed to Create Linkage Rule - Substring Length Input is not Numeric", type = "error", closeButton = FALSE)
-      return()
-    }
-
-    # Next, we'll make sure that if a numeric value is provided, that it is valid by setting it to default values (NA)
-    if(!is.na(alternate_field_value) && as.numeric(alternate_field_value) <= 1){
-      alternate_field_value <- NA
-    }
-    if(!is.na(integer_value_variance) && as.numeric(integer_value_variance) <= 0){
-      integer_value_variance <- NA
-    }
-    if(!is.na(substring_length) && as.numeric(substring_length) <= 0){
-      substring_length <- NA
-    }
-    if(standardize_names == 1){
-      standardize_names <- NA
-    }
-
-    # Next, if all values were left empty after this, we'll return throw an error
-    if(is.na(alternate_field_value) && is.na(integer_value_variance) && is.na(substring_length) && is.na(standardize_names)){
-      showNotification("Failed to Create Linkage Rule - All Inputs are Missing", type = "error", closeButton = FALSE)
-      return()
-    }
-
-    # Next, we'll make sure that only one type of Name or Numerical rule can be chosen at a time
-    if(!is.na(integer_value_variance) && !is.na(substring_length)){
-      showNotification("Failed to Create Linkage Rule - Cannot Apply Both String and Numerical Rules to a Field (Drop One or the Other)", type = "error", closeButton = FALSE)
-      return()
-    }
-    if(!is.na(integer_value_variance) && !is.na(standardize_names)){
-      showNotification("Failed to Create Linkage Rule - Cannot Apply Both String and Numerical Rules to a Field (Drop One or the Other)", type = "error", closeButton = FALSE)
-      return()
-    }
-
-    # Lastly, we'll make sure this rule doesn't already exist
-    # Modify the query to handle NULL values
-    get_query <- dbSendQuery(linkage_metadata_conn, '
-                              SELECT * FROM linkage_rules
-                              WHERE (alternate_field_value = ? OR (alternate_field_value IS NULL AND ? IS NULL))
-                              AND (integer_value_variance = ? OR (integer_value_variance IS NULL AND ? IS NULL))
-                              AND (substring_length = ? OR (substring_length IS NULL AND ? IS NULL))
-                              AND (standardize_names = ? OR (standardize_names IS NULL AND ? IS NULL));')
-    # Bind the values to the query
-    dbBind(get_query, list(alternate_field_value, alternate_field_value,
-                           integer_value_variance, integer_value_variance,
-                           substring_length, substring_length,
-                           standardize_names, standardize_names))
-    output_df <- dbFetch(get_query)
-    num_of_databases <- nrow(output_df)
-    dbClearResult(get_query)
-    if(num_of_databases != 0){
-      showNotification("Failed to Add Linkage Rule - Linkage Rule Already Exists", type = "error", closeButton = FALSE)
-      return()
-    }
-    #----#
-
-    # Add the new user provided values to the database as a new linkage rule
-    #----#
-    new_entry_query <- paste("INSERT INTO linkage_rules (alternate_field_value, integer_value_variance, substring_length, standardize_names)",
-                             "VALUES(?, ?, ?, ?);")
-    new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-    dbBind(new_entry, list(alternate_field_value, integer_value_variance, substring_length, standardize_names))
-    dbClearResult(new_entry)
-    #----#
-
-    # Update user input fields to make them blank!
-    #----#
-    updateNumericInput(session, "add_alternate_field_number", value = NA)
-    updateNumericInput(session, "add_integer_value_variance", value = NA)
-    updateNumericInput(session, "add_substring_length", value = NA)
-    updateSelectInput(session, "add_name_standardization", selected = 1)
-    #----#
-
-    # Update Data Tables and UI Renders
-    #----#
-    output$currently_added_linkage_rules <- renderDataTable({
-      get_linkage_rules()
-    })
-    output$blocking_keys_add_linkage_rules <- renderDataTable({
-      get_linkage_rules()
-    })
-    output$matching_keys_add_linkage_rules <- renderDataTable({
-      get_linkage_rules()
-    })
-    #----#
-
-    # Show success notification
-    #----#
-    showNotification("Linkage Rule Successfully Created", type = "message", closeButton = FALSE)
-    #----#
-  })
-  #----
-  #-------------------------------#
-
-  # Show the next loading screen
   hideElement("loading_screen_15")
   showElement("loading_screen_16")
 
@@ -12939,9 +12742,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   selected_rows_run <- reactiveValues(selected = NULL)
 
   # Initialize the selected file and folder to be empty
-  output$uploaded_linkage_standardize_names_file <- renderText({
-    "No File Has Been Chosen"
-  })
   output$uploaded_linkage_output_dir <- renderText({
     "No Folder Has Been Chosen"
   })
@@ -13035,9 +12835,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     }
   })
 
-  # Linkage Name Standardizing File Chooser
-  shinyFileChoose(input, 'standardize_names_file', roots=volumes, filetypes=c('csv'))
-
   # Back button
   observeEvent(input$run_algorithm_back, {
     # Show the page we need to return to
@@ -13045,25 +12842,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Return to the page you came from
     updateNavbarPage(session, "main_navbar", selected = run_algorithm_return_page)
-  })
-
-  # Observes which linkage output directory was chosen
-  observeEvent(input$standardize_names_file, {
-    # Get the output linkage directory
-    file_path <- input$standardize_names_file
-
-    # Render the output text
-    if(is.integer(file_path)){
-      output$uploaded_linkage_standardize_names_file <- renderText({
-        "No File Has Been Chosen"
-      })
-    }
-    else{
-      file_path <- parseFilePaths(volumes, file_path)$datapath
-      output$uploaded_linkage_standardize_names_file <- renderText({
-        file_path
-      })
-    }
   })
 
   # Observes which linkage report type was chosen
