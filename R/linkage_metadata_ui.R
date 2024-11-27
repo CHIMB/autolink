@@ -8181,10 +8181,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                            WHERE linkage_rule_id =', linkage_rule_id)
           method_df <- dbGetQuery(linkage_metadata_conn, method_query)
 
-          # We'll start with "Alternative Field"
-          alt_field_val <- method_df$alternate_field_value
+          # We'll start with "Alternative Field Left"
+          alt_field_val <- method_df$alternate_field_value_left
           if(!is.na(alt_field_val)){
-            method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+            method_df$alternate_field_value_left <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Left)")
+          }
+
+          # Next we'll handle "Alternative Field Right"
+          alt_field_val <- method_df$alternate_field_value_right
+          if(!is.na(alt_field_val)){
+            method_df$alternate_field_value_right <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Right)")
           }
 
           # Next we'll handle the "Integer Variance"
@@ -8203,7 +8209,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
 
           # Rename the column names to be easier to read when printed in table format
-          names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+          names(method_df)[names(method_df) == 'alternate_field_value_left'] <- 'Alternate Field Number (Left)'
+          names(method_df)[names(method_df) == 'alternate_field_value_right'] <- 'Alternate Field Number (Right)'
           names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
           names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
           names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
@@ -8300,10 +8307,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                            WHERE linkage_rule_id =', linkage_rule_id)
           method_df <- dbGetQuery(linkage_metadata_conn, method_query)
 
-          # We'll start with "Alternative Field"
-          alt_field_val <- method_df$alternate_field_value
+          # We'll start with "Alternative Field Left"
+          alt_field_val <- method_df$alternate_field_value_left
           if(!is.na(alt_field_val)){
-            method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+            method_df$alternate_field_value_left <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Left)")
+          }
+
+          # Next we'll handle "Alternative Field Right"
+          alt_field_val <- method_df$alternate_field_value_right
+          if(!is.na(alt_field_val)){
+            method_df$alternate_field_value_right <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Right)")
           }
 
           # Next we'll handle the "Integer Variance"
@@ -8322,7 +8335,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
 
           # Rename the column names to be easier to read when printed in table format
-          names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+          names(method_df)[names(method_df) == 'alternate_field_value_left'] <- 'Alternate Field Number (Left)'
+          names(method_df)[names(method_df) == 'alternate_field_value_right'] <- 'Alternate Field Number (Right)'
           names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
           names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
           names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
@@ -9041,10 +9055,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                            WHERE linkage_rule_id =', linkage_rule_id)
       method_df <- dbGetQuery(linkage_metadata_conn, method_query)
 
-      # We'll start with "Alternative Field"
-      alt_field_val <- method_df$alternate_field_value
+      # We'll start with "Alternative Field Left"
+      alt_field_val <- method_df$alternate_field_value_left
       if(!is.na(alt_field_val)){
-        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+        method_df$alternate_field_value_left <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Left)")
+      }
+
+      # Next we'll handle "Alternative Field Right"
+      alt_field_val <- method_df$alternate_field_value_right
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value_right <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Right)")
       }
 
       # Next we'll handle the "Integer Variance"
@@ -9063,7 +9083,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
 
       # Rename the column names to be easier to read when printed in table format
-      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'alternate_field_value_left'] <- 'Alternate Field Number (Left)'
+      names(method_df)[names(method_df) == 'alternate_field_value_right'] <- 'Alternate Field Number (Right)'
       names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
       names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
       names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
@@ -9190,7 +9211,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Linkage rule table
         h5(strong("Enter Inputs for One or More Linkage Rules:")),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            numericInput("add_linkage_rule_alt_field_blocking", label = "Alternative Field:", value = NULL)
+            numericInput("add_linkage_rule_alt_field_blocking_left", label = "Alternative Field (Left):", value = NULL)
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("add_linkage_rule_alt_field_blocking_right", label = "Alternative Field (Right):", value = NULL)
           )
         ),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -9225,7 +9250,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Linkage rule table
         h5(strong("Enter Inputs for One or More Linkage Rules:")),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            numericInput("update_linkage_rule_alt_field_blocking", label = "Alternative Field:", value = NULL)
+            numericInput("update_linkage_rule_alt_field_blocking_left", label = "Alternative Field (Left):", value = NULL)
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("update_linkage_rule_alt_field_blocking_right", label = "Alternative Field (Right):", value = NULL)
           )
         ),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -9255,31 +9284,35 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Using the linkage rule ID, obtain the input values
     if(linkage_rule_global_id == "blocking_linkage_rule_to_add"){
       # Get the values the user provided
-      alternate_field_value  <- input$add_linkage_rule_alt_field_blocking
-      integer_value_variance <- input$add_linkage_rule_int_variance_blocking
-      substring_length       <- input$add_linkage_rule_name_substring_blocking
-      standardize_names      <- input$add_linkage_rule_standardize_names_blocking
+      alternate_field_value_left   <- input$add_linkage_rule_alt_field_blocking_left
+      alternate_field_value_right  <- input$add_linkage_rule_alt_field_blocking_right
+      integer_value_variance       <- input$add_linkage_rule_int_variance_blocking
+      substring_length             <- input$add_linkage_rule_name_substring_blocking
+      standardize_names            <- input$add_linkage_rule_standardize_names_blocking
     }
     else if (linkage_rule_global_id == "blocking_linkage_rule_to_update"){
       # Get the values the user provided
-      alternate_field_value  <- input$update_linkage_rule_alt_field_blocking
-      integer_value_variance <- input$update_linkage_rule_int_variance_blocking
-      substring_length       <- input$update_linkage_rule_name_substring_blocking
-      standardize_names      <- input$update_linkage_rule_standardize_names_blocking
+      alternate_field_value_left   <- input$update_linkage_rule_alt_field_blocking_left
+      alternate_field_value_right  <- input$update_linkage_rule_alt_field_blocking_right
+      integer_value_variance       <- input$update_linkage_rule_int_variance_blocking
+      substring_length             <- input$update_linkage_rule_name_substring_blocking
+      standardize_names            <- input$update_linkage_rule_standardize_names_blocking
     }
     else if (linkage_rule_global_id == "matching_linkage_rule_to_add"){
       # Get the values the user provided
-      alternate_field_value  <- input$add_linkage_rule_alt_field_matching
-      integer_value_variance <- input$add_linkage_rule_int_variance_matching
-      substring_length       <- input$add_linkage_rule_name_substring_matching
-      standardize_names      <- input$add_linkage_rule_standardize_names_matching
+      alternate_field_value_left   <- input$add_linkage_rule_alt_field_matching_left
+      alternate_field_value_right  <- input$add_linkage_rule_alt_field_matching_right
+      integer_value_variance       <- input$add_linkage_rule_int_variance_matching
+      substring_length             <- input$add_linkage_rule_name_substring_matching
+      standardize_names            <- input$add_linkage_rule_standardize_names_matching
     }
     else if (linkage_rule_global_id == "matching_linkage_rule_to_update"){
       # Get the values the user provided
-      alternate_field_value  <- input$update_linkage_rule_alt_field_matching
-      integer_value_variance <- input$update_linkage_rule_int_variance_matching
-      substring_length       <- input$update_linkage_rule_name_substring_matching
-      standardize_names      <- input$update_linkage_rule_standardize_names_matching
+      alternate_field_value_left   <- input$update_linkage_rule_alt_field_matching_left
+      alternate_field_value_right  <- input$update_linkage_rule_alt_field_matching_right
+      integer_value_variance       <- input$update_linkage_rule_int_variance_matching
+      substring_length             <- input$update_linkage_rule_name_substring_matching
+      standardize_names            <- input$update_linkage_rule_standardize_names_matching
     }
     else{
       return()
@@ -9288,11 +9321,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Error handle to make sure we don't end up putting invalid values into the 'Linkage Rules' table
     #----#
-    # First, we'll make sure that the numeric values provided are actually numeric (can't even happen if we use a numericInput() in shiny)
-    if(!is.na(alternate_field_value) && is.na(suppressWarnings(as.numeric(alternate_field_value)))){
-      showNotification("Failed to Create Linkage Rule - Alternate Field Value Input is not Numeric", type = "error", closeButton = FALSE)
-      return()
-    }
     if(!is.na(integer_value_variance) && is.na(suppressWarnings(as.numeric(integer_value_variance)))){
       showNotification("Failed to Create Linkage Rule - Integer Value Variance Input is not Numeric", type = "error", closeButton = FALSE)
       return()
@@ -9303,8 +9331,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     }
 
     # Next, we'll make sure that if a numeric value is provided, that it is valid by setting it to default values (NA)
-    if(!is.na(alternate_field_value) && as.numeric(alternate_field_value) <= 0){
-      alternate_field_value <- NA
+    if(!is.na(alternate_field_value_left) && as.numeric(alternate_field_value_left) <= 0){
+      alternate_field_value_left <- NA
+    }
+    if(!is.na(alternate_field_value_right) && as.numeric(alternate_field_value_right) <= 0){
+      alternate_field_value_right <- NA
     }
     if(!is.na(integer_value_variance) && as.numeric(integer_value_variance) <= 0){
       integer_value_variance <- NA
@@ -9317,7 +9348,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     }
 
     # Next, if all values were left empty after this, we'll return throw an error
-    if(is.na(alternate_field_value) && is.na(integer_value_variance) && is.na(substring_length) && is.na(standardize_names)){
+    if(is.na(alternate_field_value_left) && is.na(alternate_field_value_right) && is.na(integer_value_variance) && is.na(substring_length) && is.na(standardize_names)){
       showNotification("Failed to Create Linkage Rule - All Inputs are Missing", type = "error", closeButton = FALSE)
       return()
     }
@@ -9336,12 +9367,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     # Modify the query to handle NULL values
     get_query <- dbSendQuery(linkage_metadata_conn, '
                               SELECT * FROM linkage_rules
-                              WHERE (alternate_field_value = ? OR (alternate_field_value IS NULL AND ? IS NULL))
+                              WHERE (alternate_field_value_left = ? OR (alternate_field_value_left IS NULL AND ? IS NULL))
+                              AND (alternate_field_value_right = ? OR (alternate_field_value_right IS NULL AND ? IS NULL))
                               AND (integer_value_variance = ? OR (integer_value_variance IS NULL AND ? IS NULL))
                               AND (substring_length = ? OR (substring_length IS NULL AND ? IS NULL))
                               AND (standardize_names = ? OR (standardize_names IS NULL AND ? IS NULL));')
     # Bind the values to the query
-    dbBind(get_query, list(alternate_field_value, alternate_field_value,
+    dbBind(get_query, list(alternate_field_value_left, alternate_field_value_left,
+                           alternate_field_value_right, alternate_field_value_right,
                            integer_value_variance, integer_value_variance,
                            substring_length, substring_length,
                            standardize_names, standardize_names))
@@ -9360,10 +9393,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                            WHERE linkage_rule_id =', linkage_rule_id)
         method_df <- dbGetQuery(linkage_metadata_conn, method_query)
 
-        # We'll start with "Alternative Field"
-        alt_field_val <- method_df$alternate_field_value
+        # We'll start with "Alternative Field Left"
+        alt_field_val <- method_df$alternate_field_value_left
         if(!is.na(alt_field_val)){
-          method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+          method_df$alternate_field_value_left <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Left)")
+        }
+
+        # Next we'll handle "Alternative Field Right"
+        alt_field_val <- method_df$alternate_field_value_right
+        if(!is.na(alt_field_val)){
+          method_df$alternate_field_value_right <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Right)")
         }
 
         # Next we'll handle the "Integer Variance"
@@ -9382,7 +9421,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
 
         # Rename the column names to be easier to read when printed in table format
-        names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+        names(method_df)[names(method_df) == 'alternate_field_value_left'] <- 'Alternate Field Number (Left)'
+        names(method_df)[names(method_df) == 'alternate_field_value_right'] <- 'Alternate Field Number (Right)'
         names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
         names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
         names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
@@ -9454,10 +9494,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Add the new user provided values to the database as a new linkage rule
     #----#
-    new_entry_query <- paste("INSERT INTO linkage_rules (alternate_field_value, integer_value_variance, substring_length, standardize_names)",
-                             "VALUES(?, ?, ?, ?);")
+    new_entry_query <- paste("INSERT INTO linkage_rules (alternate_field_value_left, alternate_field_value_right, integer_value_variance, substring_length, standardize_names)",
+                             "VALUES(?, ?, ?, ?, ?);")
     new_entry <- dbSendStatement(linkage_metadata_conn, new_entry_query)
-    dbBind(new_entry, list(alternate_field_value, integer_value_variance, substring_length, standardize_names))
+    dbBind(new_entry, list(alternate_field_value_left, alternate_field_value_right, integer_value_variance, substring_length, standardize_names))
     dbClearResult(new_entry)
 
     # Get the most recently inserted comparison_rule_id value
@@ -9471,10 +9511,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                            WHERE linkage_rule_id =', linkage_rule_id)
       method_df <- dbGetQuery(linkage_metadata_conn, method_query)
 
-      # We'll start with "Alternative Field"
-      alt_field_val <- method_df$alternate_field_value
+      # We'll start with "Alternative Field Left"
+      alt_field_val <- method_df$alternate_field_value_left
       if(!is.na(alt_field_val)){
-        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+        method_df$alternate_field_value_left <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Left)")
+      }
+
+      # Next we'll handle "Alternative Field Right"
+      alt_field_val <- method_df$alternate_field_value_right
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value_right <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Right)")
       }
 
       # Next we'll handle the "Integer Variance"
@@ -9493,7 +9539,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
 
       # Rename the column names to be easier to read when printed in table format
-      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'alternate_field_value_left'] <- 'Alternate Field Number (Left)'
+      names(method_df)[names(method_df) == 'alternate_field_value_right'] <- 'Alternate Field Number (Right)'
       names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
       names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
       names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
@@ -9659,10 +9706,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                            WHERE linkage_rule_id =', linkage_rule_id)
       method_df <- dbGetQuery(linkage_metadata_conn, method_query)
 
-      # We'll start with "Alternative Field"
-      alt_field_val <- method_df$alternate_field_value
+      # We'll start with "Alternative Field Left"
+      alt_field_val <- method_df$alternate_field_value_left
       if(!is.na(alt_field_val)){
-        method_df$alternate_field_value <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value")
+        method_df$alternate_field_value_left <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Left)")
+      }
+
+      # Next we'll handle "Alternative Field Right"
+      alt_field_val <- method_df$alternate_field_value_right
+      if(!is.na(alt_field_val)){
+        method_df$alternate_field_value_right <- paste0(scales::ordinal(as.numeric(alt_field_val)), " Field Value (Right)")
       }
 
       # Next we'll handle the "Integer Variance"
@@ -9681,7 +9734,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       method_df$standardize_names <- str_replace(method_df$standardize_names, "1", "Standardize Names")
 
       # Rename the column names to be easier to read when printed in table format
-      names(method_df)[names(method_df) == 'alternate_field_value'] <- 'Alternate Field Number'
+      names(method_df)[names(method_df) == 'alternate_field_value_left'] <- 'Alternate Field Number (Left)'
+      names(method_df)[names(method_df) == 'alternate_field_value_right'] <- 'Alternate Field Number (Right)'
       names(method_df)[names(method_df) == 'integer_value_variance'] <- 'Integer Value Variance'
       names(method_df)[names(method_df) == 'substring_length'] <- 'Substring Length'
       names(method_df)[names(method_df) == 'standardize_names'] <- 'Standardize Names'
@@ -9842,7 +9896,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Linkage rule table
         h5(strong("Enter Inputs for One or More Linkage Rules:")),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            numericInput("add_linkage_rule_alt_field_matching", label = "Alternative Field:", value = NULL)
+            numericInput("add_linkage_rule_alt_field_matching_left", label = "Alternative Field (Left):", value = NULL)
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("add_linkage_rule_alt_field_matching_right", label = "Alternative Field (Right):", value = NULL)
           )
         ),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
@@ -9877,7 +9935,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Linkage rule table
         h5(strong("Enter Inputs for One or More Linkage Rules:")),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-            numericInput("update_linkage_rule_alt_field_matching", label = "Alternative Field:", value = NULL)
+            numericInput("update_linkage_rule_alt_field_matching_left", label = "Alternative Field (Left):", value = NULL)
+          )
+        ),
+        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("update_linkage_rule_alt_field_matching_right", label = "Alternative Field (Right):", value = NULL)
           )
         ),
         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",

@@ -86,53 +86,78 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
 
             # One of our linkage rules is to select an alternative field value from a blocking field
-            if("alternate_field_value" %in% names(linkage_rules)){
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
               # Get the field we are blocking on
               dataset_field <- row$left_dataset_field
 
-              # Get the number of splits we expect to do
-              num_of_splits <- linkage_rules$alternate_field_value
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
 
-              # Create some vectors for storing the split name fields (left and right)
-              name_split_left <- vector("list", num_of_splits + 1)
-              name_split_left[[1]] <- left_dataset[[dataset_field]]
-              name_split_right <- vector("list", num_of_splits + 1)
-              name_split_right[[1]] <- right_dataset[[dataset_field]]
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
 
-              # Loop until we reach the split field we want
-              for(split_num in 1:num_of_splits){
-                # Clean up by trimming white space
-                name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
-                name_split_left[[split_num]] <- split[,1]
-                name_split_left[[split_num+1]] <- split[,2]
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
 
-                # Clean up by trimming white space
-                name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
-                name_split_right[[split_num]] <- split[,1]
-                name_split_right[[split_num+1]] <- split[,2]
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
               }
 
-              # After we finish splitting, return the LAST value since we split
-              alternate_field_left  <- name_split_left[[num_of_splits]]
-              alternate_field_right <- name_split_right[[num_of_splits]]
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
 
               # Put the alternate values back into the datasets
-              left_dataset[[dataset_field]] <- alternate_field_left
-              right_dataset[[dataset_field]] <- alternate_field_right
-
-              # Clean up after ourselves
-              rm(name_split_left)
-              rm(name_split_right)
-              gc()
+              left_dataset[[paste0(dataset_field, "_alt_block")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_block")]] <- alternate_field_right
 
               # Add to our list of blocking keys
-              blocking_keys <- append(blocking_keys, dataset_field)
+              blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_block"))
             }
 
             # Another linkage rules is to allow for slight error in date field records
@@ -226,6 +251,94 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           }
         }
 
+        # If we are planning on using the "alternative field" linkage rule for matching fields,
+        # then we need to error handle it
+        for(row_num in 1:nrow(matching_keys_df)){
+          # Get the current row
+          row <- matching_keys_df[row_num,]
+
+          # Get the linkage rules for the current row
+          linkage_rules_json <- row$linkage_rules
+
+          # Make sure linkage rules aren't NA
+          if(!is.na(linkage_rules_json)){
+            # Convert the linkage rules from JSON to R readable.
+            linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
+
+            # One of our linkage rules is to select an alternative field value from a blocking field
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
+              # Get the field we are blocking on
+              dataset_field <- row$left_dataset_field
+
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
+              }
+
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
+
+              # Put the alternate values back into the datasets
+              left_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_right
+            }
+          }
+        }
+
         # Now, we'll make a list of all the pairs of blocking keys we'd like to try
         blocking_keys_pairs <- list()
 
@@ -300,53 +413,78 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
 
             # One of our linkage rules is to select an alternative field value from a blocking field
-            if("alternate_field_value" %in% names(linkage_rules)){
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
               # Get the field we are blocking on
               dataset_field <- row$left_dataset_field
 
-              # Get the number of splits we expect to do
-              num_of_splits <- linkage_rules$alternate_field_value
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
 
-              # Create some vectors for storing the split name fields (left and right)
-              name_split_left <- vector("list", num_of_splits + 1)
-              name_split_left[[1]] <- left_dataset[[dataset_field]]
-              name_split_right <- vector("list", num_of_splits + 1)
-              name_split_right[[1]] <- right_dataset[[dataset_field]]
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
 
-              # Loop until we reach the split field we want
-              for(split_num in 1:num_of_splits){
-                # Clean up by trimming white space
-                name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
-                name_split_left[[split_num]] <- split[,1]
-                name_split_left[[split_num+1]] <- split[,2]
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
 
-                # Clean up by trimming white space
-                name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
-                name_split_right[[split_num]] <- split[,1]
-                name_split_right[[split_num+1]] <- split[,2]
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
               }
 
-              # After we finish splitting, return the LAST value since we split
-              alternate_field_left  <- name_split_left[[num_of_splits]]
-              alternate_field_right <- name_split_right[[num_of_splits]]
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
 
               # Put the alternate values back into the datasets
-              left_dataset[[dataset_field]] <- alternate_field_left
-              right_dataset[[dataset_field]] <- alternate_field_right
+              left_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_right
 
-              # Clean up after ourselves
-              rm(name_split_left)
-              rm(name_split_right)
-              gc()
-
-              # Store this field name as one of our matching fields
-              matching_keys <- append(matching_keys, dataset_field)
+              # Add to our list of blocking keys
+              matching_keys <- append(matching_keys, paste0(dataset_field, "_alt_match"))
             }
 
             # Linkage rule to substring things like names to be initials, first 5 characters, etc
@@ -398,6 +536,11 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # Get the field we'll apply the comparison rules to
             dataset_field <- row$left_dataset_field
+
+            # Quick error handling check, if we used the ALTERNATIVE FIELD VALUE linkage rule, use that new field instead!
+            if(paste0(dataset_field, "_alt_match") %in% matching_keys){
+              dataset_field <- paste0(dataset_field, "_alt_match")
+            }
 
             # Based on the comparison rule, map it to the appropriate function
             if("jw_score" %in% names(comparison_rules)){
@@ -1079,53 +1222,78 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
 
             # One of our linkage rules is to select an alternative field value from a blocking field
-            if("alternate_field_value" %in% names(linkage_rules)){
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
               # Get the field we are blocking on
               dataset_field <- row$left_dataset_field
 
-              # Get the number of splits we expect to do
-              num_of_splits <- linkage_rules$alternate_field_value
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
 
-              # Create some vectors for storing the split name fields (left and right)
-              name_split_left <- vector("list", num_of_splits + 1)
-              name_split_left[[1]] <- left_dataset[[dataset_field]]
-              name_split_right <- vector("list", num_of_splits + 1)
-              name_split_right[[1]] <- right_dataset[[dataset_field]]
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
 
-              # Loop until we reach the split field we want
-              for(split_num in 1:num_of_splits){
-                # Clean up by trimming white space
-                name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
-                name_split_left[[split_num]] <- split[,1]
-                name_split_left[[split_num+1]] <- split[,2]
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
 
-                # Clean up by trimming white space
-                name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
-                name_split_right[[split_num]] <- split[,1]
-                name_split_right[[split_num+1]] <- split[,2]
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
               }
 
-              # After we finish splitting, return the LAST value since we split
-              alternate_field_left  <- name_split_left[[num_of_splits]]
-              alternate_field_right <- name_split_right[[num_of_splits]]
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
 
               # Put the alternate values back into the datasets
-              left_dataset[[dataset_field]] <- alternate_field_left
-              right_dataset[[dataset_field]] <- alternate_field_right
-
-              # Clean up after ourselves
-              rm(name_split_left)
-              rm(name_split_right)
-              gc()
+              left_dataset[[paste0(dataset_field, "_alt_block")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_block")]] <- alternate_field_right
 
               # Add to our list of blocking keys
-              blocking_keys <- append(blocking_keys, dataset_field)
+              blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_block"))
             }
 
             # Another linkage rules is to allow for slight error in date field records
@@ -1219,6 +1387,94 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           }
         }
 
+        # If we are planning on using the "alternative field" linkage rule for matching fields,
+        # then we need to error handle it
+        for(row_num in 1:nrow(matching_keys_df)){
+          # Get the current row
+          row <- matching_keys_df[row_num,]
+
+          # Get the linkage rules for the current row
+          linkage_rules_json <- row$linkage_rules
+
+          # Make sure linkage rules aren't NA
+          if(!is.na(linkage_rules_json)){
+            # Convert the linkage rules from JSON to R readable.
+            linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
+
+            # One of our linkage rules is to select an alternative field value from a blocking field
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
+              # Get the field we are blocking on
+              dataset_field <- row$left_dataset_field
+
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
+              }
+
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
+
+              # Put the alternate values back into the datasets
+              left_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_right
+            }
+          }
+        }
+
         # Now, we'll make a list of all the pairs of blocking keys we'd like to try
         blocking_keys_pairs <- list()
 
@@ -1294,53 +1550,78 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
 
             # One of our linkage rules is to select an alternative field value from a blocking field
-            if("alternate_field_value" %in% names(linkage_rules)){
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
               # Get the field we are blocking on
               dataset_field <- row$left_dataset_field
 
-              # Get the number of splits we expect to do
-              num_of_splits <- linkage_rules$alternate_field_value
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
 
-              # Create some vectors for storing the split name fields (left and right)
-              name_split_left <- vector("list", num_of_splits + 1)
-              name_split_left[[1]] <- left_dataset[[dataset_field]]
-              name_split_right <- vector("list", num_of_splits + 1)
-              name_split_right[[1]] <- right_dataset[[dataset_field]]
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
 
-              # Loop until we reach the split field we want
-              for(split_num in 1:num_of_splits){
-                # Clean up by trimming white space
-                name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
-                name_split_left[[split_num]] <- split[,1]
-                name_split_left[[split_num+1]] <- split[,2]
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
 
-                # Clean up by trimming white space
-                name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
-                name_split_right[[split_num]] <- split[,1]
-                name_split_right[[split_num+1]] <- split[,2]
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
               }
 
-              # After we finish splitting, return the LAST value since we split
-              alternate_field_left  <- name_split_left[[num_of_splits]]
-              alternate_field_right <- name_split_right[[num_of_splits]]
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
 
               # Put the alternate values back into the datasets
-              left_dataset[[dataset_field]] <- alternate_field_left
-              right_dataset[[dataset_field]] <- alternate_field_right
+              left_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_right
 
-              # Clean up after ourselves
-              rm(name_split_left)
-              rm(name_split_right)
-              gc()
-
-              # Store this field name as one of our matching fields
-              matching_keys <- append(matching_keys, dataset_field)
+              # Add to our list of blocking keys
+              blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_match"))
             }
 
             # Linkage rule to substring things like names to be initials, first 5 characters, etc
@@ -1392,6 +1673,11 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # Get the field we'll apply the comparison rules to
             dataset_field <- row$left_dataset_field
+
+            # Quick error handling check, if we used the ALTERNATIVE FIELD VALUE linkage rule, use that new field instead!
+            if(paste0(dataset_field, "_alt_match") %in% matching_keys){
+              dataset_field <- paste0(dataset_field, "_alt_match")
+            }
 
             # Based on the comparison rule, map it to the appropriate function
             if("jw_score" %in% names(comparison_rules)){
@@ -1662,45 +1948,75 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
 
             # One of our linkage rules is to select an alternative field value from a blocking field
-            if("alternate_field_value" %in% names(linkage_rules)){
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
               # Get the field we are blocking on
               dataset_field <- row$left_dataset_field
 
-              # Get the number of splits we expect to do
-              num_of_splits <- linkage_rules$alternate_field_value
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
 
-              # Create some vectors for storing the split name fields (left and right)
-              name_split_left <- vector("list", num_of_splits + 1)
-              name_split_left[[1]] <- left_dataset[[dataset_field]]
-              name_split_right <- vector("list", num_of_splits + 1)
-              name_split_right[[1]] <- right_dataset[[dataset_field]]
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
 
-              # Loop until we reach the split field we want
-              for(split_num in 1:num_of_splits){
-                # Clean up by trimming white space
-                name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
-                name_split_left[[split_num]] <- split[,1]
-                name_split_left[[split_num+1]] <- split[,2]
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
 
-                # Clean up by trimming white space
-                name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
-                name_split_right[[split_num]] <- split[,1]
-                name_split_right[[split_num+1]] <- split[,2]
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
               }
 
-              # After we finish splitting, return the LAST value since we split
-              alternate_field_left  <- name_split_left[[num_of_splits]]
-              alternate_field_right <- name_split_right[[num_of_splits]]
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right  <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
 
               # Put the alternate values back into the datasets
-              left_dataset[[dataset_field]] <- alternate_field_left
-              right_dataset[[dataset_field]] <- alternate_field_right
+              left_dataset[[paste0(dataset_field, "_alt_block")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_block")]] <- alternate_field_right
 
               # Clean up after ourselves
               rm(name_split_left)
@@ -1708,7 +2024,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               gc()
 
               # Add to our list of blocking keys
-              blocking_keys <- append(blocking_keys, dataset_field)
+              blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_block"))
             }
 
             # Another linkage rules is to allow for slight error in date field records
@@ -1802,6 +2118,94 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           }
         }
 
+        # If we are planning on using the "alternative field" linkage rule for matching fields,
+        # then we need to error handle it
+        for(row_num in 1:nrow(matching_keys_df)){
+          # Get the current row
+          row <- matching_keys_df[row_num,]
+
+          # Get the linkage rules for the current row
+          linkage_rules_json <- row$linkage_rules
+
+          # Make sure linkage rules aren't NA
+          if(!is.na(linkage_rules_json)){
+            # Convert the linkage rules from JSON to R readable.
+            linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
+
+            # One of our linkage rules is to select an alternative field value from a blocking field
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
+              # Get the field we are blocking on
+              dataset_field <- row$left_dataset_field
+
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
+              }
+
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
+
+              # Put the alternate values back into the datasets
+              left_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_right
+            }
+          }
+        }
+
         # Now, we'll make a list of all the pairs of blocking keys we'd like to try
         blocking_keys_pairs <- list()
 
@@ -1874,53 +2278,78 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             linkage_rules <- jsonlite::fromJSON(linkage_rules_json)
 
             # One of our linkage rules is to select an alternative field value from a blocking field
-            if("alternate_field_value" %in% names(linkage_rules)){
+            if("alternate_field_value_left" %in% names(linkage_rules) || "alternate_field_value_right" %in% names(linkage_rules)){
               # Get the field we are blocking on
               dataset_field <- row$left_dataset_field
 
-              # Get the number of splits we expect to do
-              num_of_splits <- linkage_rules$alternate_field_value
+              # If a left alt value was provided, then split it and get the value
+              if("alternate_field_value_left" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_left
 
-              # Create some vectors for storing the split name fields (left and right)
-              name_split_left <- vector("list", num_of_splits + 1)
-              name_split_left[[1]] <- left_dataset[[dataset_field]]
-              name_split_right <- vector("list", num_of_splits + 1)
-              name_split_right[[1]] <- right_dataset[[dataset_field]]
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_left <- vector("list", num_of_splits + 1)
+                name_split_left[[1]] <- left_dataset[[dataset_field]]
 
-              # Loop until we reach the split field we want
-              for(split_num in 1:num_of_splits){
-                # Clean up by trimming white space
-                name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_left[[split_num]] <- trimws(name_split_left[[split_num]], "both")
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
-                name_split_left[[split_num]] <- split[,1]
-                name_split_left[[split_num+1]] <- split[,2]
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_left[[split_num]], ' ', n = 2)
+                  name_split_left[[split_num]] <- split[,1]
+                  name_split_left[[split_num+1]] <- split[,2]
+                }
 
-                # Clean up by trimming white space
-                name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_left <- name_split_left[[num_of_splits]]
 
-                # Split the name in half and store the results
-                split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
-                name_split_right[[split_num]] <- split[,1]
-                name_split_right[[split_num+1]] <- split[,2]
+                # Clean up after ourselves
+                rm(name_split_left)
+                gc()
+              }
+              else{
+                alternate_field_left <- left_dataset[[dataset_field]]
               }
 
-              # After we finish splitting, return the LAST value since we split
-              alternate_field_left  <- name_split_left[[num_of_splits]]
-              alternate_field_right <- name_split_right[[num_of_splits]]
+              # If a right alt value was provided, then split it and get the value
+              if("alternate_field_value_right" %in% names(linkage_rules)){
+                # Get the number of splits we expect to do
+                num_of_splits <- linkage_rules$alternate_field_value_right
+
+                # Create some vectors for storing the split name fields (left and right)
+                name_split_right <- vector("list", num_of_splits + 1)
+                name_split_right[[1]] <- right_dataset[[dataset_field]]
+
+                # Loop until we reach the split field we want
+                for(split_num in 1:num_of_splits){
+                  # Clean up by trimming white space
+                  name_split_right[[split_num]] <- trimws(name_split_right[[split_num]], "both")
+
+                  # Split the name in half and store the results
+                  split <- str_split_fixed(name_split_right[[split_num]], ' ', n = 2)
+                  name_split_right[[split_num]] <- split[,1]
+                  name_split_right[[split_num+1]] <- split[,2]
+                }
+
+                # After we finish splitting, return the LAST value since we split
+                alternate_field_right  <- name_split_right[[num_of_splits]]
+
+                # Clean up after ourselves
+                rm(name_split_right)
+                gc()
+              }
+              else{
+                alternate_field_right <- right_dataset[[dataset_field]]
+              }
 
               # Put the alternate values back into the datasets
-              left_dataset[[dataset_field]] <- alternate_field_left
-              right_dataset[[dataset_field]] <- alternate_field_right
+              left_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_left
+              right_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_right
 
-              # Clean up after ourselves
-              rm(name_split_left)
-              rm(name_split_right)
-              gc()
-
-              # Store this field name as one of our matching fields
-              matching_keys <- append(matching_keys, dataset_field)
+              # Add to our list of blocking keys
+              blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_match"))
             }
 
             # Linkage rule to substring things like names to be initials, first 5 characters, etc
@@ -1972,6 +2401,11 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # Get the field we'll apply the comparison rules to
             dataset_field <- row$left_dataset_field
+
+            # Quick error handling check, if we used the ALTERNATIVE FIELD VALUE linkage rule, use that new field instead!
+            if(paste0(dataset_field, "_alt_match") %in% matching_keys){
+              dataset_field <- paste0(dataset_field, "_alt_match")
+            }
 
             # Based on the comparison rule, map it to the appropriate function
             if("jw_score" %in% names(comparison_rules)){
