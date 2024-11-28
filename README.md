@@ -102,10 +102,10 @@ extra_params  <- create_extra_parameters_list(...) # Any number of optional/extr
 For more details on how the architecture of the package is structured
 and how the stored algorithms are pulled and used to link data, consider
 reading the [<b>Developer Facing Documentation
-(474KB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/DEVELOPER_DOCUMENTATION_AUTOMATED_LINKAGE).
+(474KB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/DEVELOPER_DOCUMENTATION_AUTOMATED_LINKAGE.pdf).
 
 For more details on how to work function calls, how to navigate the
 pages of the user interface, and how to make changes, or add new
 information to the metadata, consider reading the [<b>User Facing
 Documentation
-(978KB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/USER_DOCUMENTATION_AUTOMATED_LINKAGE).
+(978KB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/USER_DOCUMENTATION_AUTOMATED_LINKAGE.pdf).
