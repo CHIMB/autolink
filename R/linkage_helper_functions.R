@@ -1033,6 +1033,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
     if(is.character(data_linker) && is.character(data_linker) && length(data_linker) == 1 && nchar(data_linker) > 0){
       extra_params_list[["data_linker"]] <- data_linker
     }
+    else{
+      extra_params_list[["data_linker"]] <- "Missing Name"
+    }
+  }
+  else{
+    extra_params_list[["data_linker"]] <- "Missing Name"
   }
 
   ### Output Algorithm Summary

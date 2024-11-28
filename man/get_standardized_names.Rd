@@ -22,7 +22,7 @@ get_standardized_names(
 }
 \description{
 The get_standardized_names() function will take in an integer iteration ID
-which will grab the .rds dataset file from the datalink packages 'data' folder, the
+which will grab the .rds dataset file from the autolink packages 'data' folder, the
 data should contain two columns, one of variant spellings of a name called 'unique',
 and a column 'common' which is the most common spelling of that name which it will be
 standardized to. If no spelling is found, the name is replaced with NA
