@@ -110,10 +110,11 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   dbExecute(my_db, "
     CREATE TABLE linkage_rules (
       linkage_rule_id INTEGER PRIMARY KEY,
-      alternate_field_value INTEGER,
+      alternate_field_value_left INTEGER,
       integer_value_variance INTEGER,
       substring_length INTEGER,
-      standardize_names INTEGER
+      standardize_names INTEGER,
+      alternate_field_value_right INTEGER
     );
   ")
 

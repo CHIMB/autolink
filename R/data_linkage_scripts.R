@@ -42,7 +42,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           temp_field_name <- paste0("temp_", row$right_dataset_field)
 
           # Rename the temporary field to the desired left dataset field name
-          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- paste0(left_dataset_field_name, "_renamed")
+          names(left_dataset)[names(left_dataset) == left_dataset_field_name] <- paste0(left_dataset_field_name, "_renamed")
         }
 
         ### MATCHING CRITERIA
@@ -63,8 +64,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           temp_field_name <- paste0("temp_", row$right_dataset_field)
 
           # Rename the temporary field to the desired left dataset field name
-          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- paste0(left_dataset_field_name, "_renamed")
+          names(left_dataset)[names(left_dataset) == left_dataset_field_name] <- paste0(left_dataset_field_name, "_renamed")
         }
+
+        # Rename the data frames to have "_renamed" applied to them
+        blocking_keys_df$left_dataset_field <- paste0(blocking_keys_df$left_dataset_field, "_renamed")
+        matching_keys_df$left_dataset_field <- paste0(matching_keys_df$left_dataset_field, "_renamed")
+        blocking_keys_df$right_dataset_field <- paste0(blocking_keys_df$right_dataset_field, "_renamed")
+        matching_keys_df$right_dataset_field <- paste0(matching_keys_df$right_dataset_field, "_renamed")
 
         # Go through the blocking variables, applying the linkage rules to each,
         # and storing the columns we'll be using to block on
@@ -158,6 +166,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
               # Add to our list of blocking keys
               blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_block"))
+
+              # Rename the row of blocking keys to the "_alt_block" version incase other linkage rules are being used
+              blocking_keys_df$left_dataset_field[row_num]  <- paste0(dataset_field, "_alt_block")
+              blocking_keys_df$right_dataset_field[row_num] <- paste0(dataset_field, "_alt_block")
             }
 
             # Another linkage rules is to allow for slight error in date field records
@@ -485,6 +497,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
               # Add to our list of blocking keys
               matching_keys <- append(matching_keys, paste0(dataset_field, "_alt_match"))
+
+              # Rename the row of blocking keys to the "_alt_match" version incase other linkage rules are being used
+              matching_keys_df$left_dataset_field[row_num]  <- paste0(dataset_field, "_alt_match")
+              matching_keys_df$right_dataset_field[row_num] <- paste0(dataset_field, "_alt_match")
             }
 
             # Linkage rule to substring things like names to be initials, first 5 characters, etc
@@ -1041,6 +1057,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         ### Create the data frame of the fields to be returned
         output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+        for(index in 1:nrow(output_fields)){
+          # Check if the column is one of our blocking or matching keys, if not, then keep it as is, if so, rename it
+          if(paste0(output_fields$field_name[index], "_renamed") %in% matching_keys_df$left_dataset_field){
+            output_fields$field_name[index] <- paste0(output_fields$field_name[index], "_renamed")
+          }
+          else if(paste0(output_fields$field_name[index], "_renamed") %in% blocking_keys_df$left_dataset_field){
+            output_fields$field_name[index] <- paste0(output_fields$field_name[index], "_renamed")
+          }
+        }
 
         # Create a vector of field names with '.x' suffix to retain
         fields_to_keep <- ifelse(output_fields$field_name %in% colnames(linked_dataset), paste0(output_fields$field_name), paste0(output_fields$field_name, ".x"))
@@ -1053,6 +1078,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Rename the fields with suffix '.x' to have it removed.
         filtered_data <- filtered_data %>% rename_with(~ gsub("\\.x$", "", .), ends_with(".x"))
+
+        # Rename the fields with suffix '_renamed' to have it removed.
+        filtered_data <- filtered_data %>% rename_with(~ gsub("\\_renamed$", "", .), ends_with("_renamed"))
 
         # Store the filtered data for return
         return_list[["output_linkage_df"]] <- filtered_data
@@ -1178,7 +1206,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           temp_field_name <- paste0("temp_", row$right_dataset_field)
 
           # Rename the temporary field to the desired left dataset field name
-          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- paste0(left_dataset_field_name, "_renamed")
+          names(left_dataset)[names(left_dataset) == left_dataset_field_name] <- paste0(left_dataset_field_name, "_renamed")
         }
 
         ### MATCHING CRITERIA
@@ -1199,8 +1228,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           temp_field_name <- paste0("temp_", row$right_dataset_field)
 
           # Rename the temporary field to the desired left dataset field name
-          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- paste0(left_dataset_field_name, "_renamed")
+          names(left_dataset)[names(left_dataset) == left_dataset_field_name] <- paste0(left_dataset_field_name, "_renamed")
         }
+
+        # Rename the data frames to have "_renamed" applied to them
+        blocking_keys_df$left_dataset_field <- paste0(blocking_keys_df$left_dataset_field, "_renamed")
+        matching_keys_df$left_dataset_field <- paste0(matching_keys_df$left_dataset_field, "_renamed")
+        blocking_keys_df$right_dataset_field <- paste0(blocking_keys_df$right_dataset_field, "_renamed")
+        matching_keys_df$right_dataset_field <- paste0(matching_keys_df$right_dataset_field, "_renamed")
 
         # Go through the blocking variables, applying the linkage rules to each,
         # and storing the columns we'll be using to block on
@@ -1294,6 +1330,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
               # Add to our list of blocking keys
               blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_block"))
+
+              # Rename the row of blocking keys to the "_alt_block" version incase other linkage rules are being used
+              blocking_keys_df$left_dataset_field[row_num]  <- paste0(dataset_field, "_alt_block")
+              blocking_keys_df$right_dataset_field[row_num] <- paste0(dataset_field, "_alt_block")
             }
 
             # Another linkage rules is to allow for slight error in date field records
@@ -1621,7 +1661,11 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               right_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_right
 
               # Add to our list of blocking keys
-              blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_match"))
+              matching_keys <- append(matching_keys, paste0(dataset_field, "_alt_match"))
+
+              # Rename the row of blocking keys to the "_alt_match" version incase other linkage rules are being used
+              matching_keys_df$left_dataset_field[row_num]  <- paste0(dataset_field, "_alt_match")
+              matching_keys_df$right_dataset_field[row_num] <- paste0(dataset_field, "_alt_match")
             }
 
             # Linkage rule to substring things like names to be initials, first 5 characters, etc
@@ -1852,6 +1896,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         ### Create the data frame of the fields to be returned
         output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+        for(index in 1:nrow(output_fields)){
+          # Check if the column is one of our blocking or matching keys, if not, then keep it as is, if so, rename it
+          if(paste0(output_fields$field_name[index], "_renamed") %in% matching_keys_df$left_dataset_field){
+            output_fields$field_name[index] <- paste0(output_fields$field_name[index], "_renamed")
+          }
+          else if(paste0(output_fields$field_name[index], "_renamed") %in% blocking_keys_df$left_dataset_field){
+            output_fields$field_name[index] <- paste0(output_fields$field_name[index], "_renamed")
+          }
+        }
 
         # Create a vector of field names with '.x' suffix to retain
         fields_to_keep <- ifelse(output_fields$field_name %in% colnames(linked_dataset), paste0(output_fields$field_name), paste0(output_fields$field_name, ".x"))
@@ -1867,6 +1920,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Rename the fields with suffix '.x' to have it removed.
         filtered_data <- filtered_data %>% rename_with(~ gsub("\\.x$", "", .), ends_with(".x"))
+
+        # Rename the fields with suffix '_renamed' to have it removed.
+        filtered_data <- filtered_data %>% rename_with(~ gsub("\\_renamed$", "", .), ends_with("_renamed"))
 
         # Store the filtered data for return
         return_list[["output_linkage_df"]] <- filtered_data
@@ -1904,7 +1960,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           temp_field_name <- paste0("temp_", row$right_dataset_field)
 
           # Rename the temporary field to the desired left dataset field name
-          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- paste0(left_dataset_field_name, "_renamed")
+          names(left_dataset)[names(left_dataset) == left_dataset_field_name] <- paste0(left_dataset_field_name, "_renamed")
         }
 
         ### MATCHING CRITERIA
@@ -1925,8 +1982,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           temp_field_name <- paste0("temp_", row$right_dataset_field)
 
           # Rename the temporary field to the desired left dataset field name
-          names(right_dataset)[names(right_dataset) == temp_field_name] <- left_dataset_field_name
+          names(right_dataset)[names(right_dataset) == temp_field_name] <- paste0(left_dataset_field_name, "_renamed")
+          names(left_dataset)[names(left_dataset) == left_dataset_field_name] <- paste0(left_dataset_field_name, "_renamed")
         }
+
+        # Rename the data frames to have "_renamed" applied to them
+        blocking_keys_df$left_dataset_field <- paste0(blocking_keys_df$left_dataset_field, "_renamed")
+        matching_keys_df$left_dataset_field <- paste0(matching_keys_df$left_dataset_field, "_renamed")
+        blocking_keys_df$right_dataset_field <- paste0(blocking_keys_df$right_dataset_field, "_renamed")
+        matching_keys_df$right_dataset_field <- paste0(matching_keys_df$right_dataset_field, "_renamed")
 
         # Go through the blocking variables, applying the linkage rules to each,
         # and storing the columns we'll be using to block on
@@ -2025,6 +2089,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
               # Add to our list of blocking keys
               blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_block"))
+
+              # Rename the row of blocking keys to the "_alt_block" version incase other linkage rules are being used
+              blocking_keys_df$left_dataset_field[row_num]  <- paste0(dataset_field, "_alt_block")
+              blocking_keys_df$right_dataset_field[row_num] <- paste0(dataset_field, "_alt_block")
             }
 
             # Another linkage rules is to allow for slight error in date field records
@@ -2349,7 +2417,11 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               right_dataset[[paste0(dataset_field, "_alt_match")]] <- alternate_field_right
 
               # Add to our list of blocking keys
-              blocking_keys <- append(blocking_keys, paste0(dataset_field, "_alt_match"))
+              matching_keys <- append(matching_keys, paste0(dataset_field, "_alt_match"))
+
+              # Rename the row of blocking keys to the "_alt_match" version incase other linkage rules are being used
+              matching_keys_df$left_dataset_field[row_num]  <- paste0(dataset_field, "_alt_match")
+              matching_keys_df$right_dataset_field[row_num] <- paste0(dataset_field, "_alt_match")
             }
 
             # Linkage rule to substring things like names to be initials, first 5 characters, etc
@@ -2900,6 +2972,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         ### Create the data frame of the fields to be returned
         output_fields <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
+        for(index in 1:nrow(output_fields)){
+          # Check if the column is one of our blocking or matching keys, if not, then keep it as is, if so, rename it
+          if(paste0(output_fields$field_name[index], "_renamed") %in% matching_keys_df$left_dataset_field){
+            output_fields$field_name[index] <- paste0(output_fields$field_name[index], "_renamed")
+          }
+          else if(paste0(output_fields$field_name[index], "_renamed") %in% blocking_keys_df$left_dataset_field){
+            output_fields$field_name[index] <- paste0(output_fields$field_name[index], "_renamed")
+          }
+        }
 
         # Create a vector of field names with '.x' suffix to retain
         fields_to_keep <- ifelse(output_fields$field_name %in% colnames(linked_dataset), paste0(output_fields$field_name), paste0(output_fields$field_name, ".x"))
@@ -2912,6 +2993,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Rename the fields with suffix '.x' to have it removed.
         filtered_data <- filtered_data %>% rename_with(~ gsub("\\.x$", "", .), ends_with(".x"))
+
+        # Rename the fields with suffix '_renamed' to have it removed.
+        filtered_data <- filtered_data %>% rename_with(~ gsub("\\_renamed$", "", .), ends_with("_renamed"))
 
         # Store the filtered data for return
         return_list[["output_linkage_df"]] <- filtered_data
@@ -3604,10 +3688,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # Change the stage values to be the linkage indicator
       output_df <- output_df %>% mutate(link_indicator = ifelse(stage == "UNLINKED",0,1))
+      label(output_df[["link_indicator"]]) <- "Link Indicator"
     }
     else{
       # Change the stage values to be the linkage indicator
       output_df <- output_df %>% mutate(link_indicator = ifelse(stage == "UNLINKED",0,1))
+      label(output_df[["link_indicator"]]) <- "Link Indicator"
     }
 
     # Apply Labels to the output data frame
@@ -3849,6 +3935,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         # Get the output variables that we'll be using
         strata_vars <- colnames(output_df)
         strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
+        strata_vars <- strata_vars[! strata_vars %in% c('link_indicator')] # Drop the 'link_indicator' field
 
         # Load the 'linkrep' library and generate a linkage quality report
         library("linkrep")
@@ -4244,6 +4331,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # Get the strata variables
       strata_vars <- colnames(linked_data_list[[1]])
       strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
+      strata_vars <- strata_vars[! strata_vars %in% c('link_indicator')] # Drop the 'link_indicator' field
 
       # Make sure the missing data indicators were provided
       missing_data_indicators  <- intermediate_missing_indicators_df
