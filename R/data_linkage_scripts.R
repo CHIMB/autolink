@@ -678,6 +678,38 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               # Keep track of this comparison rule
               comparison_rules_list[[dataset_field]] <- soundex_dist()
             }
+            else if ("reference_val_index" %in% names(comparison_rules) && "relative_diff_tolerance" %in% names(comparison_rules)){
+              # custom "relative difference tolerance" function
+              relative_difference_tolerance <- function(tolerance, index){
+                function(x , y){
+                  if(!missing(x) && !missing(y)){
+                    if(index == 1){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 (abs(x - y)/x) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else if (index == 2){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 (abs(x - y)/y) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else return(FALSE)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the tolerance value
+              tolerance <- comparison_rules[["relative_diff_tolerance"]]
+              ref_index <- comparison_rules[["reference_val_index"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- relative_difference_tolerance(tolerance, ref_index)
+            }
           }
         }
 
@@ -978,6 +1010,38 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
                 # Keep track of this comparison rule
                 comparison_rules_list_gt[[dataset_field]] <- soundex_dist()
+              }
+              else if ("reference_val_index" %in% names(comparison_rules) && "relative_diff_tolerance" %in% names(comparison_rules)){
+                # custom "relative difference tolerance" function
+                relative_difference_tolerance <- function(tolerance, index){
+                  function(x , y){
+                    if(!missing(x) && !missing(y)){
+                      if(index == 1){
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   (abs(x - y)/x) <= tolerance)
+                        return(within_tolerance)
+                      }
+                      else if (index == 2){
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   (abs(x - y)/y) <= tolerance)
+                        return(within_tolerance)
+                      }
+                      else return(FALSE)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the tolerance value
+                tolerance <- comparison_rules[["relative_diff_tolerance"]]
+                ref_index <- comparison_rules[["reference_val_index"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- relative_difference_tolerance(tolerance, ref_index)
               }
             }
           }
@@ -1843,6 +1907,38 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               # Keep track of this comparison rule
               comparison_rules_list[[dataset_field]] <- soundex_dist()
             }
+            else if ("reference_val_index" %in% names(comparison_rules) && "relative_diff_tolerance" %in% names(comparison_rules)){
+              # custom "relative difference tolerance" function
+              relative_difference_tolerance <- function(tolerance, index){
+                function(x , y){
+                  if(!missing(x) && !missing(y)){
+                    if(index == 1){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 (abs(x - y)/x) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else if (index == 2){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 (abs(x - y)/y) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else return(FALSE)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the tolerance value
+              tolerance <- comparison_rules[["relative_diff_tolerance"]]
+              ref_index <- comparison_rules[["reference_val_index"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- relative_difference_tolerance(tolerance, ref_index)
+            }
           }
         }
 
@@ -2599,6 +2695,38 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               # Keep track of this comparison rule
               comparison_rules_list[[dataset_field]] <- soundex_dist()
             }
+            else if ("reference_val_index" %in% names(comparison_rules) && "relative_diff_tolerance" %in% names(comparison_rules)){
+              # custom "relative difference tolerance" function
+              relative_difference_tolerance <- function(tolerance, index){
+                function(x , y){
+                  if(!missing(x) && !missing(y)){
+                    if(index == 1){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 (abs(x - y)/x) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else if (index == 2){
+                      within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                 FALSE,
+                                                 (abs(x - y)/y) <= tolerance)
+                      return(within_tolerance)
+                    }
+                    else return(FALSE)
+                  }
+                  else{
+                    return(FALSE)
+                  }
+                }
+              }
+
+              # Get the tolerance value
+              tolerance <- comparison_rules[["relative_diff_tolerance"]]
+              ref_index <- comparison_rules[["reference_val_index"]]
+
+              # Keep track of this comparison rule
+              comparison_rules_list[[dataset_field]] <- relative_difference_tolerance(tolerance, ref_index)
+            }
           }
         }
 
@@ -2760,6 +2888,38 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
                 # Keep track of this comparison rule
                 comparison_rules_list_gt[[dataset_field]] <- soundex_dist()
+              }
+              else if ("reference_val_index" %in% names(comparison_rules) && "relative_diff_tolerance" %in% names(comparison_rules)){
+                # custom "relative difference tolerance" function
+                relative_difference_tolerance <- function(tolerance, index){
+                  function(x , y){
+                    if(!missing(x) && !missing(y)){
+                      if(index == 1){
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   (abs(x - y)/x) <= tolerance)
+                        return(within_tolerance)
+                      }
+                      else if (index == 2){
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   (abs(x - y)/y) <= tolerance)
+                        return(within_tolerance)
+                      }
+                      else return(FALSE)
+                    }
+                    else{
+                      return(FALSE)
+                    }
+                  }
+                }
+
+                # Get the tolerance value
+                tolerance <- comparison_rules[["relative_diff_tolerance"]]
+                ref_index <- comparison_rules[["reference_val_index"]]
+
+                # Keep track of this comparison rule
+                comparison_rules_list_gt[[dataset_field]] <- relative_difference_tolerance(tolerance, ref_index)
               }
             }
           }

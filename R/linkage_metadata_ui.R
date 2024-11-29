@@ -859,9 +859,9 @@ linkage_ui <- fluidPage(
         #----
         #--------------------------#
 
-        #-- TESTING LINKAGE ALGORITHMS PAGE --#
+        #-- MANAGE LINKAGE ALGORITHMS PAGE --#
         #----
-        nav_panel(title = "Testable Linkage Algorithms", value = "linkage_algorithms_page",
+        nav_panel(title = "Manage Linkage Algorithms", value = "linkage_algorithms_page",
           fluidPage(
             # Two select inputs for choosing which datasets we want to be using
             h5(strong("Select a Left and Right Dataset To View or Add Linkage Algorithms:")),
@@ -1179,7 +1179,10 @@ linkage_ui <- fluidPage(
 
               # Un-publish button
               fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                  actionButton("view_published_algorithms_audits", "Performance Measures...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
+                )),
+                column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
                   actionButton("unpublish_linkage_algorithm", "Unpublish Linkage Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
                 ))
               )
@@ -1910,9 +1913,9 @@ linkage_ui <- fluidPage(
               # Select between manually adding output fields, or use an existing algorithms output fields
               fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    radioButtons("algorithm_output_add_type", strong("Select Output Field Add Type:"),
-                                 c("Manually Add Output Fields" = 1,
-                                   "Use Existing Algorithms Output Fields" = 2),
+                    radioButtons("algorithm_output_add_type", strong("Add Output Field:"),
+                                 c("Manually Enter Fields" = 1,
+                                   "Copy from Existing Algorithm" = 2),
                                  width = validateCssUnit(500))
                   )
                 ),
@@ -1927,47 +1930,60 @@ linkage_ui <- fluidPage(
                   width = 1/2,
                   height = 550,
                   # CARD FOR SELECTING THE FIELD TYPE
-                  card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
+                  card(full_screen = TRUE,
                     fluidPage(
                       fluidRow(
                         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                            selectInput("linkage_algorithm_output_field_type", label = "Field Type:",
+                            selectizeInput("linkage_algorithm_output_field_type", label = "Field Type:",
                             choices = list("Generic/Pass-Through" = 1,
-                                           "Date (Year)" = 2,
-                                           "Age" = 3,
-                                           "Postal Code Initials" = 4,
-                                           "Name Length" = 5,
-                                           "Number of Names" = 6,
+                                           "Categorized Year" = 2,
+                                           "Categorized Age" = 3,
+                                           "Substring Initial" = 4,
+                                           "Word Length" = 5,
+                                           "Number of Words" = 6,
                                            "Derived Age" = 7,
                                            "Standardized Values" = 8,
-                                           "Forward Sortation Area (FSA)" = 9),
-                            selected = 1,
+                                           "Canadian Forward Sortation Area (FSA)" = 9),
+                            options = list(
+                              placeholder = 'Select a Field Output Type',
+                              onInitialize = I('function() { this.setValue(""); }')
+                            ),
                             width = validateCssUnit(500)),
                           )
                         ),
-                      )
-                    )
-                  ),
-                  # CARD FOR THE INPUT UI
-                  card(full_screen = TRUE, card_header("Add Linkage Output Fields", class = 'bg-dark'),
-                    fluidPage(
-                      fluidRow(
                         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                            textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
-                                          width = validateCssUnit(500), resize = "none"),
-                          )
-                        ),
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                            uiOutput("linkage_algorithm_output_field_input"),
-                          )
-                        ),
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                            actionButton("add_linkage_algorithm_output_field", "Add Output Field", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                            # Boxed text output for showing the uploaded file name
+                            div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 500px;",
+                              htmlOutput("selected_field_type_description")
+                            )
                           )
                         )
                       )
                     )
                   ),
+                  # CARD FOR THE INPUT UI
+                  card(full_screen = TRUE,
+                    conditionalPanel(
+                      condition = "input.linkage_algorithm_output_field_type != ''",
+                      fluidPage(
+                        fluidRow(
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                              textAreaInput("linkage_algorithm_output_field_label", label = "Output Dataset Field Label:", value = "",
+                                            width = validateCssUnit(500), resize = "none"),
+                            )
+                          ),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                              uiOutput("linkage_algorithm_output_field_input"),
+                            )
+                          ),
+                          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                              actionButton("add_linkage_algorithm_output_field", "Add Output Field", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
                 )
               ),
 
@@ -4373,8 +4389,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     output$currently_added_algorithm_output_fields <- renderDataTable({
       get_algorithm_output_fields()
     })
-    updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
-    updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
+    updateSelectizeInput(session, "linkage_algorithm_output_field_type",
+                         options = list(
+                           placeholder = 'Select a Field Output Type',
+                           onInitialize = I('function() { this.setValue(""); }')
+                         )
+    )
+    # updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
+    # updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
 
     # Update the available previous algorithms output fields table
     output$usable_previous_algorithm_outputs <- renderUI({
@@ -5058,6 +5080,38 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     get_published_linkage_algorithms()
   })
 
+  # Move to the performance measures page from the published algorithms page
+  observeEvent(input$view_published_algorithms_audits, {
+    # Get the selected row
+    left_dataset_id  <- published_algorithms_left_dataset_id
+    right_dataset_id <- published_algorithms_right_dataset_id
+    selected_row     <- input$published_linkage_algorithms_rows_selected
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                  'AND archived = 0 AND published = 1',
+                                                  'ORDER BY algorithm_id ASC;'))
+
+    # Grab the algorithm id
+    algorithm_id <- df[selected_row, "algorithm_id"]
+
+    # Update the global variable for the acceptance method id and the return page
+    linkage_audits_algorithm_id <<- algorithm_id
+    linkage_audits_return_page  <<- "published_linkage_algorithms_page"
+
+    # Update the table of performance measures and the date range element
+    output$algorithm_specific_audits <- renderDataTable({
+      get_audit_information()
+    })
+    updateDateRangeInput(session, "audit_date_range", start = "1983-01-01", end = format(Sys.Date(), format = "%Y-%m-%d"))
+
+    # Clear the selected rows
+    selected_rows_audit$selected <- NULL
+
+    # Show the iterations page
+    nav_show('main_navbar', 'audits_page')
+    updateNavbarPage(session, "main_navbar", selected = "audits_page")
+  })
+
   # Observes which row the user selected and shows the selected algorithms info
   observeEvent(input$published_linkage_algorithms_rows_selected, {
     # Get the selected row
@@ -5407,6 +5461,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   # Back button will bring you back to whichever page you came from
   observeEvent(input$linkage_audits_back, {
     # Show return to the page you came from
+    nav_show('main_navbar', 'published_linkage_algorithms_page')
     updateNavbarPage(session, "main_navbar", selected = linkage_audits_return_page)
   })
 
@@ -5493,10 +5548,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     audit_df <- subset(audit_df, select = -c(audit_id, algorithm_id))
 
     # With our data frame, we'll rename some of the columns to look better
-    names(audit_df)[names(audit_df) == 'audit_by']                  <- 'Audited By'
-    names(audit_df)[names(audit_df) == 'audit_date']                <- 'Audit Date'
+    names(audit_df)[names(audit_df) == 'audit_by']                  <- 'Run By'
+    names(audit_df)[names(audit_df) == 'audit_date']                <- 'Date of Execution'
     names(audit_df)[names(audit_df) == 'performance_measures_json'] <- 'Performance Measures'
-    names(audit_df)[names(audit_df) == 'audit_time']                <- 'Audit Time'
+    names(audit_df)[names(audit_df) == 'audit_time']                <- 'Time of Execution'
 
     # Reorder the columns
     audit_df <- audit_df[, c(1, 2, 4, 3)]
@@ -5713,9 +5768,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       export_df_temp <- data.frame(matrix(ncol = 0, nrow = 1))
 
       # Add the date and author as columns
-      export_df_temp[["Audited By"]]    <- audit_by
-      export_df_temp[["Date of Audit"]] <- audit_date
-      export_df_temp[["Time of Audit"]] <- audit_time
+      export_df_temp[["Run By"]]    <- audit_by
+      export_df_temp[["Date of Execution"]] <- audit_date
+      export_df_temp[["Time of Execution"]] <- audit_time
 
       # Convert the performance measures_json to a data frame
       performance_measures_df <- jsonlite::fromJSON(performance_measures_json, simplifyDataFrame = TRUE)
@@ -6290,6 +6345,81 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   algorithm_output_fields_dataset_id   <- 1
   algorithm_output_fields_return_page  <- "linkage_algorithms_page"
 
+  # Define a reactive expression to describe the selected field type
+  field_type_description <- reactive({
+    switch(as.character(input$linkage_algorithm_output_field_type),  # Convert numeric input to character
+           "1" = paste0(
+             "The 'Generic' field type allows the selected field to pass through without any modifications or cutoffs. ",
+             "It retains the original values as-is, appending an '_untouched_categ' suffix to the original field name."
+           ),
+           "2" = paste0(
+             "The 'Categorized Year' field type expects year values such as birth years or data capture years. ",
+             "Values are categorized into the following ranges:<br>",
+             "<ul>",
+             "<li>&lt;1975</li>",
+             "<li>1975-1984</li>",
+             "<li>1985-1994</li>",
+             "<li>1995-2004</li>",
+             "<li>2005-2014</li>",
+             "<li>2015-2024</li>",
+             "<li>2025-2034</li>",
+             "<li>2035-2044</li>",
+             "</ul>"
+           ),
+           "3" = paste0(
+             "The 'Age' field type categorizes numerical age values into the following ranges:<br>",
+             "<ul>",
+             "<li>&lt;18</li>",
+             "<li>18-34</li>",
+             "<li>35-64</li>",
+             "<li>65-80</li>",
+             "<li>81+</li>",
+             "</ul>"
+           ),
+           "4" = paste0(
+             "The 'Substring Initial' field type takes the first character of any string character field."
+           ),
+           "5" = paste0(
+             "The 'Word Length' field type categorizes words based on their character length into the following ranges:<br>",
+             "<ul>",
+             "<li>&lt;5</li>",
+             "<li>5</li>",
+             "<li>6</li>",
+             "<li>7</li>",
+             "<li>8+</li>",
+             "</ul>"
+           ),
+           "6" = paste0(
+             "The 'Word Count' field type counts the number of words in a string or name (e.g., first, middle, last). ",
+             "It categorizes values into: <br>",
+             "<ul>",
+             "<li>1</li>",
+             "<li>2</li>",
+             "<li>3+</li>",
+             "</ul>"
+           ),
+           "7" = paste0(
+             "The 'Derived Age' field type calculates age from a birth date and a capture date, ",
+             "then categorizes it into the following ranges:<br>",
+             "<ul>",
+             "<li>&lt;18</li>",
+             "<li>18-34</li>",
+             "<li>35-64</li>",
+             "<li>65-80</li>",
+             "<li>81+</li>",
+             "</ul>"
+           ),
+           "8" = paste0(
+             "The 'Standardization/Lookup' field type applies standardization using a pre-defined lookup table. ",
+             "Values are mapped to their standardized forms based on the lookup table provided for the specific field."
+           ),
+           "9" = paste0(
+             "The 'Canadian Forward Sortation Area' field type standardizes the first character of a postal code to canadian geographical areas. ",
+             "For example, 'A' corresponds to Newfoundland and Labrador, and 'R' corresponds to Manitoba."
+           ),
+           "Unknown field type.")  # Default fallback
+  })
+
   # Back button will bring you back to whichever page you came from
   observeEvent(input$linkage_algorithm_output_back, {
     # Show return to the page you came from
@@ -6342,15 +6472,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     }
 
     # Change the field type by replacing it with values
-    df$field_type[df$field_type == 1]  <- 'General/Pass-Through'
-    df$field_type[df$field_type == 2]  <- 'Date (Year)'
-    df$field_type[df$field_type == 3]  <- 'Age'
-    df$field_type[df$field_type == 4]  <- 'Postal Code Initials'
-    df$field_type[df$field_type == 5]  <- 'Name Length'
-    df$field_type[df$field_type == 6] <- 'Number of Names'
-    df$field_type[df$field_type == 7]  <- 'Derived Age'
+    df$field_type[df$field_type == 1] <- 'General/Pass-Through'
+    df$field_type[df$field_type == 2] <- 'Categorized Year'
+    df$field_type[df$field_type == 3] <- 'Categorized Age'
+    df$field_type[df$field_type == 4] <- 'Substring Initial'
+    df$field_type[df$field_type == 5] <- 'Word Length'
+    df$field_type[df$field_type == 6] <- 'Number of Words'
+    df$field_type[df$field_type == 7] <- 'Derived Age'
     df$field_type[df$field_type == 8] <- 'Standardized Values'
-    df$field_type[df$field_type == 9] <- 'Forward Sortation Area (FSA)'
+    df$field_type[df$field_type == 9] <- 'Canadian Forward Sortation Area (FSA)'
 
     # With our data frame, we'll rename some of the columns to look better
     names(df)[names(df) == 'field_name'] <- 'Field Source Name(s)'
@@ -6379,6 +6509,11 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   observeEvent(input$linkage_algorithm_output_field_type, {
     # Get the field type
     field_type <- input$linkage_algorithm_output_field_type
+
+    # Render the text/help description of the selected field type
+    output$selected_field_type_description <- renderUI({
+      HTML(field_type_description())
+    })
 
     # Render the UI based on the field type
     # FIELD TYPE == 7 (Derived Age)
@@ -6911,8 +7046,14 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         output$currently_added_algorithm_output_fields <- renderDataTable({
           get_algorithm_output_fields()
         })
-        updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
-        updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
+        updateSelectizeInput(session, "linkage_algorithm_output_field_type",
+                             options = list(
+                               placeholder = 'Select a Field Output Type',
+                               onInitialize = I('function() { this.setValue(""); }')
+                             )
+        )
+        # updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 2)
+        # updateSelectInput(session, "linkage_algorithm_output_field_type", selected = 1)
         updateTextAreaInput(session, "linkage_algorithm_output_field_label", value = "")
         standardization_file_path_algorithm_output$path <- NULL
         #----#

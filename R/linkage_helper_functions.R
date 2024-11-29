@@ -536,7 +536,7 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Add this column as one we will be keeping
       cols_to_drop <- append(cols_to_drop, old_field_name)
     }
-    # YEAR (DATE FIELD)
+    # SUBSTRING INITIAL
     else if(field_type == 2){
       # Get the field name (appending an identifiable suffix to the column)
       old_field_name <- field_info$field_name
@@ -572,13 +572,13 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Add this column as one we will be removing
       cols_to_drop <- append(cols_to_drop, old_field_name)
     }
-    # POSTAL CODE INITIAL (TAKE FIRST CHARACTER)
+    # SUBSTRING INITIAL (TAKE FIRST CHARACTER)
     else if(field_type == 4){
       # Get the field name (appending an identifiable suffix to the column)
       old_field_name <- field_info$field_name
       new_field_name <- paste0(old_field_name, "_initial_categ")
 
-      # Apply the substring function to the postal code field
+      # Apply the substring function to the field
       output_df[[new_field_name]] <- substr(trimws(output_df[[old_field_name]]), 1, 1)
 
       # Apply the column label
@@ -587,7 +587,7 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Add this column as one we will be removing
       cols_to_drop <- append(cols_to_drop, old_field_name)
     }
-    # NAME LENGTH
+    # WORD LENGTH
     else if(field_type == 5){
       # Get the field name (appending an identifiable suffix to the column)
       old_field_name <- field_info$field_name
@@ -605,7 +605,7 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Add this column as one we will be removing
       cols_to_drop <- append(cols_to_drop, old_field_name)
     }
-    # NAME COUNT
+    # WORD COUNT
     else if(field_type == 6){
       # Get the field name (appending an identifiable suffix to the column)
       old_field_name <- field_info$field_name
@@ -691,7 +691,7 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Add this column as one we will be removing
       cols_to_drop <- append(cols_to_drop, old_field_name)
     }
-    # FORWARD SORTATION AREA (GEOGRAPHIC AREA STANDARDIZATION)
+    # CANADIAN FORWARD SORTATION AREA (GEOGRAPHIC AREA STANDARDIZATION)
     else if(field_type == 9){
       # Get the field name (appending an identifiable suffix to the column)
       old_field_name <- field_info$field_name

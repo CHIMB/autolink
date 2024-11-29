@@ -758,6 +758,11 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
                              'VALUES(7, "Date Error Tolerance", "Error Tolerance For Date Fields");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
+                             'VALUES(8, "Relative Difference (Percentage)", "Relative difference using a reference value and experimental value");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
   }
   comparison_methods_insert()
   #~~~~
@@ -797,6 +802,16 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
 
     new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
                              'VALUES(7, 7, "date_tolerance", "The maximum number of days that date fields can vary from each-other.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(8, 8, "reference_val_index", "A number that identifies which field is the reference value. Should be an integer of either 1 or 2 that specifies which field to grab.");')
+    new_entry <- dbSendStatement(my_db, new_entry_query)
+    dbClearResult(new_entry)
+
+    new_entry_query <- paste('INSERT INTO comparison_method_parameters (comparison_method_id, parameter_id, parameter_key, description)',
+                             'VALUES(8, 9, "relative_diff_tolerance", "The max percentage tolerance value that a difference should be less than to be considered. Should be 0 < x < 1.");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
