@@ -296,6 +296,9 @@ linkage_ui <- fluidPage(
               }"
             ),
             HTML("
+              .tooltip {
+                opacity: 1 !important; /* Ensure the entire tooltip is fully opaque */
+              }
               .tooltip-inner {
                 max-width: 300px;  /* Custom width */
                 background-color: #f8f9fa;  /* Light background */
@@ -363,7 +366,12 @@ linkage_ui <- fluidPage(
                 min-height: 60px; /* Adjust to your preference */
               }
            ")
-          )
+          ),
+          tags$style(HTML("
+            .tooltip {
+              z-index: 1151 !important; /* Set the tooltip to be greater than the modal z-axis */
+            }"
+          ))
         ),
         #----
         title =
