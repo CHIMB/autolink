@@ -789,6 +789,27 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Create the second plot of the subset of candidate pair records (IF GROUND TRUTH IS PROVIDED)
           ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
           if(nrow(ground_truth_df) > 0){
+            # First, check if the blocking or matching keys is using the ground truth
+            for(index in 1:nrow(ground_truth_df)){
+              # Check if the column is one of our blocking or matching keys, if not, then keep it as is, if so, rename it
+              if(paste0(ground_truth_df$left_dataset_field[index], "_renamed") %in% matching_keys_df$left_dataset_field){
+                ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
+                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              }
+              else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed") %in% blocking_keys_df$left_dataset_field){
+                ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
+                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              }
+              else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed_alt_match") %in% matching_keys_df$left_dataset_field){
+                ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
+                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              }
+              else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed_alt_block") %in% blocking_keys_df$left_dataset_field){
+                ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
+                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              }
+            }
+
             # Rename the fields of our ground truth keys so that they match in both datasets
             for(row_num in 1:nrow(ground_truth_df)){
               # Get the current row
