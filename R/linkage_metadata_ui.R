@@ -4094,7 +4094,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Query to get the algorithms we could select from
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
-                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id,
+                                                WHERE dataset_id_left =', left_dataset_id, 'AND dataset_id_right =', right_dataset_id, 'AND archived = 0 AND published = 0',
                                                   'ORDER BY algorithm_id ASC'))
 
     algorithm_name <- df[selected_row, "algorithm_name"]
