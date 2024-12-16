@@ -211,6 +211,8 @@ linkage_ui <- fluidPage(
     div(
       id = "main_content",
       page_navbar(
+        position = "fixed-top", #Fixes the position of the navbar to also be on screen at the top of the page
+        padding = c(validateCssUnit(100), validateCssUnit(0), validateCssUnit(0), validateCssUnit(0)), # Sets the padding to keep UI just under the navbar
         # Set the theme of the application
         theme = bs_theme(bootswatch = "spacelab"),
         # Tags
@@ -2796,25 +2798,149 @@ linkage_ui <- fluidPage(
             # Line break to give the back button some breathing room
             HTML("<br><br>"),
 
-            ### STEP 1
-            h5(strong("Step 1: Select the Algorithm(s) to Run")),
-            h6(p(strong("Note: "), paste("A minimum of one algorithm must be selected."))),
-            # Create a card for the output location
+            ### NEW STEP 1
+            h5(strong("Step 1: Select Action")),
+            # Create a card for the action type
             div(style = "display: flex; justify-content: center; align-items: center;",
               card(
                 width = 1,
-                height = 600,
+                height = 150,
+                card_header(class = 'bg-dark'),
                 full_screen = FALSE,
-                card_header("Select Algorithms to Run", class = 'bg-dark'),
-                page_fillable(
-                  column(
-                    width = 12,
-                    div(
-                      style = "margin-bottom: 10px;",  # Add spacing below the buttons
-                      actionButton("select_all_run", "Select All", class = "btn btn-primary btn-sm"),
-                      actionButton("select_none_run", "Select None", class = "btn btn-secondary btn-sm")
+                card_body(
+                  fluidRow(
+                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                       # Radio button for selecting action type
+                       radioButtons(
+                         inputId = "run_algorithm_action_type",
+                         label = "Selection Action Type:",
+                         choices = list(
+                           "Link Data" = 1,
+                           "Sensitivity Testing" = 2
+                         )
+                       ),
+                    )),
+                  ),
+                )
+              )
+            ),
+
+            ### STEP 2 (LINK DATA SELECTED) [A]
+            conditionalPanel(
+              condition = "input.run_algorithm_action_type == 1",
+
+              h5(strong("Step 2: Select Algorithms for Linking Data")),
+
+              ### uiOutput of selectable linkage algorithms (consisting of radio buttons)
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = 1,
+                  height = 250,
+                  card_header(class = 'bg-dark'),
+                  full_screen = FALSE,
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("link_data_selectable_algorithms")
+                      )),
                     ),
-                    dataTableOutput("select_linkage_algorithms_to_run"),
+                  )
+                )
+              ),
+
+              ### Select whether the user wants to generate a report
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = 1,
+                  height = 150,
+                  card_header(class = 'bg-dark'),
+                  full_screen = FALSE,
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Radio button for selecting action type
+                        radioButtons(
+                          inputId = "link_data_generate_report",
+                          label = "Generate Report?",
+                          choices = list(
+                            "Yes" = 1,
+                            "No" = 2
+                          )
+                        ),
+                      )),
+                    ),
+                  )
+                )
+              ),
+
+              ### If the user wants to generate report, allow them to optionally select additional algorithms
+              ### which will appear in the appendix of the report (algorithm summaries and performance measures)
+              conditionalPanel(
+                condition = "input.link_data_generate_report == 1",
+
+                ### uiOutput of selectable linkage algorithms (consisting of checkboxes)
+                div(style = "display: flex; justify-content: center; align-items: center;",
+                  card(
+                    width = 1,
+                    height = 250,
+                    card_header(class = 'bg-dark'),
+                    full_screen = FALSE,
+                    card_body(
+                      fluidRow(
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                          uiOutput("link_data_selectable_appendix_algorithms")
+                        )),
+                      ),
+                    )
+                  )
+                ),
+              )
+            ),
+
+            ### STEP 2 (SENSITIVITY ANALYSIS SELECTED) [B]
+            conditionalPanel(
+              condition = "input.run_algorithm_action_type == 2",
+
+              h5(strong("Step 2: Select Algorithms for Sensitivity Analysis")),
+
+              ### uiOutput of selectable linkage algorithms (consisting of check boxes)
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = 1,
+                  height = 250,
+                  card_header(class = 'bg-dark'),
+                  full_screen = FALSE,
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        uiOutput("sensitivity_analysis_selectable_algorithms")
+                      )),
+                    ),
+                  )
+                )
+              ),
+
+              ### Select whether the user wants to generate a report
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                card(
+                  width = 1,
+                  height = 150,
+                  card_header(class = 'bg-dark'),
+                  full_screen = FALSE,
+                  card_body(
+                    fluidRow(
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Radio button for selecting action type
+                        radioButtons(
+                          inputId = "sensitivity_analysis_generate_report",
+                          label = "Generate Report?",
+                          choices = list(
+                            "Yes" = 1,
+                            "No" = 2
+                          )
+                        ),
+                      )),
+                    ),
                   )
                 )
               )
@@ -2822,8 +2948,8 @@ linkage_ui <- fluidPage(
 
             HTML("<br>"), # Spacing
 
-            ### STEP 2
-            h5(strong("Step 2: Provide the Output Folder")),
+            ### STEP 3
+            h5(strong("Step 3: Provide the Output Folder")),
             # Create a card for the output location
             div(style = "display: flex; justify-content: center; align-items: center;",
               card(
@@ -2843,43 +2969,6 @@ linkage_ui <- fluidPage(
                     )),
                     column(width = 12, div(style = "display: flex; justify-content: center; align-items: left;",
                       helpText("Select a folder where all output will be saved.")
-                    ))
-                  ),
-                )
-              )
-            ),
-
-            HTML("<br>"), # Spacing
-
-            ### STEP 2
-            h5(strong("Step 3: Select the Type of Linkage Quality Report")),
-            # Create a card for the linkage quality report type
-            div(style = "display: flex; justify-content: center; align-items: center;",
-              card(
-                width = 1,
-                height = 250,
-                full_screen = FALSE,
-                card_header("Report Type", class = 'bg-dark'),
-                card_body(
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Radio button for selecting report type
-                      radioButtons(
-                        inputId = "linkage_report_type",
-                        label = "Choose Linkage Report Type:",
-                        choices = list(
-                          "No Report" = 1,
-                          "Intermediate Report" = 2,
-                          "Final Report" = 3
-                        )
-                      ),
-                      helpText("Select a report type to see more information about what is included in each.")
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded folder name
-                      div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                         textOutput("linkage_report_type_help")
-                      ),
                     ))
                   ),
                 )
@@ -3031,7 +3120,13 @@ linkage_ui <- fluidPage(
           title = "Links",
           align = "right",
           nav_item(tags$a("GitHub", href = "https://github.com/CHIMB/autolink"))
-        )
+        ),
+        # Javascript function to reset the scroll position when changing pages
+        tags$script(HTML("
+          Shiny.addCustomMessageHandler('resetScroll', function(message) {
+            window.scrollTo(0, 0);
+          });
+        "))
       )
     )
   )
@@ -3073,6 +3168,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         nav_hide('main_navbar', tab)
       }
     }
+
+    # Call the 'resetScroll' function whenever the page changes
+    session$sendCustomMessage(type = 'resetScroll', message = list())
 
     # Remove the modal
     removeModal()
@@ -4445,9 +4543,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     output$select_linkage_algorithms_to_run <- renderDataTable({
       get_linkage_algorithms_to_run()
     })
-
-    # Clear the selected rows
-    selected_rows_run$selected <- NULL
+    output$link_data_selectable_algorithms <- renderUI({
+      get_link_data_main_algorithm()
+    })
+    output$sensitivity_analysis_selectable_algorithms <- renderUI({
+      get_sensitivity_analysis_algorithms()
+    })
 
     # Update the return button'
     updateActionButton(session, "run_algorithm_back", label = "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long"))
@@ -4472,9 +4573,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     output$select_linkage_algorithms_to_run <- renderDataTable({
       get_linkage_algorithms_to_run()
     })
-
-    # Clear the selected rows
-    selected_rows_run$selected <- NULL
+    output$link_data_selectable_algorithms <- renderUI({
+      get_link_data_main_algorithm()
+    })
+    output$sensitivity_analysis_selectable_algorithms <- renderUI({
+      get_sensitivity_analysis_algorithms()
+    })
 
     # Update the return button'
     updateActionButton(session, "run_algorithm_back", label = "Return to View Algorithms Page", icon = shiny::icon("arrow-left-long"))
@@ -12949,16 +13053,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   run_algorithm_right_dataset_id <- 1
   run_algorithm_return_page  <- "linkage_algorithms_page"
 
-  # Reactive values to track selected rows
-  selected_rows_run <- reactiveValues(selected = NULL)
-
-  # Initialize the selected file and folder to be empty
-  output$uploaded_linkage_output_dir <- renderText({
-    "No Folder Has Been Chosen"
-  })
-
-  # Query and output for getting the selected linkage algorithms
-  get_linkage_algorithms_to_run <- function(){
+  # Function for getting the selectable algorithms (MAIN) when performing "LINK DATA"
+  get_link_data_main_algorithm <- function(){
+    # Get the global values
     left_dataset_id  <- run_algorithm_left_dataset_id
     right_dataset_id <- run_algorithm_right_dataset_id
 
@@ -12971,55 +13068,108 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       return()
     }
 
-    # Query to get all linkage method information from the 'linkage_methods' table
+    # Query to get all linkage method information from the 'linkage_algorithms' table
     query <- paste('SELECT * FROM linkage_algorithms
                     WHERE dataset_id_left =', left_dataset_id, ' AND dataset_id_right =', right_dataset_id,
                    'AND archived = 0 AND published = 0',
                    'ORDER BY algorithm_id ASC;')
     df <- dbGetQuery(linkage_metadata_conn, query)
 
-    # With our data frame, we'll rename some of the columns to look better
-    names(df)[names(df) == 'algorithm_name'] <- 'Algorithm Name'
-    names(df)[names(df) == 'modified_date'] <- 'Modified Date'
-    names(df)[names(df) == 'modified_by'] <- 'Modified By'
+    # Extract columns from query result
+    choices <- setNames(df$algorithm_id, df$algorithm_name)
 
-    # With algorithms, we'll replace the enabled [0, 1] with [No, Yes]
-    df$enabled <- str_replace(df$enabled, "0", "No")
-    df$enabled <- str_replace(df$enabled, "1", "Yes")
-    df$enabled_for_testing <- str_replace(df$enabled_for_testing, "0", "No")
-    df$enabled_for_testing <- str_replace(df$enabled_for_testing, "1", "Yes")
-
-    # Rename the remaining columns
-    names(df)[names(df) == 'enabled'] <- 'Active Algorithm'
-    names(df)[names(df) == 'enabled_for_testing'] <- 'Enabled for Sensitivity Testing'
-
-    # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
-    df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right, published, archived))
-
-    # Put it into a data table now
-    dt <- datatable(df, selection = list(mode = "multiple", selected = selected_rows_run$selected), rownames = FALSE, options = list(lengthChange = FALSE))
+    # Create select input with dynamic choices
+    span(
+      radioButtons(inputId = "link_data_algorithm",
+                   label = "Select Algorithm for Linking Data:",
+                   choices = choices)
+    )
   }
 
-  # Render the data table for the linkage algorithms of the desired 2 datasets
-  output$select_linkage_algorithms_to_run <- renderDataTable({
-    get_linkage_algorithms_to_run()
+  # Function for getting the selectable algorithms when performing "SENSITIVITY ANALYSIS"
+  get_sensitivity_analysis_algorithms <- function(){
+    # Get the global values
+    left_dataset_id  <- run_algorithm_left_dataset_id
+    right_dataset_id <- run_algorithm_right_dataset_id
+
+    # Convert the dataset IDs to numeric
+    left_dataset_id <- as.numeric(left_dataset_id)
+    right_dataset_id <- as.numeric(right_dataset_id)
+
+    # Make sure the dataset IDs aren't NA
+    if(is.na(left_dataset_id) || is.na(right_dataset_id)){
+      return()
+    }
+
+    # Query to get all linkage method information from the 'linkage_algorithms' table
+    query <- paste('SELECT * FROM linkage_algorithms
+                    WHERE dataset_id_left =', left_dataset_id, ' AND dataset_id_right =', right_dataset_id,
+                   'AND archived = 0 AND published = 0',
+                   'ORDER BY algorithm_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Extract columns from query result
+    choices <- setNames(df$algorithm_id, df$algorithm_name)
+
+    # Create select input with dynamic choices
+    span(
+      checkboxGroupInput(inputId = "sensitivity_analysis_algorithms",
+                   label = "Select Algorithm for Performing Sensitivity Analysis:",
+                   choices = choices)
+    )
+  }
+
+  # Render the uiOutput() for the selectable "Link Data" algorithms
+  output$link_data_selectable_algorithms <- renderUI({
+    get_link_data_main_algorithm()
   })
 
-  # Handle 'Select All' button click
-  observeEvent(input$select_all_run, {
-    # Update selected rows to include all rows
-    selected_rows_run$selected <- seq_len(nrow(get_linkage_algorithms_to_run()$x$data))
+  # Render the uiOutput() for the selectable algorithms (OPTIONAL/SENSITIVITY) when performing "LINK DATA"
+  observeEvent(input$link_data_algorithm, {
+    # Get the selected (MAIN) algorithm
+    main_algorithm <- input$link_data_algorithm
+
+    # Get the global values
+    left_dataset_id  <- run_algorithm_left_dataset_id
+    right_dataset_id <- run_algorithm_right_dataset_id
+
+    # Convert the dataset IDs to numeric
+    left_dataset_id <- as.numeric(left_dataset_id)
+    right_dataset_id <- as.numeric(right_dataset_id)
+
+    # Make sure the dataset IDs aren't NA
+    if(is.na(left_dataset_id) || is.na(right_dataset_id)){
+      return()
+    }
+
+    # Query to get all linkage method information from the 'linkaeg_algorithms' table
+    query <- paste('SELECT * FROM linkage_algorithms
+                    WHERE dataset_id_left =', left_dataset_id, ' AND dataset_id_right =', right_dataset_id,
+                   'AND archived = 0 AND published = 0 and algorithm_id !=', main_algorithm,
+                   'ORDER BY algorithm_id ASC;')
+    df <- dbGetQuery(linkage_metadata_conn, query)
+
+    # Extract columns from query result
+    choices <- setNames(df$algorithm_id, df$algorithm_name)
+
+    output$link_data_selectable_appendix_algorithms <- renderUI({
+      # Create select input with dynamic choices
+      span(
+        checkboxGroupInput(inputId = "link_data_sensitivity_algorithms",
+                     label = "Select Additional Algorithms for Comparing Performance:",
+                     choices = choices)
+      )
+    })
   })
 
-  # Handle 'Select None' button click
-  observeEvent(input$select_none_run, {
-    # Clear the selected rows
-    selected_rows_run$selected <- NULL
+  # Render the uiOutput() for the selectable "Sensitivity Analysis" algorithms
+  output$sensitivity_analysis_selectable_algorithms <- renderUI({
+    get_sensitivity_analysis_algorithms()
   })
 
-  # Update `selected_rows_run` when a row is clicked manually
-  observe({
-    selected_rows_run$selected <- input$select_linkage_algorithms_to_run_rows_selected
+  # Initialize the selected file and folder to be empty
+  output$uploaded_linkage_output_dir <- renderText({
+    "No Folder Has Been Chosen"
   })
 
   # Get the computer volumes
@@ -13055,28 +13205,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     updateNavbarPage(session, "main_navbar", selected = run_algorithm_return_page)
   })
 
-  # Observes which linkage report type was chosen
-  observeEvent(input$linkage_report_type, {
-    # Render the text
-    if(input$linkage_report_type == 1){
-      output$linkage_report_type_help <- renderText({
-        "No linkage quality report will be generated for any algorithm(s) that are being run."
-      })
-    }
-    else if(input$linkage_report_type == 2){
-      output$linkage_report_type_help <- renderText({
-        "The intermediate report will generate a singular report for all algorithms being run. Information includes
-        a linked data summary, linkage rate summary, linkage algorithm summary, and a performance metrics table and plot."
-      })
-    }
-    else if(input$linkage_report_type == 3){
-      output$linkage_report_type_help <- renderText({
-        "The final report will generate a full quality report for each algorithm being ran. Information includes
-        a linked data summary, linkage rate summary, linkage algorithm summary, and a performance metrics table and plot."
-      })
-    }
-  })
-
   # Attempts to run the linkage algorithms the user chose
   observeEvent(input$run_linkage_btn, {
     # Disable this button
@@ -13096,7 +13224,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       # Get the user toggle inputs
       output_linked_iterations_pairs  <- input$output_linked_iterations_pairs
       output_unlinked_iteration_pairs <- input$output_unlinked_iteration_pairs
-      linkage_report_type             <- as.numeric(input$linkage_report_type)
       generate_algorithm_summary      <- input$generate_algorithm_summary
       calculate_performance_measures  <- input$calculate_performance_measures
       generate_threshold_plots        <- input$generate_threshold_plots
@@ -13104,31 +13231,66 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       save_missing_data_indicators    <- input$create_missing_data_indicators
       include_unlinked_records        <- input$include_unlinked_records
       save_audit_performance          <- input$save_audit_performance
+      linkage_report_type             <- 1
 
       # Get the folder and file inputs
       output_dir <- parseDirPath(volumes, input$linkage_output_dir)
 
-      # Get the selected rows and the corresponding algorithm IDs
-      selected_rows <- input$select_linkage_algorithms_to_run_rows_selected
-      query <- paste('SELECT * FROM linkage_algorithms
-                    WHERE dataset_id_left =', run_algorithm_left_dataset_id, ' AND dataset_id_right =', run_algorithm_right_dataset_id,
-                   'AND archived = 0 AND published = 0',
-                   'ORDER BY algorithm_id ASC;')
-      df <- dbGetQuery(linkage_metadata_conn, query)
-      algorithm_ids  <- df$algorithm_id[selected_rows]
+      # Get the ACTION TYPE
+      action_type <- input$run_algorithm_action_type
 
-      #-- Error Handling --#
+      # Prepare the algorithms variables that will be updated based on the action type
+      main_algorithms <- c()
+      main_report_algorithm <- 0
+
+      # If the action type is [1], then we are "LINKING DATA"
+      if(action_type == 1){
+        # Get the main algorithm and append it to our list of main algorithms
+        link_data_algorithm <- as.numeric(input$link_data_algorithm)
+        main_algorithms <- append(main_algorithms, link_data_algorithm)
+
+        # Check if a report is being generated, if so, grab any of the selected optional algorithms
+        if(input$link_data_generate_report == 1){
+          linkage_report_type <- 3
+          optional_algorithms <- input$link_data_sensitivity_algorithms
+
+          # If optional algorithms WERE selected, then make sure they run BEFORE the main algorithm
+          # so that we can save its information
+          if(length(optional_algorithms) > 0){
+            # Convert the optional algorithms to numeric values
+            optional_algorithms <- as.numeric(optional_algorithms)
+            # Append the optional algorithms to be first
+            main_algorithms <- append(optional_algorithms, main_algorithms)
+
+            # Track the main algorithm that will contain all the extra information
+            main_report_algorithm <- link_data_algorithm
+          }
+        }
+      }
+      # If the action type is instead [2], then we are "PERFORMING SENSITIVITY ANALYSIS"
+      else if (action_type == 2){
+        # Get the main algorithm and append it to our list of main algorithms
+        sensitivity_analysis_algorithms <- as.numeric(input$sensitivity_analysis_algorithms)
+        main_algorithms <- append(main_algorithms, sensitivity_analysis_algorithms)
+
+        # Check if a report is being generated, set the type to 2
+        if(input$sensitivity_analysis_generate_report == 1){
+          linkage_report_type <- 2
+        }
+      }
+
+      # Verify that main algorithms contains at least one algorithm
+      if(length(main_algorithms) <= 0){
+        # If we fail, let the user know why
+        showNotification("Failed to Run Algorithm(s) - At least one algorithm must be selected.", type = "error", closeButton = FALSE)
+        return(FALSE)
+      }
+
       # We need to make sure the user supplied an output folder
       if(identical(output_dir, character(0))){
         showNotification("Failed to Run Linkage - Missing Output Folder", type = "error", closeButton = FALSE)
         return(FALSE)
       }
-      # Make sure at least one algorithm was selected
-      if(length(algorithm_ids) <= 0){
-        showNotification("Failed to Run Linkage - No Algorithms are Selected", type = "error", closeButton = FALSE)
-        return(FALSE)
-      }
-      #--------------------#
 
       # Get the parameters that will be passed to the linkage function
       left_dataset   <- dbGetQuery(linkage_metadata_conn, paste0('SELECT * FROM datasets WHERE dataset_id = ', run_algorithm_left_dataset_id))$dataset_location
@@ -13139,13 +13301,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                      generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
                                                      data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results,
                                                      collect_missing_data_indicators = save_missing_data_indicators, include_unlinked_records = include_unlinked_records,
-                                                     save_audit_performance = save_audit_performance)
+                                                     save_audit_performance = save_audit_performance, main_report_algorithm = main_report_algorithm)
 
       # Run the algorithms
       try_catch_success <- TRUE
       tryCatch({
         # Run the linkage algorithms
-        results <- run_main_linkage(left_dataset, right_dataset, link_metadata, algorithm_ids, extra_params, progress_callback)
+        results <- run_main_linkage(left_dataset, right_dataset, link_metadata, main_algorithms, extra_params, progress_callback)
 
         # If the user wanted to save this data then handle that
         if(save_all_linkage_results == T){

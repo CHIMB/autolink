@@ -746,113 +746,6 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
   # Return the output dataframe
   return(output_df)
 }
-### V1
-#----
-# apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df){
-#   # Get the output fields
-#   stored_fields_with_names <- dbGetQuery(linkage_db, "SELECT lao.algorithm_id, lao.dataset_label, lao.field_type, df.field_name
-#                                                  FROM linkage_algorithms_output_fields lao
-#                                                  JOIN dataset_fields df
-#                                                  ON lao.dataset_field_id = df.field_id
-#                                                  WHERE lao.algorithm_id = ?
-#                                                  ORDER BY parameter_id", params = list(algorithm_id))
-#
-#   # Loop through the columns of our output data frame, and obtain the field type
-#   for(col_name in colnames(output_df)){
-#     # Get the corresponding field type for each column
-#     field_type <- stored_fields_with_names$field_type[stored_fields_with_names$field_name == col_name]
-#     dataset_label <- stored_fields_with_names$dataset_label[stored_fields_with_names$field_name == col_name]
-#
-#     # Make sure a field type exists for this field, otherwise skip it
-#     if(!identical(field_type, integer(0))){
-#       # DATE
-#       if(field_type == 2){
-#         # Create Cutoffs for the years
-#         output_df[[col_name]] <- cut(output_df[[col_name]],
-#                                      breaks = c(-Inf, 1975, 1985, 1995, 2005, 2015, Inf),
-#                                      labels = c("<1975", "1975-1984", "1985-1994", "1995-2004", "2005-2014", "2015-2024"),
-#                                      right = FALSE)
-#
-#         # Apply the column label
-#         label(output_df[[col_name]]) <- dataset_label
-#       }
-#       # AGE
-#       else if(field_type == 3){
-#         # Create cutoffs for the age
-#         output_df[[col_name]] <- cut(output_df[[col_name]],
-#                                      breaks = c(-Inf, 18, 35, 65, Inf),
-#                                      labels = c("<18", "18-34", "35-64", "65+"),
-#                                      right = F)
-#
-#         # Apply the column label
-#         label(output_df[[col_name]]) <- dataset_label
-#       }
-#       # POSTAL CODE
-#       else if(field_type == 4){
-#         # Substring the postal code to contain the first 3 digits
-#         output_df[[col_name]] <- substr(output_df[[col_name]], 1, 3)
-#
-#         # Apply the column label
-#         label(output_df[[col_name]]) <- dataset_label
-#       }
-#       # NAME LENGTH
-#       else if(field_type == 5){
-#         # Create cutoffs for the length of the name
-#         output_df[[col_name]] <- cut(nchar(output_df[[col_name]]),
-#                                      breaks = c(-Inf, 5, 6, 7, 8, Inf),
-#                                      labels = c("<5", "5", "6", "7", "8+"),
-#                                      right = F)
-#
-#         # Apply the column label
-#         label(output_df[[col_name]]) <- dataset_label
-#       }
-#       # AGE (BIRTH YEAR)
-#       else if(field_type == 6){
-#
-#       }
-#       # AGE (BIRTH MONTH)
-#       else if(field_type == 7){
-#
-#       }
-#       # AGE (BIRTH DAY)
-#       else if(field_type == 8){
-#
-#       }
-#       # AGE (DATE)
-#       else if(field_type == 9){
-#         # Calculate the age
-#         age <- as.numeric(floor(difftime(as.Date(Sys.Date()), output_df[[col_name]], unit="weeks")/52.25))
-#
-#         # Apply cutoffs
-#         output_df[[col_name]] <- cut(age,
-#                                      breaks = c(-Inf, 18, 35, 65, Inf),
-#                                      labels = c("<18", "18-34", "35-64", "65+"),
-#                                      right = F)
-#
-#         # Apply the column label
-#         label(output_df[[col_name]]) <- dataset_label
-#       }
-#       # NAME COUNT
-#       else if(field_type == 10){
-#         # Calculate the number of names per record
-#         name_count = lengths(strsplit(trimws(output_df[[col_name]]), " "))
-#
-#         # Apply the cutoffs
-#         output_df[[col_name]] <- cut(name_count,
-#                                      breaks = c(-Inf, 2, 3, Inf),
-#                                      labels = c("1", "2", "3+"),
-#                                      right = F)
-#
-#         # Apply the column label
-#         label(output_df[[col_name]]) <- dataset_label
-#       }
-#     }
-#   }
-#
-#   # Return the output fields
-#   return(output_df)
-# }
-#----
 #----------------------------------------#
 
 #-- HELPER FUNCTIONS FOR LINKAGE RULES --#
@@ -968,6 +861,7 @@ load_linkage_file <- function(dataset_file){
 #' @param save_all_linkage_results A TRUE or FALSE value for whether you'd like a list of all report data returned after all algorithms have been ran.
 #' @param collect_missing_data_indicators A TRUE or FALSE value for whether you'd like to have missing data indicators appear of the variables you're keeping as output.
 #' @param save_audit_performance A TRUE or FALSE value for whether you'd like to save the performance of each algorithm being ran for later auditing purposes.
+#' @param main_report_algorithm A numeric value which specified the algorithm ID of the only report that should be generated. (If the user would like performance values appear in report appendix)
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
@@ -982,7 +876,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          generate_threshold_plots = FALSE,
                                          save_all_linkage_results = FALSE,
                                          collect_missing_data_indicators = FALSE,
-                                         save_audit_performance = FALSE){
+                                         save_audit_performance = FALSE,
+                                         main_report_algorithm = NULL){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -1070,6 +965,14 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
      (isTRUE(save_audit_performance) || save_audit_performance == "TRUE")){
     extra_params_list[["save_audit_performance"]] <- TRUE
   }
+
+  ### Main Report Algorithm
+  ### Generate Linkage Quality Report
+  if(!is.na(main_report_algorithm) && !is.null(main_report_algorithm) &&
+     (is.numeric(main_report_algorithm) && length(main_report_algorithm) == 1 && main_report_algorithm >= 1)){
+    extra_params_list[["main_report_algorithm"]] <- main_report_algorithm
+  }
+
   #----------------------------------------------------------------------------#
 
   ### Finally, return the list
