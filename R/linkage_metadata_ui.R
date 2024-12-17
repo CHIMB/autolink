@@ -571,11 +571,23 @@ linkage_ui <- fluidPage(
 
         #-- DATASETS PAGE --#
         #----
-        nav_panel(title = "Datasets", value = "datasets_page",
+        nav_panel(title = "Dataset Metadata", value = "datasets_page",
           fluidPage(
             h5(strong("Select An Existing Dataset to Update:")),
             h6(p(strong("NOTE: "), "For datasets that use the same dataset code/prefix, only one be enabled at a time.")),
-            dataTableOutput("currently_added_datasets"),
+
+            fluidRow(
+              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+                actionButton("add_dataset_pop_up", "Add Dataset Metadata...", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+              )),
+              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+                actionButton("update_dataset_pop_up", "Update Dataset Metadata...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+              ))
+            ),
+
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.9vw;",
+              dataTableOutput("currently_added_datasets"),
+            )),
 
             # If the user has selected a row, then we can either UPDATE or TOGGLE a dataset
             conditionalPanel(
@@ -594,203 +606,7 @@ linkage_ui <- fluidPage(
                                 placement = "right",
                                 options = list(container = "body"))),
                 ))
-              ),
-              HTML("<br><br>"),
-              h5(strong("Update the Dataset Information & View Dataset Fields Here:")),
-
-              # Create a column layout to separate the user inputs and dataset fields
-              layout_column_wrap(
-                width = 1/2,
-                height = 550,
-                # Card for the user inputs
-                card(card_header("Update Dataset Information", class = "bg-dark"),
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; align-items: center;",
-                       textAreaInput("update_dataset_code", label = "Dataset Code/File Prefix:", value = "",
-                                     width = validateCssUnit(500), resize = "none"),
-
-                       # Add the popover manually
-                       h1(tooltip(bs_icon("question-circle"),
-                                  paste("The dataset code is the prefix of the source dataset that you will be using",
-                                        "during the data linkage process. The prefix you enter here should match the",
-                                        "prefix of the file you are using using EXACTLY."),
-                                  placement = "right",
-                                  options = list(container = "body")))
-                     )),
-                     column(width = 12, div(style = "display: flex; align-items: center;",
-                       textAreaInput("update_dataset_name", label = "Dataset Name:", value = "",
-                                     width = validateCssUnit(500), resize = "none"),
-
-                       # Add the popover manually
-                       h1(tooltip(bs_icon("question-circle"),
-                                  paste("The dataset name should be an identifiable name for the dataset that you can",
-                                        "reasonably identify. The ideal name is the full expanded name of the dataset",
-                                        "that you plan on storing."),
-                                  placement = "right",
-                                  options = list(container = "body")))
-                     )),
-                     column(width = 12, div(style = "display: flex; align-items: center;",
-                       numericInput("update_dataset_vers", label = "Dataset Version:",
-                                    value = NULL, width = validateCssUnit(500)),
-
-                       # Add the popover manually
-                       h1(tooltip(bs_icon("question-circle"),
-                                  paste("The dataset version number can help differentiate dataset names additionally",
-                                          "while also allowing for storing different versions of the same dataset."),
-                                 placement = "right",
-                                 options = list(container = "body")))
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                      # Label for the uploaded file name
-                      div(style = "margin-right: 10px;", "Uploaded File (Path):"),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      # Boxed text output for showing the uploaded file name
-                      div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                        textOutput("uploaded_file_name_update")
-                      ),
-                      # Upload button
-                      actionButton("update_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
-
-                      # Add the popover manually
-                      h1(tooltip(bs_icon("question-circle"),
-                                 paste("The dataset you plan on using to perform data linkage should be uploaded here.",
-                                       "The column names will be grabbed from the first row in the source dataset for",
-                                       "future use when creating linkage algorithms and passes."),
-                                 placement = "right",
-                                 options = list(container = "body")))
-                    ))
-                  ),
-                ),
-
-                # Card for viewing the selected fields
-                card(card_header("View Selected Dataset Fields", class = "bg-dark"),
-                  dataTableOutput("selected_dataset_fields")
-                )
-              ),
-
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  actionButton("update_dataset", "Update Dataset", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("pen")),
-                ))
-              ),
-              HTML("<br>")
-            ),
-            # abbreviated
-            # If the user has no row selected, then we can ADD a new dataset
-            conditionalPanel(
-              condition = "input.currently_added_datasets_rows_selected <= 0",
-              HTML("<br>"),
-              h5(strong("Or, Add the Dataset Information & View Uploaded Fields Here:")),
-
-              # Create a column layout for the user inputs and viewable fields
-              layout_column_wrap(
-                width = 1/2,
-                height = 550,
-
-                # Card for the user inputs
-                card(card_header("Add Dataset Information", class = "bg-dark"),
-                 fluidRow(
-                   column(width = 12, div(style = "display: flex; align-items: center;",
-                     textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
-                                   width = validateCssUnit(500), resize = "none"),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The dataset code is the prefix of the source dataset that you will be using",
-                                      "during the data linkage process. The prefix you enter here should match the",
-                                      "prefix of the file you are using using EXACTLY."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   )),
-                   column(width = 12, div(style = "display: flex; align-items: center;",
-                     textAreaInput("add_dataset_name", label = "Dataset Name:", value = "",
-                                   width = validateCssUnit(500), resize = "none"),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The dataset name should be an identifiable name for the dataset that you can",
-                                      "reasonably identify. The ideal name is the full expanded name of the dataset",
-                                      "that you plan on storing."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   )),
-                   column(width = 12, div(style = "display: flex; align-items: center;",
-                     numericInput("add_dataset_version", label = "Dataset Version:",
-                                  value = NULL, width = validateCssUnit(500)),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("The dataset version number can help differentiate dataset names additionally",
-                                      "while also allowing for storing different versions of the same dataset."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   )),
-                   column(width = 12, div(style = "display: flex; align-items: center;",
-                     selectInput("add_dataset_is_fwf", label = "Is The Dataset of Fixed-Width Format?",
-                                 choices = list("No" = 1,
-                                                "Yes" = 2),
-                                 selected = 1,
-                                 width = validateCssUnit(500)),
-
-                     # Add the popover manually
-                     h1(tooltip(bs_icon("question-circle"),
-                                paste("If the dataset being used for linkage is fwf, select yes before uploading the",
-                                      "dataset so that the column widths can be extracted for confirmation."),
-                                placement = "right",
-                                options = list(container = "body")))
-                   )),
-                   column(width = 12, div(style = "display: flex; align-items: center;",
-                     fluidRow(
-                        column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
-                          # Label for the uploaded file name
-                          div(style = "margin-right: 10px;", "Uploaded File (Path):"),
-                        )),
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                          # Boxed text output for showing the uploaded file name
-                          div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;",
-                            textOutput("uploaded_file_name")
-                          ),
-                          # Upload button
-                          actionButton("add_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
-
-                          # Add the popover manually
-                          h1(tooltip(bs_icon("question-circle"),
-                                     paste("The dataset you plan on using to perform data linkage should be uploaded here.",
-                                           "The column names will be grabbed from the first row in the source dataset for",
-                                           "future use when creating linkage algorithms and passes."),
-                                     placement = "right",
-                                       options = list(container = "body")))
-                        ))
-                      )
-                    ))
-                  ),
-                ),
-                # Card for viewing the uploaded fields
-                card(card_header("View Uploaded Dataset Fields", class = "bg-dark"),
-                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                    dataTableOutput("uploaded_dataset_fields"),
-                  )),
-
-                  # If the user has submitted a dataset file, they can also change the widths (IF A ROW IS SELECTED)
-                  fluidRow(
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      numericInput("update_field_width_input", label = "Field Width:",
-                                   value = NULL, width = validateCssUnit(300)),
-                    )),
-                    column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                      actionButton("update_field_width_btn", "Update Field Width", class = "btn-warning"),
-                    ))
-                  ),
-                )
-              ),
-
-              fluidRow(
-                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                  actionButton("add_dataset", "Add Dataset", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-                ))
-              ),
-              HTML("<br><br>"),
+              )
             )
           )
         ),
@@ -804,66 +620,17 @@ linkage_ui <- fluidPage(
             # Generate the table
             h5(strong("View the Currently Usable Linkage Methods:")),
             h6(p(strong("NOTE: "), "Only one combination of implementation name and technique label can exist at a time.")),
-            dataTableOutput("currently_added_linkage_methods"),
+
+            fluidRow(
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                actionButton("add_linkage_method_pop_up", "Add Linkage Method...", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+              ))
+            ),
 
             # Line break
             HTML("<br>"),
 
-            # Add linkage method fields here
-            h5(strong("Or, Add a New Linkage Method Here:")),
-            fluidRow(
-              column(width = 3, div(style = "display: flex; align-items: center;",
-                textAreaInput("add_implementation_name", label = "Implementation/Class Name:", value = "",
-                              width = validateCssUnit(500), resize = "none"),
-
-                # Add the popover manually
-                h1(tooltip(bs_icon("question-circle"),
-                           paste("The linkage implementation/class name should match the custom R script built",
-                                 "by yourself to be used for linkage EXACTLY. During linkage, the program will",
-                                 "try to source and call your custom class by searching for this exact name."),
-                           placement = "right",
-                           options = list(container = "body")))
-              )),
-              column(width = 3, div(style = "display: flex; align-items: center;",
-                textAreaInput("add_technique_label", label = "Linkage Method:", value = "",
-                              width = validateCssUnit(500), resize = "none"),
-
-                # Add the popover manually
-                h1(tooltip(bs_icon("question-circle"),
-                           paste("Within a linkage implementation, there are various techniques that can be used",
-                                 "(Deterministic, Probabilistic) and the program will pass to your class which",
-                                 "technique should be used."),
-                           placement = "right",
-                           options = list(container = "body")))
-              )),
-              column(width = 3, div(style = "display: flex; align-items: center;",
-                textAreaInput("add_implementation_desc", label = "Implementation Description:", value = "",
-                              width = validateCssUnit(500), resize = "none"),
-
-                # Add the popover manually
-                h1(tooltip(bs_icon("question-circle"),
-                           paste("Short description of the linkage class being created including its method and name."),
-                           placement = "right",
-                           options = list(container = "body")))
-              )),
-              column(width = 3, div(style = "display: flex; align-items: center;",
-                numericInput("add_implementation_vers", label = "Implementation Version:",
-                             value = NULL, width = validateCssUnit(500)),
-
-                # Add the popover manually
-                h1(tooltip(bs_icon("question-circle"),
-                           paste("The implementation version can help differentiate implementations from",
-                                 "other implementations with similar names and techniques."),
-                           placement = "right",
-                           options = list(container = "body")))
-              )),
-            ),
-            HTML("<br>"),
-            fluidRow(
-              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                actionButton("add_linkage_method", "Add Linkage Method", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
-              ))
-            )
+            dataTableOutput("currently_added_linkage_methods"),
           )
         ),
         #----
@@ -885,16 +652,57 @@ linkage_ui <- fluidPage(
               ))
             ),
 
-            # Line break to give the input and table some space
-            HTML("<br><br>"),
-
             # Once the user selects their LEFT and RIGHT dataset, show them the table of linkage algorithms
             conditionalPanel(
               condition = "input.linkage_algorithm_left_dataset != '' && input.linkage_algorithm_right_dataset != ''
                           && input.linkage_algorithm_left_dataset != input.linkage_algorithm_right_dataset",
 
+              # Currently selected ground truth + ground truth button go here
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  # Label for the uploaded file name
+                  div(style = "margin-right: 10px;", "Ground Truth:"),
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  # Boxed text output for showing the uploaded file name
+                  div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 400px;
+                               display: flex; justify-content: center; align-items: center;",
+                      textOutput("selected_dataset_pair_ground_truth")
+                  ),
+                  # Upload button
+                  actionButton("linkage_algorithms_to_ground_truth", label = "", shiny::icon("pen"), class = "btn-circle btn-green"),
+                ))
+              ),
+
+              HTML("<br>"), # White space
+
+              # Card for the run algorithms, archived algorithms, and published algorithms pages
+              div(style = "display: flex; justify-content: center; align-items: center;",
+                  card(
+                    width = 1,
+                    height = 85,
+                    full_screen = FALSE,
+                    card_body(
+                      fluidRow(
+                        column(width = 4, div(style = "display: flex; justify-content: right; align-items: center; margin-top: 8px",
+                            actionButton("run_default_algorithm", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("file-waveform")),
+                          )
+                        ),
+                        column(width = 4, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 8px",
+                            actionButton("move_to_archived_algorithms", "Archived Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("box-archive")),
+                          )
+                        ),
+                        column(width = 4, div(style = "display: flex; justify-content: left; align-items: center; margin-top: 8px",
+                            actionButton("move_to_published_algorithms", "Published Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("scroll")),
+                          )
+                        )
+                      ),
+                    )
+                  )
+              ),
+
               # Generate the table
-              h5(strong("Select a Row to either Enable/Disable the Algorithm, View/Modify Passes, or View/Modify Ground Truth Variables:")),
+              h5(strong("Select a Row to Modify Algorithm Metadata:")),
               fluidRow(
                 column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                   dataTableOutput("currently_added_linkage_algorithms"),
@@ -908,8 +716,8 @@ linkage_ui <- fluidPage(
 
                 # Column layout for all buttons
                 layout_column_wrap(
-                  width = 1/4,
-                  height = 185,
+                  width = 1/3,
+                  height = 125,
                   heights_equal = "all",
 
                   # Card for Regenerating Linkage Reports
@@ -917,12 +725,12 @@ linkage_ui <- fluidPage(
                     full_screen = FALSE,
                     card_body(
                       fluidRow(
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
-                            actionButton("run_algorithm_alt", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("file-waveform")),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                            actionButton("go_to_regenerate_report", "Regenerate Report...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
                           )
                         ),
                         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                            actionButton("go_to_regenerate_report", "Regenerate Report...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("arrows-rotate")),
+                            actionButton("linkage_algorithms_to_audits", "Performance Measures...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
                           )
                         )
                       )
@@ -934,7 +742,7 @@ linkage_ui <- fluidPage(
                     full_screen = FALSE,
                     card_body(
                       fluidRow(
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 35px",
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                             actionButton("archive_algorithm", "Archive Selected Algorithm", class = "btn-danger", width = validateCssUnit(300), icon = shiny::icon("box-archive")),
                           )
                         ),
@@ -952,78 +760,25 @@ linkage_ui <- fluidPage(
                     card_body(
                       fluidRow(
                         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                            actionButton("toggle_algorithm", "Set as Default Algorithm", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-on")),
-                          )
-                        ),
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                            actionButton("toggle_algorithm_for_testing", "Toggle for Testing", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("toggle-off")),
-                          )
-                        ),
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
                             actionButton("linkage_algorithms_to_view_linkage_iterations", "Algorithm Passes...", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("list")),
+                          )
+                        ),
+                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
+                            actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output...", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("file-export")),
                           )
                         )
                       )
                     )
                   ),
-
-                  # Create a card for editing/viewing algorithm output information
-                  card(
-                    full_screen = FALSE,
-                    card_body(
-                      fluidRow(
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
-                            actionButton("linkage_algorithms_to_ground_truth", "Ground Truth Variables...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("square-check")),
-                          )
-                        ),
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                            actionButton("linkage_algorithms_to_algorithm_output", "Algorithm Output...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("file-export")),
-                          )
-                        ),
-                        column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; margin-top: 15px",
-                            actionButton("linkage_algorithms_to_audits", "Performance Measures...", class = "btn-info", width = validateCssUnit(300), icon = shiny::icon("chart-simple")),
-                          )
-                        )
-                      )
-                    )
-                  )
                 ),
               ),
 
               # Line break to separate the table and new algorithm input
               HTML("<br><br>"),
 
-              # Conditional panel for if a row wasn't selected
+              # Conditional panel for if a row WASN'T selected
               conditionalPanel(
                 condition = "input.currently_added_linkage_algorithms_rows_selected <= 0",
-
-                # Card for the run algorithms, archived algorithms, and published algorithms pages
-                div(style = "display: flex; justify-content: center; align-items: center;",
-                  card(
-                    width = 1,
-                    height = 85,
-                    full_screen = FALSE,
-                    card_body(
-                      fluidRow(
-                        column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
-                            actionButton("run_default_algorithm", "Run Algorithm(s)...", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("file-waveform")),
-                          )
-                        ),
-                        column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
-                            actionButton("move_to_archived_algorithms", "Archived Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("box-archive")),
-                          )
-                        ),
-                        column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
-                            actionButton("move_to_published_algorithms", "Published Algorithms...", class = "btn-info", width = validateCssUnit(400), icon = shiny::icon("scroll")),
-                          )
-                        )
-                      ),
-                    )
-                  )
-                ),
-
-                # Line break between sections
-                HTML("<br><br>"),
 
                 # Section for adding a new algorithm
                 h5(strong("Or, create an empty linkage algorithm here:")),
@@ -3117,9 +2872,23 @@ linkage_ui <- fluidPage(
 
         nav_spacer(),
         nav_menu(
-          title = "Links",
+          title = "Help",
           align = "right",
-          nav_item(tags$a("GitHub", href = "https://github.com/CHIMB/autolink"))
+          nav_item(tags$a(
+            shiny::icon("github", lib = "font-awesome"),
+            "GitHub",
+            href = "https://github.com/CHIMB/autolink"
+          )),
+          nav_item(tags$a(
+            icon("user-graduate", lib = "font-awesome"),
+            "User Help",
+            href = "https://github.com/CHIMB/autolink/blob/main/docs/USER_DOCUMENTATION_AUTOMATED_LINKAGE.pdf"
+          )),
+          nav_item(tags$a(
+            icon("user-gear", lib = "font-awesome"),
+            "Developer Help",
+            href = "https://github.com/CHIMB/autolink/blob/main/docs/DEVELOPER_DOCUMENTATION_AUTOMATED_LINKAGE.pdf"
+          ))
         ),
         # Javascript function to reset the scroll position when changing pages
         tags$script(HTML("
@@ -3214,23 +2983,23 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     names(df)[names(df) == 'dataset_code'] <- 'Dataset Code'
     names(df)[names(df) == 'dataset_name'] <- 'Dataset Name'
     names(df)[names(df) == 'version'] <- 'Version'
-    names(df)[names(df) == 'is_fwf'] <- 'Is Fixed-Width'
-    names(df)[names(df) == 'enabled_for_linkage'] <- 'Enabled'
-    names(df)[names(df) == 'dataset_location'] <- 'Local Dataset File Location'
+    names(df)[names(df) == 'is_fwf'] <- 'Fixed Width'
+    names(df)[names(df) == 'enabled_for_linkage'] <- 'Active'
+    names(df)[names(df) == 'dataset_location'] <- 'Local File Path'
 
     # With datasets, we'll replace the enabled [0, 1] with [No, Yes]
-    df$Enabled <- str_replace(df$Enabled, "0", "No")
-    df$Enabled <- str_replace(df$Enabled, "1", "Yes")
+    df$Active <- str_replace(df$Active, "0", "No")
+    df$Active <- str_replace(df$Active, "1", "Yes")
 
     # With datasets, we'll replace the yes of fwf [1, 2] with [No, Yes]
-    df[["Is Fixed-Width"]] <- str_replace(df[["Is Fixed-Width"]] , "1", "No")
-    df[["Is Fixed-Width"]] <- str_replace(df[["Is Fixed-Width"]] , "2", "Yes")
+    df[["Fixed Width"]] <- str_replace(df[["Fixed Width"]] , "1", "No")
+    df[["Fixed Width"]] <- str_replace(df[["Fixed Width"]] , "2", "Yes")
 
     # Drop the dataset_id value
     df <- subset(df, select = -c(dataset_id))
 
     # Put it into a data table now
-    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+    dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
   }
 
   # Function to read in a file, extract the column names, and return them
@@ -3368,6 +3137,283 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     dt <- datatable(uploaded_fields_df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
   })
 
+  # Observes when the user presses the "Add Dataset" modal pop-up button
+  observeEvent(input$add_dataset_pop_up, {
+    # Reset all the input fields
+    updateTextAreaInput(session, "add_dataset_code", value = "")
+    updateTextAreaInput(session, "add_dataset_name", value = "")
+    updateSelectInput(session, "add_dataset_is_fwf", selected = 1)
+    updateNumericInput(session,  "add_dataset_vers", value = NA)
+    file_path$path <- NULL
+
+    # Show the dialog modal
+    showModal(modalDialog(
+      title = "Add Dataset Metadata",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidPage(
+        # Create a column layout for the user inputs and viewable fields
+        layout_column_wrap(
+          width = 1/2,
+          height = 600,
+
+          # Card for the user inputs
+          card(card_header("Add Dataset Information", class = "bg-dark"),
+            fluidRow(
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                textAreaInput("add_dataset_code", label = "Dataset Code/File Prefix:", value = "",
+                              width = validateCssUnit(500), resize = "none"),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The dataset code is the prefix of the source dataset that you will be using",
+                                 "during the data linkage process. The prefix you enter here should match the",
+                                 "prefix of the file you are using using EXACTLY."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                textAreaInput("add_dataset_name", label = "Dataset Name:", value = "",
+                              width = validateCssUnit(500), resize = "none"),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The dataset name should be an identifiable name for the dataset that you can",
+                                 "reasonably identify. The ideal name is the full expanded name of the dataset",
+                                 "that you plan on storing."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                numericInput("add_dataset_version", label = "Dataset Version:",
+                             value = NULL, width = validateCssUnit(500)),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The dataset version number can help differentiate dataset names additionally",
+                                 "while also allowing for storing different versions of the same dataset."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                selectInput("add_dataset_is_fwf", label = "Is The Dataset of Fixed-Width Format?",
+                             choices = list("No" = 1,
+                                            "Yes" = 2),
+                             selected = 1,
+                             width = validateCssUnit(500)),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("If the dataset being used for linkage is fwf, select yes before uploading the",
+                                 "dataset so that the column widths can be extracted for confirmation."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                fluidRow(
+                  column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                    # Label for the uploaded file name
+                    div(style = "margin-right: 10px;", "Uploaded File (Path):"),
+                  )),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    # Boxed text output for showing the uploaded file name
+                    div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 500px;",
+                        textOutput("uploaded_file_name")
+                    ),
+                    # Upload button
+                    actionButton("add_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
+
+                    # Add the popover manually
+                    h1(tooltip(bs_icon("question-circle"),
+                               paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                                     "The column names will be grabbed from the first row in the source dataset for",
+                                     "future use when creating linkage algorithms and passes."),
+                               placement = "right",
+                               options = list(container = "body")))
+                  )),
+                  column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                    helpText(strong("The following file types are valid for uploading:")),
+                    HTML("&nbsp"),
+                    helpText(".txt, .csv, .sas7bdat, .xlsx, and .xls")
+                  ))
+                )
+              ))
+            ),
+          ),
+          # Card for viewing the uploaded fields
+          card(card_header("View Uploaded Dataset Fields", class = "bg-dark"),
+            # Label of the uploaded file type (extension)
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              strong("Uploaded File Type:"),
+            )),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 75px;
+                           display: flex; justify-content: center; align-items: center;",
+                textOutput("uploaded_file_type")
+              ),
+            )),
+
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.82vw;",
+              dataTableOutput("uploaded_dataset_fields"),
+            )),
+
+            # If the user has submitted a dataset file, they can also change the widths (IF A ROW IS SELECTED)
+            conditionalPanel(
+              condition = "input.uploaded_dataset_fields_rows_selected > 0 && input.add_dataset_is_fwf == 2",
+              fluidRow(
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  numericInput("update_field_width_input", label = "Field Width:",
+                                value = NULL, width = validateCssUnit(300)),
+                )),
+                column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                  actionButton("update_field_width_btn", "Update Field Width", class = "btn-warning"),
+                ))
+              ),
+            )
+          )
+        ),
+
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("add_dataset", "Add Dataset Metadata", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+          ))
+        ),
+      ),
+      size = "l"
+    ))
+  })
+
+  # Observes when the user presses the "Update Dataset" modal pop-up
+  observeEvent(input$update_dataset_pop_up, {
+    # Pre-populate the input fields based on the row selected by the user
+    row_selected <- input$currently_added_datasets_rows_selected
+
+    # Get the entire dataframe for datasets so that we can get the info from the
+    # row the user selected.
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets'))
+    dataset_code <- df[row_selected, "dataset_code"]
+    dataset_name <- df[row_selected, "dataset_name"]
+    version      <- df[row_selected, "version"]
+    dataset_path <- df[row_selected, "dataset_location"]
+
+    # Convert the version string to a number
+    version <- sub('.', '', version)
+    version_num <- as.numeric(version)
+
+    # Now update the input fields
+    updateTextAreaInput(session, "update_dataset_code", value = dataset_code)
+    updateTextAreaInput(session, "update_dataset_name", value = dataset_name)
+    updateNumericInput(session,  "update_dataset_vers", value = version_num)
+    output$uploaded_file_name_update <- renderText({
+      dataset_path
+    })
+    file_path_update$path <- dataset_path
+
+    # Open up the dialog modal for updating dataset metadata
+    showModal(modalDialog(
+      title = "Update Dataset Metadata",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidPage(
+        # Create a column layout to separate the user inputs and dataset fields
+        layout_column_wrap(
+          width = 1/2,
+          height = 600,
+          # Card for the user inputs
+          card(card_header("Update Dataset Information", class = "bg-dark"),
+            fluidRow(
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                textAreaInput("update_dataset_code", label = "Dataset Code/File Prefix:", value = "",
+                              width = validateCssUnit(500), resize = "none"),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The dataset code is the prefix of the source dataset that you will be using",
+                                 "during the data linkage process. The prefix you enter here should match the",
+                                 "prefix of the file you are using using EXACTLY."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                textAreaInput("update_dataset_name", label = "Dataset Name:", value = "",
+                              width = validateCssUnit(500), resize = "none"),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The dataset name should be an identifiable name for the dataset that you can",
+                                 "reasonably identify. The ideal name is the full expanded name of the dataset",
+                                 "that you plan on storing."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 12, div(style = "display: flex; align-items: center;",
+                numericInput("update_dataset_vers", label = "Dataset Version:",
+                             value = NULL, width = validateCssUnit(500)),
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The dataset version number can help differentiate dataset names additionally",
+                                 "while also allowing for storing different versions of the same dataset."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                # Label for the uploaded file name
+                div(style = "margin-right: 10px;", "Uploaded File (Path):"),
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                # Boxed text output for showing the uploaded file name
+                div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 500px;",
+                    textOutput("uploaded_file_name_update")
+                ),
+                # Upload button
+                actionButton("update_dataset_file", label = "", shiny::icon("upload")), #or use 'upload'
+
+                # Add the popover manually
+                h1(tooltip(bs_icon("question-circle"),
+                           paste("The dataset you plan on using to perform data linkage should be uploaded here.",
+                                 "The column names will be grabbed from the first row in the source dataset for",
+                                 "future use when creating linkage algorithms and passes."),
+                           placement = "right",
+                           options = list(container = "body")))
+              )),
+              column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                helpText(strong("The following file types are valid for uploading:")),
+                HTML("&nbsp"),
+                helpText(".txt, .csv, .sas7bdat, .xlsx, and .xls")
+              ))
+            ),
+          ),
+
+          # Card for viewing the selected fields
+          card(card_header("View Selected Dataset Fields", class = "bg-dark"),
+            # Label of the uploaded file type (extension)
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              strong("Uploaded File Type:"),
+            )),
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+              div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 75px;
+                           display: flex; justify-content: center; align-items: center;",
+                textOutput("uploaded_file_type_update")
+              ),
+            )),
+
+            column(width = 12, div(style = "display: flex; justify-content: center; align-items: center; font-size: 0.82vw;",
+              dataTableOutput("selected_dataset_fields"),
+            ))
+          )
+        ),
+
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("update_dataset", "Update Dataset Metadata", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+          ))
+        ),
+      ),
+      size = "l"
+    ))
+  })
+
   # Observes if the user uploads a file or changes the type to fwf
   observe({
     data_is_fwf <- input$add_dataset_is_fwf
@@ -3399,47 +3445,62 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # If the data is fwf, handle it differently
     if(data_is_fwf == 2){
-      # Use fwf_empty to guess column positions
-      col_positions <- fwf_empty(input_file)
+      tryCatch({
+        # Use fwf_empty to guess column positions
+        col_positions <- fwf_empty(input_file)
 
-      # Extract the start and end positions of each column
-      start_positions <- col_positions$begin
-      end_positions <- col_positions$end
-      col_names <- col_positions$col_names
+        # Extract the start and end positions of each column
+        start_positions <- col_positions$begin
+        end_positions <- col_positions$end
+        col_names <- col_positions$col_names
 
-      # Read the first line to get the total length of a line
-      first_line <- read_lines(input_file, n_max = 1)
-      line_length <- nchar(first_line)
+        # Read the first line to get the total length of a line
+        first_line <- read_lines(input_file, n_max = 1)
+        line_length <- nchar(first_line)
 
-      # Handle the case where the last 'end' position is NA (column goes to the end of the line)
-      end_positions[is.na(end_positions)] <- line_length
+        # Handle the case where the last 'end' position is NA (column goes to the end of the line)
+        end_positions[is.na(end_positions)] <- line_length
 
-      # Calculate the column widths
-      col_widths <- end_positions - start_positions + 1
+        # Calculate the column widths
+        col_widths <- end_positions - start_positions + 1
 
-      # Now try to get the column types
-      col_types <- sapply(read_fwf(input_file, fwf_empty(input_file), n_max = 1, show_col_types = FALSE), class)
+        # Now try to get the column types
+        col_types <- sapply(read_fwf(input_file, fwf_empty(input_file), n_max = 1, show_col_types = FALSE), class)
 
-      # Construct a data frame
-      df <- data.frame(
-        field_name = col_names,
-        field_type = col_types,
-        field_width = col_widths
-      )
+        # Construct a data frame
+        df <- data.frame(
+          field_name = col_names,
+          field_type = col_types,
+          field_width = col_widths
+        )
 
-      # Replace the global df with the one we read in
-      uploaded_fields_df <<- df
+        # Replace the global df with the one we read in
+        uploaded_fields_df <<- df
 
-      # Renders the uploaded dataset fields based on the file the user provided
-      output$uploaded_dataset_fields <- renderDataTable({
-        # get the uploaded fields df
-        df <- uploaded_fields_df
-        names(df)[names(df) == 'field_name'] <- 'Field Name'
-        names(df)[names(df) == 'field_type'] <- 'Field Type'
-        names(df)[names(df) == 'field_width'] <- 'Field Width'
+        # Renders the uploaded dataset fields based on the file the user provided
+        output$uploaded_dataset_fields <- renderDataTable({
+          # get the uploaded fields df
+          df <- uploaded_fields_df
+          names(df)[names(df) == 'field_name'] <- 'Field Name'
+          names(df)[names(df) == 'field_type'] <- 'Field Type'
+          names(df)[names(df) == 'field_width'] <- 'Field Width'
 
-        # Put it into a data table now
-        dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+          # Put it into a data table now
+          dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+        })
+      },
+      error = function(e){
+        # Renders the uploaded dataset fields based on the file the user provided
+        output$uploaded_dataset_fields <- renderDataTable({
+          # get the uploaded fields df
+          df <- uploaded_fields_df
+          names(df)[names(df) == 'field_name'] <- 'Field Name'
+          names(df)[names(df) == 'field_type'] <- 'Field Type'
+          names(df)[names(df) == 'field_width'] <- 'Field Width'
+
+          # Put it into a data table now
+          dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE, dom = 'tp'))
+        })
       })
     }
     else{
@@ -3632,10 +3693,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       output$uploaded_file_name <- renderText({
         "No File Uploaded"
       })
+      output$uploaded_file_type <- renderText({
+        ""
+      })
     }
     else{
       output$uploaded_file_name <- renderText({
         uploaded_file_add
+      })
+      output$uploaded_file_type <- renderText({
+        file_ext(uploaded_file_add)
       })
     }
 
@@ -3644,10 +3711,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       output$uploaded_file_name_update <- renderText({
         "No File Uploaded"
       })
+      output$uploaded_file_type_update <- renderText({
+        ""
+      })
     }
     else{
       output$uploaded_file_name_update <- renderText({
         uploaded_file_update
+      })
+      output$uploaded_file_type_update <- renderText({
+        file_ext(uploaded_file_update)
       })
     }
   })
@@ -3747,7 +3820,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     #----#
     updateTextAreaInput(session, "add_dataset_code",    value = "")
     updateTextAreaInput(session, "add_dataset_name",    value = "")
-    updateNumericInput(session,  "add_dataset_vers",    value = NULL)
+    updateNumericInput(session,  "add_dataset_vers",    value = NA)
     file_path$path <- NULL
     output$uploaded_file_name <- renderText({
       "No File Uploaded"
@@ -3787,32 +3860,23 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     #----#
     showNotification("Dataset Successfully Added", type = "message", closeButton = FALSE)
     #----#
+
+    # Remove the modal
+    removeModal()
   })
 
   # Observes what row the user selects to update and will pre-populate the updating fields
   observe({
     row_selected <- input$currently_added_datasets_rows_selected
 
-    # Get the entire dataframe for datasets so that we can get the info from the
-    # row the user selected.
-    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets'))
-    dataset_code <- df[row_selected, "dataset_code"]
-    dataset_name <- df[row_selected, "dataset_name"]
-    version <- df[row_selected, "version"]
-    dataset_path <- df[row_selected, "dataset_location"]
-
-    # Convert the version string to a number
-    version <- sub('.', '', version)
-    version_num <- as.numeric(version)
-
-    # Now update the input fields
-    updateTextAreaInput(session, "update_dataset_code",    value = dataset_code)
-    updateTextAreaInput(session, "update_dataset_name",    value = dataset_name)
-    updateNumericInput(session,  "update_dataset_vers",    value = version_num)
-    output$uploaded_file_name_update <- renderText({
-      dataset_path
-    })
-    file_path_update$path <- dataset_path
+    # If the row selected is NULL, disable/make the update dataset button un-clickable, otherwise
+    # make it enabled
+    if(is.null(row_selected)){
+      disable("update_dataset_pop_up")
+    }
+    else{
+      enable("update_dataset_pop_up")
+    }
   })
 
   # Updates an existing record in the 'datasets' table
@@ -3892,6 +3956,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     #----#
     showNotification("Dataset Successfully Updated", type = "message", closeButton = FALSE)
     #----#
+
+    # Remove the modal
+    removeModal()
   })
   #----
   #--------------------------#
@@ -3928,6 +3995,88 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   # Renders the Data table of currently added linkage methods
   output$currently_added_linkage_methods <- renderDataTable({
     get_linkage_methods()
+  })
+
+  # Observes when the user presses the "Add Linkage Method" button that brings up a modal dialog
+  observeEvent(input$add_linkage_method_pop_up, {
+    # Reset all the input fields
+    updateTextAreaInput(session, "add_implementation_name", value = "")
+    updateTextAreaInput(session, "add_technique_label",     value = "")
+    updateTextAreaInput(session, "add_implementation_desc", value = "")
+    updateNumericInput(session,  "add_implementation_vers", value = NA)
+
+    # Show the dialog modal
+    showModal(modalDialog(
+      title = "Add Linkage Method",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidPage(
+        # Add linkage method fields here
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            textAreaInput("add_implementation_name", label = "Implementation/Class Name:", value = "",
+                          width = validateCssUnit(500), resize = "none"),
+
+            # Add the popover manually
+            h1(tooltip(bs_icon("question-circle"),
+                       paste("The linkage implementation/class name should match the custom R script built",
+                             "by yourself to be used for linkage EXACTLY. During linkage, the program will",
+                             "try to source and call your custom class by searching for this exact name."),
+                       placement = "right",
+                       options = list(container = "body")))
+          )),
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            textAreaInput("add_technique_label", label = "Linkage Method:", value = "",
+                          width = validateCssUnit(500), resize = "none"),
+
+            # Add the popover manually
+            h1(tooltip(bs_icon("question-circle"),
+                       paste("Within a linkage implementation, there are various techniques that can be used",
+                             "(Deterministic, Probabilistic) and the program will pass to your class which",
+                             "technique should be used."),
+                       placement = "right",
+                       options = list(container = "body")))
+          )),
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            textAreaInput("add_implementation_desc", label = "Implementation Description:", value = "",
+                          width = validateCssUnit(500), resize = "none"),
+
+            # Add the popover manually
+            h1(tooltip(bs_icon("question-circle"),
+                       paste("Short description of the linkage class being created including its method and name."),
+                       placement = "right",
+                       options = list(container = "body")))
+          )),
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            numericInput("add_implementation_vers", label = "Implementation Version:",
+                         value = NULL, width = validateCssUnit(500)),
+
+            # Add the popover manually
+            h1(tooltip(bs_icon("question-circle"),
+                       paste("The implementation version can help differentiate implementations from",
+                             "other implementations with similar names and techniques."),
+                       placement = "right",
+                       options = list(container = "body")))
+          )),
+        ),
+        HTML("<br>"),
+        fluidRow(
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("add_linkage_method", "Add Linkage Method", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
+          )),
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            helpText(paste0(
+              "The first step to using a custom implementation during data linkage within the 'autolink' package is adding ",
+              "it here within the GUI. Once the implementation has been successfully added here, you should verify that the class ",
+              "that is being called (that you have created) accepts the proper input parameters, and that it returns all expected values. ",
+              "To verify that everything is set up correctly, or if you are unsure with what you need. Consider reading the 'Developer Help' ",
+              "documentation found under the 'Help' drop-down and click the corresponding link."
+            ), style = "width: 500px;")
+          )),
+        )
+      ),
+      size = "s"
+    ))
   })
 
   # Adds a new record to the linkage methods table
@@ -3989,6 +4138,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     #----#
     showNotification("Linkage Method Successfully Added", type = "message", closeButton = FALSE)
     #----#
+
+    # Remove the modal
+    removeModal()
   })
   #----
   #---------------------------------#
@@ -4104,18 +4256,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     names(df)[names(df) == 'modified_date'] <- 'Modified Date'
     names(df)[names(df) == 'modified_by'] <- 'Modified By'
 
-    # With algorithms, we'll replace the enabled [0, 1] with [No, Yes]
-    df$enabled <- str_replace(df$enabled, "0", "No")
-    df$enabled <- str_replace(df$enabled, "1", "Yes")
-    df$enabled_for_testing <- str_replace(df$enabled_for_testing, "0", "No")
-    df$enabled_for_testing <- str_replace(df$enabled_for_testing, "1", "Yes")
-
-    # Rename the remaining columns
-    names(df)[names(df) == 'enabled'] <- 'Active Algorithm'
-    names(df)[names(df) == 'enabled_for_testing'] <- 'Enabled for Sensitivity Testing'
-
     # Drop the algorithm_id, dataset_id_left, and dataset_id_right value
-    df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right, published, archived))
+    df <- subset(df, select = -c(algorithm_id, dataset_id_left, dataset_id_right, published, archived, enabled, enabled_for_testing))
 
     # Put it into a data table now
     dt <- datatable(df, selection = 'single', rownames = FALSE, options = list(lengthChange = FALSE))
@@ -4124,6 +4266,56 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   # Render the data table for the linkage algorithms of the desired 2 datasets
   output$currently_added_linkage_algorithms <- renderDataTable({
     get_linkage_algorithms()
+  })
+
+  # Observes the dataset pair and will attempt to get the ground truth that belongs to the dataset pair
+  observe({
+    # Get the user inputs
+    left_dataset_id  <- input$linkage_algorithm_left_dataset
+    right_dataset_id <- input$linkage_algorithm_right_dataset
+
+    # Make sure BOTH IDs are not blank or the same
+    if(is.null(left_dataset_id) || is.null(right_dataset_id) || left_dataset_id == "" ||
+       right_dataset_id == "" || left_dataset_id == right_dataset_id){
+      # Render the text output
+      output$selected_dataset_pair_ground_truth <- renderText({
+        "No ground truth has been provided."
+      })
+
+      return()
+    }
+
+    # Get all the rows from ground_truth_variables that match to a left and right dataset id
+    ground_truth_df <- dbGetQuery(linkage_metadata_conn, paste0('
+    SELECT
+      dvf.field_name AS left_dataset_field,
+      dvf2.field_name AS right_dataset_field,
+      gtv.comparison_rule_id
+    FROM ground_truth_variables gtv
+    INNER JOIN dataset_fields dvf ON gtv.left_dataset_field_id = dvf.field_id
+    INNER JOIN dataset_fields dvf2 ON gtv.right_dataset_field_id = dvf2.field_id
+    WHERE gtv.dataset_id_left = ', left_dataset_id, ' AND gtv.dataset_id_right = ', right_dataset_id))
+
+    # Render the text output to contain the ground truth names
+    ground_truth_fields <- c()
+    for(field_name in ground_truth_df$left_dataset_field){
+      if(tolower(field_name) == "phin"){
+        ground_truth_fields <- append(ground_truth_fields, "PHIN")
+      }
+      else{
+        ground_truth_fields <- append(ground_truth_fields, field_name)
+      }
+    }
+
+    # Convert the vector into a single string
+    ground_truth_fields_char <- ifelse(length(ground_truth_fields) <= 0,
+                                        "No ground truth has been provided.",
+                                        paste0(ground_truth_fields, collapse = ", "))
+
+    # Render the text output
+    output$selected_dataset_pair_ground_truth <- renderText({
+      ground_truth_fields_char
+    })
   })
 
   # Add an empty linkage algorithm to the table using the provided datasets and name
