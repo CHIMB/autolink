@@ -3761,18 +3761,15 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     if("collect_missing_data_indicators" %in% names(extra_parameters) && extra_parameters[["collect_missing_data_indicators"]] == T){
       # Obtain the output variables
       output_fields_df <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
-      output_fields    <- output_fields_df$field_name
+      output_fields    <- unique(output_fields_df$field_name)
 
       # Establish the source missing data frame
       source_missing <- subset(left_dataset, select = output_fields)
 
       # For each of the output fields, replace missing values with 0 and existing values with 1
-      for(row in 1:nrow(output_fields_df)){
-        # Get the current row
-        output_fields_row <- output_fields_df[row,]
-
+      for(output_field in output_fields){
         # Get the column name
-        col_name <- output_fields_row$field_name
+        col_name <- output_field
 
         # Replace blank, missing, NA, etc. values for the column with 0, otherwise replace with 1
         source_missing[[col_name]] <- ifelse(is.na(source_missing[[col_name]]) | is.null(source_missing[[col_name]]) | trimws(source_missing[[col_name]]) == "",
@@ -3917,49 +3914,244 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       algo_summary_footnotes <- unique(algo_summary_footnotes)
 
       # Get the blocking variables
-      blocking_fields_df      <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
-      cleaned_blocking_fields <- str_replace_all(blocking_fields_df$left_dataset_field, "[[:punct:]]", " ") # Remove punctuation
-      cleaned_blocking_fields <- str_to_title(cleaned_blocking_fields) # Set to title-case
-      blocking_fields         <- paste(cleaned_blocking_fields, collapse = ", ")
+      # blocking_fields_df      <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
+      # cleaned_blocking_fields <- str_replace_all(blocking_fields_df$left_dataset_field, "[[:punct:]]", " ") # Remove punctuation
+      # cleaned_blocking_fields <- str_to_title(cleaned_blocking_fields) # Set to title-case
+      #blocking_fields         <- paste(cleaned_blocking_fields, collapse = ", ")
 
-      # Get the matching variables
-      matching_query <- paste('SELECT field_name, comparison_rule_id FROM matching_variables
-                              JOIN dataset_fields on field_id = left_dataset_field_id
-                              WHERE iteration_id =', curr_iteration_id)
-      matching_df <- dbGetQuery(linkage_metadata_db, matching_query)
+      # Start by getting all the rows from blocking_variables that match to a specific iteration_id
+      blocking_keys_df <- dbGetQuery(linkage_metadata_db, paste0('
+          SELECT
+            dvf.field_name AS left_dataset_field,
+            dvf2.field_name AS right_dataset_field,
+            bv.linkage_rule_id
+          FROM blocking_variables bv
+          INNER JOIN dataset_fields dvf ON bv.left_dataset_field_id = dvf.field_id
+          INNER JOIN dataset_fields dvf2 ON bv.right_dataset_field_id = dvf2.field_id
+          WHERE bv.iteration_id = ', curr_iteration_id))
 
-      # Clean the matching variable name
-      cleaned_name <- str_replace_all(matching_df$field_name, "[[:punct:]]", " ") # Remove punctuation
-      cleaned_name <- str_to_title(cleaned_name) # Set to title-case
-      matching_df$field_name <- cleaned_name
+      # Loop through each blocking variable, renaming them, and apply linkage rules to the fields
+      blocking_keys <- c()
+      if(nrow(blocking_keys_df) > 0){
+        for(j in 1:nrow(blocking_keys_df)){
+          # First, get the dataset field name
+          field_name <- blocking_keys_df$left_dataset_field[j]
 
-      # Loop through each matching variable to get its comparison methods
-      for(j in 1:nrow(matching_df)){
-        # Get the comparison_rule_id for this row
-        comparison_rule_id <- matching_df$comparison_rule_id[j]
-        if(nrow(matching_df) > 0 && !is.na(comparison_rule_id)){
-          # Query to get the acceptance method name from the comparison_rules table
-          method_query <- paste('SELECT method_name FROM comparison_rules cr
-                             JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
-                             WHERE comparison_rule_id =', comparison_rule_id)
-          method_name <- dbGetQuery(linkage_metadata_db, method_query)$method_name
+          # Remove punctuation
+          field_name <- str_replace_all(field_name, "[[:punct:]]", " ")
 
-          # Query to get the associated parameters for the comparison_rule_id
-          params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
-          params_df <- dbGetQuery(linkage_metadata_db, params_query)
+          # Split up the words of the string, and convert them to title case, except for
+          # words like "of", "and", etc.
+          words <- str_split(field_name, "\\s+")[[1]]
+          field_name <- str_c(
+            sapply(words, function(word) {
+              if (tolower(word) %in% c("of", "and", "the", "in", "on", "at", "to", "with")) {
+                tolower(word)
+              } else {
+                str_to_title(word)
+              }
+            }),
+            collapse = " "
+          )
+          if(tolower(field_name) == "phin"){
+            field_name <- "PHIN"
+            algo_summary_footnotes <- append(algo_summary_footnotes, "PHIN=Personal Health Identification Number")
+            algo_summary_footnotes <- unique(algo_summary_footnotes)
+          }
 
-          # Combine the parameters into a string
-          params_str <- paste(params_df$parameter, collapse = ", ")
+          # Next, get the linkage rule
+          linkage_rule_id <- blocking_keys_df$linkage_rule_id[j]
 
-          # Create the final string "method_name (key1=value1, key2=value2)"
-          method_with_params <- paste0(" - ", method_name, " (", params_str, ")")
+          # If the linkage_rule_id is not NA, replace it with text of the rule
+          if(!is.na(linkage_rule_id)){
+            # Query to get the acceptance method name from the comparison_rules table
+            method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+            method_df <- dbGetQuery(linkage_metadata_db, method_query)
 
-          # Replace the comparison_rule_id with the method and parameters string
-          matching_df$field_name[j] <- paste0(matching_df$field_name[j], method_with_params)
+            # We'll start with "Alternative Field Left"
+            alt_field_val <- method_df$alternate_field_value_left
+            if(!is.na(alt_field_val)){
+              field_name <- paste0(field_name, " - ", scales::ordinal(as.numeric(alt_field_val)), " Field Value (Left)")
+            }
+
+            # Next we'll handle "Alternative Field Right"
+            alt_field_val <- method_df$alternate_field_value_right
+            if(!is.na(alt_field_val)){
+              field_name <- paste0(field_name, " - ", scales::ordinal(as.numeric(alt_field_val)), " Field Value (Right)")
+            }
+
+            # Next we'll handle the "Integer Variance"
+            int_variance <- method_df$integer_value_variance
+            if(!is.na(int_variance)){
+              field_name <- paste0(field_name, " ±", int_variance)
+            }
+
+            # Next we'll handle "Name Substring"
+            name_substring <- method_df$substring_length
+            if(!is.na(name_substring)){
+              field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+            }
+
+            # Next we'll handle the "Standardize Names" rule
+            standardize_names <- method_df$standardize_names
+            if(!is.na(standardize_names)){
+              field_name <- paste0("Standardized ", field_name)
+            }
+          }
+
+          # Append the field name
+          blocking_keys <- append(blocking_keys, field_name)
         }
       }
 
-      matching_fields <- paste(matching_df$field_name, collapse = ", ")
+      # Collapse the blocking keys, separated by a comma
+      blocking_fields <- paste(blocking_keys, collapse = ", ")
+
+      # Start by getting all the rows from blocking_variables that match to a specific iteration_id
+      matching_keys_df <- dbGetQuery(linkage_metadata_db, paste0('
+          SELECT
+            dvf.field_name AS left_dataset_field,
+            dvf2.field_name AS right_dataset_field,
+            mv.linkage_rule_id,
+            mv.comparison_rule_id
+          FROM matching_variables mv
+          INNER JOIN dataset_fields dvf ON mv.left_dataset_field_id = dvf.field_id
+          INNER JOIN dataset_fields dvf2 ON mv.right_dataset_field_id = dvf2.field_id
+          WHERE mv.iteration_id = ', curr_iteration_id))
+
+      # Loop through each blocking variable, renaming them, and apply linkage rules to the fields
+      matching_keys <- c()
+      if(nrow(matching_keys_df) > 0){
+        for(j in 1:nrow(matching_keys_df)){
+          # First, get the dataset field name
+          field_name <- matching_keys_df$left_dataset_field[j]
+
+          # Remove punctuation
+          field_name <- str_replace_all(field_name, "[[:punct:]]", " ")
+
+          # Split up the words of the string, and convert them to title case, except for
+          # words like "of", "and", etc.
+          words <- str_split(field_name, "\\s+")[[1]]
+          field_name <- str_c(
+            sapply(words, function(word) {
+              if (tolower(word) %in% c("of", "and", "the", "in", "on", "at", "to", "with")) {
+                tolower(word)
+              } else {
+                str_to_title(word)
+              }
+            }),
+            collapse = " "
+          )
+          if(tolower(field_name) == "phin"){
+            field_name <- "PHIN"
+            algo_summary_footnotes <- append(algo_summary_footnotes, "PHIN=Personal Health Identification Number")
+            algo_summary_footnotes <- unique(algo_summary_footnotes)
+          }
+
+          # Next, get the linkage rule
+          linkage_rule_id <- matching_keys_df$linkage_rule_id[j]
+
+          # If the linkage_rule_id is not NA, replace it with text of the rule
+          if(!is.na(linkage_rule_id)){
+            # Query to get the acceptance method name from the comparison_rules table
+            method_query <- paste('SELECT * FROM linkage_rules
+                           WHERE linkage_rule_id =', linkage_rule_id)
+            method_df <- dbGetQuery(linkage_metadata_db, method_query)
+
+            # We'll start with "Alternative Field Left"
+            alt_field_val <- method_df$alternate_field_value_left
+            if(!is.na(alt_field_val)){
+              field_name <- paste0(field_name, " - ", scales::ordinal(as.numeric(alt_field_val)), " Field Value (Left)")
+            }
+
+            # Next we'll handle "Alternative Field Right"
+            alt_field_val <- method_df$alternate_field_value_right
+            if(!is.na(alt_field_val)){
+              field_name <- paste0(field_name, " - ", scales::ordinal(as.numeric(alt_field_val)), " Field Value (Right)")
+            }
+
+            # Next we'll handle the "Integer Variance"
+            int_variance <- method_df$integer_value_variance
+            if(!is.na(int_variance)){
+              field_name <- paste0(field_name, " ±", int_variance)
+            }
+
+            # Next we'll handle "Name Substring"
+            name_substring <- method_df$substring_length
+            if(!is.na(name_substring)){
+              field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+            }
+
+            # Next we'll handle the "Standardize Names" rule
+            standardize_names <- method_df$standardize_names
+            if(!is.na(standardize_names)){
+              field_name <- paste0("Standardized ", field_name)
+            }
+          }
+
+          # Next, get the comparison rule
+          comparison_rule_id <- matching_keys_df$comparison_rule_id[j]
+
+          # If the comparison_rule_id is not NA, replace it with text of the rule
+          if(!is.na(comparison_rule_id)){
+            # Define the direction of comparison for each method
+            comparison_directions <- list(
+              "Reclin-Jarowinkler" = "≥",
+              "Stringdist-OSA" = "≤",
+              "RecordLinkage-Levenshtein" = "≤",
+              "Soundex" = "=",
+              "Numeric Error Tolerance" = "±",
+              "Damerau–Levenshtein" = "≤",
+              "Date Error Tolerance" = "±",
+              "Relative Difference (Percentage)" = "=",
+              "JW" = "≥",
+              "OSA" = "≤",
+              "LS" = "≤",
+              "Soundex" = "=",
+              "NET" = "±",
+              "DLS" = "≤",
+              "DET" = "±",
+              "RD" = "≤"
+            )
+
+            # Query to get the acceptance method name from the comparison_rules table
+            method_query <- paste('SELECT method_name, description FROM comparison_rules cr
+                             JOIN comparison_methods cm on cr.comparison_method_id = cm.comparison_method_id
+                             WHERE comparison_rule_id =', comparison_rule_id)
+            method_name <- dbGetQuery(linkage_metadata_db, method_query)$method_name
+            description <- dbGetQuery(linkage_metadata_db, method_query)$description
+
+            # Query to get the associated parameters for the comparison_rule_id
+            params_query <- paste('SELECT parameter FROM comparison_rules_parameters WHERE comparison_rule_id =', comparison_rule_id)
+            params_df <- dbGetQuery(linkage_metadata_db, params_query)
+
+            # Combine the parameters into a string
+            params_str <- paste(params_df$parameter, collapse = ", ")
+
+            # Get the direction of comparison
+            direction <- comparison_directions[[method_name]]
+
+            # Handle cases where direction is unknown (default to "=")
+            if (is.null(direction)) {
+              direction <- "="
+            }
+
+            # Create the final string "method_name (key1=value1, key2=value2)"
+            field_name <- paste0(field_name, " (", method_name, direction, params_str, ")")
+
+            # Save the method and description as a footnote
+            algo_summary_footnotes <- append(algo_summary_footnotes, paste0(method_name, "=", description))
+            algo_summary_footnotes <- unique(algo_summary_footnotes)
+          }
+
+          # Append the field name
+          matching_keys <- append(matching_keys, field_name)
+        }
+      }
+
+      # Collapse the matching keys, separated by a comma
+      matching_fields <- paste(matching_keys, collapse = ", ")
 
       # Get the acceptance threshold
       acceptance_query <- paste('SELECT * FROM linkage_iterations
@@ -4171,7 +4363,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # Get the columns to keep
     output_fields  <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
     fields_to_keep <- output_fields$field_name
-    fields_to_keep  <- append(fields_to_keep, "stage")
+    fields_to_keep <- append(fields_to_keep, "stage")
+    fields_to_keep <- unique(fields_to_keep)
 
     # Keep the output fields specified by the user
     left_dataset <- subset(left_dataset, select = fields_to_keep)

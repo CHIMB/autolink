@@ -471,20 +471,6 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
   # Return the fields
   return(stored_fields_with_names)
 }
-### V1
-#----
-# get_linkage_output_fields <- function(linkage_db, algorithm_id){
-#   # Get the output fields
-#   stored_fields_with_names <- dbGetQuery(linkage_db, "SELECT lao.algorithm_id, lao.dataset_label, lao.field_type, df.field_name
-#                                                  FROM linkage_algorithms_output_fields lao
-#                                                  JOIN dataset_fields df
-#                                                  ON lao.dataset_field_id = df.field_id
-#                                                  WHERE lao.algorithm_id = ?
-#                                                  ORDER BY parameter_id", params = list(algorithm_id))
-#
-#   # Return the output fields
-#   return(stored_fields_with_names)
-# }
 #----
 #------------------------------------------------------------#
 
