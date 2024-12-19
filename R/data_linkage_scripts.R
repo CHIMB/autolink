@@ -5009,6 +5009,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       report_title    <- "Data Linkage Quality Report"
       report_subtitle <- paste0("Linkage of ", datasets$left_dataset_name, " with the ", datasets$right_dataset_name)
 
+      # Get the threshold
+      threshold <- NULL
+      if("report_threshold" %in% names(extra_parameters)){
+        threshold <- extra_parameters[["report_threshold"]]
+      }
+
       # If we have performance measures, include them, otherwise generate a normal report
       if(nrow(intermediate_performance_measures_df) <= 0){
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
@@ -5016,7 +5022,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                             output_dir, username, "autolink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
-                                            report_file_name = report_file_name)
+                                            report_file_name = report_file_name, threshold = threshold)
       }
       else{
         performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
@@ -5029,7 +5035,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                             performance_measures_data = intermediate_performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
                                             ground_truth = ground_truth_fields,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
-                                            report_file_name = report_file_name)
+                                            report_file_name = report_file_name, threshold = threshold)
       }
       detach("package:linkrep", unload = TRUE)
     },
