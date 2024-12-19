@@ -1718,6 +1718,7 @@ linkage_ui <- fluidPage(
                   card(full_screen = TRUE,
                     fluidPage(
                       fluidRow(
+                        # Selecting missingness of values can be done from here for now, in the future we may want to make it its own page
                         column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
                             selectizeInput("linkage_algorithm_output_field_type", label = "Field Type:",
                             choices = list("Generic/Pass-Through" = 1,
@@ -1728,7 +1729,8 @@ linkage_ui <- fluidPage(
                                            "Number of Words" = 6,
                                            "Derived Age" = 7,
                                            "Standardized Values" = 8,
-                                           "Canadian Forward Sortation Area (FSA)" = 9),
+                                           "Canadian Forward Sortation Area (FSA)" = 9,
+                                           "Missingness" = 10),
                             options = list(
                               placeholder = 'Select a Field Output Type',
                               onInitialize = I('function() { this.setValue(""); }')
@@ -7143,6 +7145,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
              "The 'Canadian Forward Sortation Area' field type standardizes the first character of a postal code to canadian geographical areas. ",
              "For example, 'A' corresponds to Newfoundland and Labrador, and 'R' corresponds to Manitoba."
            ),
+           "10" = paste0(
+            "The individual values of the selected field will be ignored, instead the field will have its values replaced by indicators which specify ",
+            "if each record within the field contains a value or not."
+           ),
            "Unknown field type.")  # Default fallback
   })
 
@@ -7207,6 +7213,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df$field_type[df$field_type == 7] <- 'Derived Age'
     df$field_type[df$field_type == 8] <- 'Standardized Values'
     df$field_type[df$field_type == 9] <- 'Canadian Forward Sortation Area (FSA)'
+    df$field_type[df$field_type == 10] <- 'Missingness'
 
     # With our data frame, we'll rename some of the columns to look better
     names(df)[names(df) == 'field_name'] <- 'Field Source Name(s)'
@@ -7327,7 +7334,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         )
       })
     }
-    # FIELD TYPE == 1, 2, 3, 4, 5, 6, 9 (Only requires one input)
+    # FIELD TYPE == 1, 2, 3, 4, 5, 6, 9, 10 (Only requires one input)
     else{
       # All other field types require just the input field
       output$linkage_algorithm_output_field_input <- renderUI({

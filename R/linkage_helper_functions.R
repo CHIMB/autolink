@@ -445,7 +445,7 @@ get_ground_truth_fields <- function(linkage_db, algorithm_id){
   return(ground_truth_df)
 }
 
-#' Get Algorithm Ground Truth Keys
+#' Get Algorithm Output Fields
 #'
 #' The get_linkage_output_fields() function will take in a linkage database connection containing
 #' all the metadata, along with an algorithm ID.
@@ -465,7 +465,34 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
     FROM output_fields of
     JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
     JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
-    WHERE of.algorithm_id = ?
+    WHERE of.algorithm_id = ? AND of.field_type != 10
+    ORDER BY ofp.parameter_id", params = list(algorithm_id))
+
+  # Return the fields
+  return(stored_fields_with_names)
+}
+
+#' Get Algorithm Missingness Fields
+#'
+#' The get_linkage_missingness_fields() function will take in a linkage database connection containing
+#' all the metadata, along with an algorithm ID.
+#' A dataframe is returned which contains the dataset fields to keep for gathering missing data indicators.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param algorithm_id An iteration number.
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' algorithm_id <- 1
+#' get_linkage_output_fields(linkage_db, algorithm_id)
+#' @export
+get_linkage_missingness_fields <- function(linkage_db, algorithm_id){
+  # Get output fields
+  stored_fields_with_names <- dbGetQuery(linkage_db, "
+    SELECT of.dataset_label, df.field_name
+    FROM output_fields of
+    JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+    JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+    WHERE of.algorithm_id = ? AND of.field_type == 10
     ORDER BY ofp.parameter_id", params = list(algorithm_id))
 
   # Return the fields
