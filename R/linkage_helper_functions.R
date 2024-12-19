@@ -523,8 +523,9 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
     FROM output_fields of
     JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
     JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
-    WHERE of.algorithm_id = ?
+    WHERE of.algorithm_id = ? and of.field_type != 10
     ORDER BY ofp.output_field_id ASC, ofp.parameter_id ASC", params = list(algorithm_id))
+
 
   # Loop through each of the output field ids, apply cutoffs and labels
   cols_to_drop <- c()
@@ -549,7 +550,7 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Add this column as one we will be keeping
       cols_to_drop <- append(cols_to_drop, old_field_name)
     }
-    # SUBSTRING INITIAL
+    # CATEGORIZED YEAR
     else if(field_type == 2){
       # Get the field name (appending an identifiable suffix to the column)
       old_field_name <- field_info$field_name
@@ -875,6 +876,7 @@ load_linkage_file <- function(dataset_file){
 #' @param collect_missing_data_indicators A TRUE or FALSE value for whether you'd like to have missing data indicators appear of the variables you're keeping as output.
 #' @param save_audit_performance A TRUE or FALSE value for whether you'd like to save the performance of each algorithm being ran for later auditing purposes.
 #' @param main_report_algorithm A numeric value which specified the algorithm ID of the only report that should be generated. (If the user would like performance values appear in report appendix)
+#' @param report_threshold A numeric value which specifies the minimum of a value in the report can be before being considered a small count. If lower than the threshold, the violating field is removed.
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
@@ -890,7 +892,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          save_all_linkage_results = FALSE,
                                          collect_missing_data_indicators = FALSE,
                                          save_audit_performance = FALSE,
-                                         main_report_algorithm = NULL){
+                                         main_report_algorithm = NULL,
+                                         report_threshold = NULL){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -984,6 +987,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!is.na(main_report_algorithm) && !is.null(main_report_algorithm) &&
      (is.numeric(main_report_algorithm) && length(main_report_algorithm) == 1 && main_report_algorithm >= 1)){
     extra_params_list[["main_report_algorithm"]] <- main_report_algorithm
+  }
+
+  ### Report Threshold
+  if(!is.na(report_threshold) && !is.null(report_threshold) &&
+     (is.numeric(report_threshold) && length(report_threshold) == 1 && report_threshold >= 1)){
+    extra_params_list[["report_threshold"]] <- report_threshold
   }
 
   #----------------------------------------------------------------------------#

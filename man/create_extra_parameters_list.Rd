@@ -17,7 +17,8 @@ create_extra_parameters_list(
   save_all_linkage_results = FALSE,
   collect_missing_data_indicators = FALSE,
   save_audit_performance = FALSE,
-  main_report_algorithm = NULL
+  main_report_algorithm = NULL,
+  report_threshold = NULL
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ create_extra_parameters_list(
 \item{save_audit_performance}{A TRUE or FALSE value for whether you'd like to save the performance of each algorithm being ran for later auditing purposes.}
 
 \item{main_report_algorithm}{A numeric value which specified the algorithm ID of the only report that should be generated. (If the user would like performance values appear in report appendix)}
+
+\item{report_threshold}{A numeric value which specifies the minimum of a value in the report can be before being considered a small count. If lower than the threshold, the violating field is removed.}
 }
 \description{
 The create_extra_parameters_list() function will allow users to modify any of the default

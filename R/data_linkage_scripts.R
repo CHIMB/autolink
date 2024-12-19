@@ -3835,55 +3835,59 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     if("collect_missing_data_indicators" %in% names(extra_parameters) && extra_parameters[["collect_missing_data_indicators"]] == T){
       # Obtain the output variables
       output_fields_df <- get_linkage_missingness_fields(linkage_metadata_db, algorithm_id)
-      output_fields    <- unique(output_fields_df$field_name)
 
-      # Establish the source missing data frame
-      source_missing <- subset(left_dataset, select = output_fields)
+      # Check if the data frame has any rows
+      if(nrow(output_fields_df) > 0){
+        output_fields    <- unique(output_fields_df$field_name)
 
-      # For each of the output fields, replace missing values with 0 and existing values with 1
-      for(output_field in output_fields){
-        # Get the column name
-        col_name <- output_field
+        # Establish the source missing data frame
+        source_missing <- subset(left_dataset, select = output_fields)
 
-        # Replace blank, missing, NA, etc. values for the column with 0, otherwise replace with 1
-        source_missing[[col_name]] <- ifelse(is.na(source_missing[[col_name]]) | is.null(source_missing[[col_name]]) | trimws(source_missing[[col_name]]) == "",
-                                             1, 0)
+        # For each of the output fields, replace missing values with 0 and existing values with 1
+        for(output_field in output_fields){
+          # Get the column name
+          col_name <- output_field
 
-        # Rename the column to append "_missing"
-        names(source_missing)[names(source_missing) == col_name] <- paste0(col_name, "_missing")
-      }
+          # Replace blank, missing, NA, etc. values for the column with 0, otherwise replace with 1
+          source_missing[[col_name]] <- ifelse(is.na(source_missing[[col_name]]) | is.null(source_missing[[col_name]]) | trimws(source_missing[[col_name]]) == "",
+                                               1, 0)
 
-      # Save the sourced missing data
-      missing_data_indicators <- source_missing
-      rm(source_missing)
-      gc()
-
-      # Finally, apply labels to the missing data indicators
-      # Apply Labels to the output data frame
-      # Find duplicate labels
-      label_counts <- table(output_fields_df$dataset_label)
-      duplicate_labels <- names(label_counts[label_counts > 1])
-
-      for(row_num in 1:nrow(output_fields_df)){
-        # Get the field to apply a label to
-        dataset_field <- paste0(output_fields_df$field_name[row_num], "_missing")
-
-        # Get the label to apply
-        dataset_label <- output_fields_df$dataset_label[row_num]
-
-        # If the label is a duplicate, append the formatted field name
-        if (dataset_label %in% duplicate_labels) {
-          field_name <- output_fields_df$field_name[row_num]
-          formatted_field_name <- str_to_title(gsub("[[:punct:]]", " ", field_name))
-          dataset_label <- paste0(dataset_label, " (", formatted_field_name, ")")
+          # Rename the column to append "_missing"
+          names(source_missing)[names(source_missing) == col_name] <- paste0(col_name, "_missing")
         }
 
-        # Apply the label to the field
-        label(missing_data_indicators[[dataset_field]]) <- dataset_label
-      }
+        # Save the sourced missing data
+        missing_data_indicators <- source_missing
+        rm(source_missing)
+        gc()
 
-      # Save intermediate missing indicators
-      intermediate_missing_indicators_df <- missing_data_indicators
+        # Finally, apply labels to the missing data indicators
+        # Apply Labels to the output data frame
+        # Find duplicate labels
+        label_counts <- table(output_fields_df$dataset_label)
+        duplicate_labels <- names(label_counts[label_counts > 1])
+
+        for(row_num in 1:nrow(output_fields_df)){
+          # Get the field to apply a label to
+          dataset_field <- paste0(output_fields_df$field_name[row_num], "_missing")
+
+          # Get the label to apply
+          dataset_label <- output_fields_df$dataset_label[row_num]
+
+          # If the label is a duplicate, append the formatted field name
+          if (dataset_label %in% duplicate_labels) {
+            field_name <- output_fields_df$field_name[row_num]
+            formatted_field_name <- str_to_title(gsub("[[:punct:]]", " ", field_name))
+            dataset_label <- paste0(dataset_label, " (", formatted_field_name, ")")
+          }
+
+          # Apply the label to the field
+          label(missing_data_indicators[[dataset_field]]) <- dataset_label
+        }
+
+        # Save intermediate missing indicators
+        intermediate_missing_indicators_df <- missing_data_indicators
+      }
     }
     #----
 
@@ -4796,8 +4800,18 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           # Generate the report file name
           report_file_name <- paste0(algorithm_name, ' (', algorithm_timestamp, ')')
 
+          # Report title and subtitle
+          report_title    <- "Data Linkage Quality Report"
+          report_subtitle <- paste0("Linkage of ", datasets$left_dataset_name, " with the ", datasets$right_dataset_name)
+
+          # Get the threshold
+          threshold <- NULL
+          if("report_threshold" %in% names(extra_parameters)){
+            threshold <- extra_parameters[["report_threshold"]]
+          }
+
           # Generate the linkage quality report
-          final_linkage_quality_report(output_df, algorithm_name, "", datasets$left_dataset_name,
+          final_linkage_quality_report(output_df, report_title, report_subtitle, datasets$left_dataset_name,
                                        paste0("the ", datasets$right_dataset_name), output_dir, username, "autolink (Record Linkage)",
                                        "link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                        algorithm_summary_data = algo_summary, algorithm_summary_tbl_footnotes = algo_summary_footnotes,
@@ -4808,7 +4822,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                        considered_algorithm_summary_table_names = considered_algo_summary_table_names, considered_performance_measures = considered_performance_measures,
                                        missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
                                        R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
-                                       report_file_name = report_file_name)
+                                       report_file_name = report_file_name, threshold = threshold)
 
           detach("package:linkrep", unload = TRUE)
         },
@@ -4966,7 +4980,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       datasets <- dbGetQuery(linkage_metadata_db, query, params = list(algorithm_ids[1]))
 
       # Create a title for the report
-      report_title <- paste0(datasets$left_dataset_name, " x ", datasets$right_dataset_name)
+      report_file_name <- paste0(datasets$left_dataset_name, " x ", datasets$right_dataset_name)
 
       # Get the username
       username <- extra_parameters[["data_linker"]]
@@ -4991,25 +5005,31 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         current_step <- current_step + 1
       }
 
+      # Report title and subtitle
+      report_title    <- "Data Linkage Quality Report"
+      report_subtitle <- paste0("Linkage of ", datasets$left_dataset_name, " with the ", datasets$right_dataset_name)
+
       # If we have performance measures, include them, otherwise generate a normal report
       if(nrow(intermediate_performance_measures_df) <= 0){
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
-                                            report_title, "", datasets$left_dataset_name, paste0("the ", datasets$right_dataset_name),
+                                            report_title, report_subtitle, datasets$left_dataset_name, paste0("the ", datasets$right_dataset_name),
                                             output_dir, username, "autolink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
-                                            R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
+                                            R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
+                                            report_file_name = report_file_name)
       }
       else{
         performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
         ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
         ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
-                                            report_title, "", datasets$left_dataset_name, paste0("the ", datasets$right_dataset_name),
+                                            report_title, report_subtitle, datasets$left_dataset_name, paste0("the ", datasets$right_dataset_name),
                                             output_dir, username, "autolink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
                                             performance_measures_data = intermediate_performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
                                             ground_truth = ground_truth_fields,
-                                            R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")))
+                                            R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
+                                            report_file_name = report_file_name)
       }
       detach("package:linkrep", unload = TRUE)
     },

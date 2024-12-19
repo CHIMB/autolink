@@ -2786,7 +2786,7 @@ linkage_ui <- fluidPage(
               div(style = "display: flex; justify-content: center; align-items: center;",
                 card(
                   width = NULL,  # Remove the width inside the card and control it from the column
-                  height = 256,
+                  height = 366,
                   full_screen = FALSE,
                   card_body(
                     fluidRow(
@@ -2807,6 +2807,12 @@ linkage_ui <- fluidPage(
                       )),
                       column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                         checkboxInput("save_audit_performance", "Save Algorithm Performance", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Any cutoff of values that fall below the provided threshold will be removed if the report option is generated.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        numericInput("report_threshold", "Report Threshold Cutoff:", NA)
                       ))
                     )
                   )
@@ -14233,6 +14239,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       save_missing_data_indicators    <- input$create_missing_data_indicators
       include_unlinked_records        <- input$include_unlinked_records
       save_audit_performance          <- input$save_audit_performance
+      report_threshold                <- input$report_threshold
       linkage_report_type             <- 1
 
       # Get the folder and file inputs
@@ -14303,7 +14310,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                      generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
                                                      data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results,
                                                      collect_missing_data_indicators = save_missing_data_indicators, include_unlinked_records = include_unlinked_records,
-                                                     save_audit_performance = save_audit_performance, main_report_algorithm = main_report_algorithm)
+                                                     save_audit_performance = save_audit_performance, main_report_algorithm = main_report_algorithm, report_threshold = report_threshold)
 
       # Run the algorithms
       try_catch_success <- TRUE
