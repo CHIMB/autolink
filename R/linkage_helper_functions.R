@@ -558,8 +558,9 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
 
       # Apply Ranges for date cutoffs
       output_df[[new_field_name]] <- cut(output_df[[old_field_name]],
-                                         breaks = c(-Inf, 1975, 1985, 1995, 2005, 2015, 2025, 2035, Inf),
-                                         labels = c("<1975", "1975-1984", "1985-1994", "1995-2004", "2005-2014", "2015-2024", "2025-2034", "2035-2044"),
+                                         breaks = c(-Inf, 1945, 1955, 1965, 1975, 1985, 1995, 2005, 2015, 2025, 2035, Inf),
+                                         labels = c("<1945", "1945-1954", "1955-1964", "1965-1974", "1975-1984", "1985-1994",
+                                                    "1995-2004", "2005-2014", "2015-2024", "2025-2034", "2035-2044"),
                                          right = FALSE)
 
       # Apply the column label
