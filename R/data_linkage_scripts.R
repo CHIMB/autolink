@@ -4811,6 +4811,14 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             threshold <- extra_parameters[["report_threshold"]]
           }
 
+          # Modify the footnotes to be one character string per table
+          algo_summary_footnotes <- paste(algo_summary_footnotes, collapse = ", ")
+          if(length(considered_algo_summary_footnotes_list) > 0){
+            for(i in 1:length(considered_algo_summary_footnotes_list)){
+              considered_algo_summary_footnotes_list[[i]] <- paste(considered_algo_summary_footnotes_list[[i]], collapse = ", ")
+            }
+          }
+
           # Generate the linkage quality report
           final_linkage_quality_report(output_df, report_title, report_subtitle, datasets$left_dataset_name,
                                        paste0("the ", datasets$right_dataset_name), output_dir, username, "autolink (Record Linkage)",
@@ -5014,6 +5022,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       threshold <- NULL
       if("report_threshold" %in% names(extra_parameters)){
         threshold <- extra_parameters[["report_threshold"]]
+      }
+
+      # Modify the footnotes to be one character string per table
+      if(length(linkage_algorithm_footnote_list) > 0){
+        for(i in 1:length(linkage_algorithm_footnote_list)){
+          linkage_algorithm_footnote_list[[i]] <- paste(linkage_algorithm_footnote_list[[i]], collapse = ", ")
+        }
       }
 
       # If we have performance measures, include them, otherwise generate a normal report
