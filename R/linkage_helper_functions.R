@@ -878,6 +878,7 @@ load_linkage_file <- function(dataset_file){
 #' @param save_audit_performance A TRUE or FALSE value for whether you'd like to save the performance of each algorithm being ran for later auditing purposes.
 #' @param main_report_algorithm A numeric value which specified the algorithm ID of the only report that should be generated. (If the user would like performance values appear in report appendix)
 #' @param report_threshold A numeric value which specifies the minimum of a value in the report can be before being considered a small count. If lower than the threshold, the violating field is removed.
+#' @param extra_summary_parameters A TRUE or FALSE value for whether you'd like extra algorithm summary parameters (FDR & FOR) to appear in the table.
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
@@ -894,7 +895,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          collect_missing_data_indicators = FALSE,
                                          save_audit_performance = FALSE,
                                          main_report_algorithm = NULL,
-                                         report_threshold = NULL){
+                                         report_threshold = NULL,
+                                         extra_summary_parameters = FALSE){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -983,7 +985,13 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
     extra_params_list[["save_audit_performance"]] <- TRUE
   }
 
-  ### Main Report Algorithm
+  ### Extra Summary Parameters
+  if(!isFALSE(extra_summary_parameters) && !is.na(extra_summary_parameters) && !is.null(extra_summary_parameters) &&
+     (isTRUE(extra_summary_parameters) || extra_summary_parameters == "TRUE")){
+    extra_params_list[["extra_summary_parameters"]] <- TRUE
+  }
+
+  #-- Main Report Algorithm Options --#
   ### Generate Linkage Quality Report
   if(!is.na(main_report_algorithm) && !is.null(main_report_algorithm) &&
      (is.numeric(main_report_algorithm) && length(main_report_algorithm) == 1 && main_report_algorithm >= 1)){

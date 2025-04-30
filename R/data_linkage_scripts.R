@@ -3914,16 +3914,31 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     linkage_rate_cumulative_denom <- nrow(left_dataset)
 
     # Keep a data frame of all passes for algorithm summary
-    algo_summary <- data.frame(
-      pass = character(),
-      linkage_implementation = character(),
-      blocking_variables = character(),
-      matching_variables = character(),
-      acceptance_threshold = character(),
-      linkage_rate_pass = character(),
-      linkage_rate_total = character()
-    )
-    algo_summary_footnotes <- c()
+    if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
+      algo_summary <- data.frame(
+        pass = character(),
+        linkage_implementation = character(),
+        blocking_variables = character(),
+        matching_variables = character(),
+        acceptance_threshold = character(),
+        linkage_rate_pass = character(),
+        linkage_rate_total = character(),
+        FDR = character(),
+        FOR = character()
+      )
+      algo_summary_footnotes <- c("FDR = False Discovery Rate, FOR = False Omission Rate")
+    } else{
+      algo_summary <- data.frame(
+        pass = character(),
+        linkage_implementation = character(),
+        blocking_variables = character(),
+        matching_variables = character(),
+        acceptance_threshold = character(),
+        linkage_rate_pass = character(),
+        linkage_rate_total = character()
+      )
+      algo_summary_footnotes <- c()
+    }
 
     # Keep a vector of performance measure values
     performance_measures <- c(TP = 0, TN = 0, FP = 0, FN = 0)
@@ -3990,12 +4005,6 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       linkage_footnote <- paste0(linkage_method, ' = ', linkage_method_desc)
       algo_summary_footnotes <- append(algo_summary_footnotes, linkage_footnote)
       algo_summary_footnotes <- unique(algo_summary_footnotes)
-
-      # Get the blocking variables
-      # blocking_fields_df      <- get_blocking_keys(linkage_metadata_db, curr_iteration_id)
-      # cleaned_blocking_fields <- str_replace_all(blocking_fields_df$left_dataset_field, "[[:punct:]]", " ") # Remove punctuation
-      # cleaned_blocking_fields <- str_to_title(cleaned_blocking_fields) # Set to title-case
-      #blocking_fields         <- paste(cleaned_blocking_fields, collapse = ", ")
 
       # Start by getting all the rows from blocking_variables that match to a specific iteration_id
       blocking_keys_df <- dbGetQuery(linkage_metadata_db, paste0('
@@ -4273,19 +4282,72 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       linkage_rate_cumulative_numer <- linkage_rate_cumulative_numer + linkage_rate_pass_numer
       linkage_rate_cumulative <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
 
-      # Create a data frame for the current passes summary
-      curr_algo_summary <- data.frame(
-        pass = row_num,
-        linkage_implementation = linkage_method,
-        blocking_variables = blocking_fields,
-        matching_variables = matching_fields,
-        acceptance_threshold = acceptance_threshold,
-        linkage_rate_pass = linkage_rate_pass,
-        linkage_rate_cumulative = linkage_rate_cumulative
-      )
+      # Create a data frame for the current passes algorithm summary
+      if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
+        if("performance_measure_variables" %in% names(results)){
+          # Get the performance measure values
+          iteration_performance_measures <- results[["performance_measure_variables"]]
 
-      # Bind this to our full algorithm summary
-      algo_summary <- rbind(algo_summary, curr_algo_summary)
+          # Append the performance measure variables to the overall values
+          TP <- iteration_performance_measures[1]
+          TN <- iteration_performance_measures[2]
+          FP <- iteration_performance_measures[3]
+          FN <- iteration_performance_measures[4]
+
+          # FDR (False Discover Rate)
+          FDR <- (FP/(FP + TP)) * 100
+
+          # FOR (False Omission Rate)
+          FOR <- (FN/(FN + TN)) * 100
+
+          # Create a data frame for the current passes summary
+          curr_algo_summary <- data.frame(
+            pass = row_num,
+            linkage_implementation = linkage_method,
+            blocking_variables = blocking_fields,
+            matching_variables = matching_fields,
+            acceptance_threshold = acceptance_threshold,
+            linkage_rate_pass = linkage_rate_pass,
+            linkage_rate_cumulative = linkage_rate_cumulative,
+            FDR = FDR,
+            FOR = FOR
+          )
+
+          # Bind this to our full algorithm summary
+          algo_summary <- rbind(algo_summary, curr_algo_summary)
+        } else {
+          # Create a data frame for the current passes summary
+          curr_algo_summary <- data.frame(
+            pass = row_num,
+            linkage_implementation = linkage_method,
+            blocking_variables = blocking_fields,
+            matching_variables = matching_fields,
+            acceptance_threshold = acceptance_threshold,
+            linkage_rate_pass = linkage_rate_pass,
+            linkage_rate_cumulative = linkage_rate_cumulative,
+            FDR = NA,
+            FOR = NA
+          )
+
+          # Bind this to our full algorithm summary
+          algo_summary <- rbind(algo_summary, curr_algo_summary)
+        }
+
+      } else{
+        # Create a data frame for the current passes summary
+        curr_algo_summary <- data.frame(
+          pass = row_num,
+          linkage_implementation = linkage_method,
+          blocking_variables = blocking_fields,
+          matching_variables = matching_fields,
+          acceptance_threshold = acceptance_threshold,
+          linkage_rate_pass = linkage_rate_pass,
+          linkage_rate_cumulative = linkage_rate_cumulative
+        )
+
+        # Bind this to our full algorithm summary
+        algo_summary <- rbind(algo_summary, curr_algo_summary)
+      }
 
       ### RESULT 1: Linked Indices (Removed the rows that were linked)
       if(!anyNA(linked_indices)){
@@ -4482,13 +4544,25 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     output_df <- apply_output_cutoffs(linkage_metadata_db, algorithm_id, output_df)
 
     # Relabel the algo summary
-    label(algo_summary$pass) <- "Pass"
-    label(algo_summary$linkage_rate_pass) <- "Within Pass Linkage Rate (%)"
-    label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
-    label(algo_summary$blocking_variables) <- "Blocking Scheme"
-    label(algo_summary$matching_variables) <- "Matching Criteria"
-    label(algo_summary$linkage_implementation) <- "Linkage Technique"
-    label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate (%)"
+    if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
+      label(algo_summary$pass) <- "Pass"
+      label(algo_summary$linkage_rate_pass) <- "Within Pass Linkage Rate (%)"
+      label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
+      label(algo_summary$blocking_variables) <- "Blocking Scheme"
+      label(algo_summary$matching_variables) <- "Matching Criteria"
+      label(algo_summary$linkage_implementation) <- "Linkage Technique"
+      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate (%)"
+      label(algo_summary$FDR) <- "FDR (%)"
+      label(algo_summary$FOR) <- "FOR (%)"
+    } else {
+      label(algo_summary$pass) <- "Pass"
+      label(algo_summary$linkage_rate_pass) <- "Within Pass Linkage Rate (%)"
+      label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
+      label(algo_summary$blocking_variables) <- "Blocking Scheme"
+      label(algo_summary$matching_variables) <- "Matching Criteria"
+      label(algo_summary$linkage_implementation) <- "Linkage Technique"
+      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate (%)"
+    }
     #----
 
     ### Step 6: Save performance measures, linkage rates, auditing information and whatever
@@ -4525,12 +4599,6 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # F1-Score
       F1_SCORE <- (TP/(TP + (0.5 * (FP + FN)))) * 100
-
-      # FDR (False Discover Rate) WE CAN CHOOSE TO ADD IT LATER
-      #FDR <- (FP/(FP + TP)) * 100
-
-      # FOR (False Omission Rate) WE CAN CHOOSE TO ADD IT LATER
-      #FOR <- (FN/(FN + TN)) * 100
 
       # Calculate the linkage rate
       linkage_rate <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
