@@ -860,7 +860,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
             ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
             caption <- paste0("Weight distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
-                               "matching and non-matching ground truth fields (", ground_truth_fields, ").")
+                              "matching and non-matching ground truth fields (", ground_truth_fields, ").")
             plot_list[["candidate_weights_plot_ground_truth"]] <- candidate_weights_plot_gt
             plot_caps_list <- append(plot_caps_list, caption)
           }
@@ -1287,28 +1287,25 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         else if ("match_weight" %in% names(acceptance_threshold)){
           acceptance_threshold <- acceptance_threshold[["match_weight"]]
           # Create a histogram of the weights with the decision boundary
-          suppressWarnings(
-            decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
-              geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.6) +
-              scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
-              labs(x = "Weight", y = "Frequency") +
-              geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
-                         color = "black", size = 0.6) +
-              scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
-              guides(linetype = guide_legend(override.aes = list(size = 0.5))) +  # Adjust line size in legend
-              scale_y_continuous(trans = "log10", breaks = scales::log_breaks(), labels = scales::label_number()) +
-              theme_minimal(base_size = 8) +
-              # Set the entire background white with a black border
-              theme(
-                plot.background = element_rect(fill = "white", color = "black", size = 1),
-                panel.background = element_rect(fill = "white", color = "black"),
-                panel.grid = element_blank(), # Remove gridlines
-                axis.line = element_line(color = "black"), # Black axis lines
-                axis.ticks = element_line(color = "black"),
-                legend.background = element_rect(fill = "white", color = "black"),
-                legend.position = "bottom"
-              )
-          )
+          decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
+            geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
+            scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+            labs(x = "Weight", y = "Frequency") +
+            geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
+                       color = "black", size = 0.6) +
+            scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
+            guides(linetype = guide_legend(override.aes = list(size = 0.5))) +  # Adjust line size in legend
+            theme_minimal(base_size = 8) +
+            # Set the entire background white with a black border
+            theme(
+              plot.background = element_rect(fill = "white", color = "black", size = 1),
+              panel.background = element_rect(fill = "white", color = "black"),
+              panel.grid = element_blank(), # Remove gridlines
+              axis.line = element_line(color = "black"), # Black axis lines
+              axis.ticks = element_line(color = "black"),
+              legend.background = element_rect(fill = "white", color = "black"),
+              legend.position = "bottom"
+            )
           algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
           ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
           caption <- paste0("Weight distribution of ", trimws(iteration_name), "'s linked pairs for ", algorithm_name, " with the selected weight acceptance threshold",
@@ -1325,28 +1322,25 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             linkage_pairs_non_missing$match_type <- ifelse(linkage_pairs_non_missing$truth == TRUE, "Yes", "No")
 
             # Create the histogram, coloring based on match type
-            suppressWarnings(
-              candidate_weights_plot_gt <- ggplot(linkage_pairs_non_missing, aes(x = weight, fill = match_type)) +
-                geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.6) +
-                scale_fill_manual(values = c("No" = "red", "Yes" = "blue"), name = "Agreement on Ground Truth") +
-                labs(x = "Weight", y = "Frequency") +
-                geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
-                           color = "black", size = 0.6) +
-                scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
-                guides(linetype = guide_legend(override.aes = list(size = 0.5))) +  # Adjust line size in legend
-                scale_y_continuous(trans = "log10", breaks = scales::log_breaks(), labels = scales::label_number()) +
-                theme_minimal(base_size = 8) +
-                # Set the entire background white with a black border
-                theme(
-                  plot.background = element_rect(fill = "white", color = "black", size = 1),
-                  panel.background = element_rect(fill = "white", color = "black"),
-                  panel.grid = element_blank(), # Remove gridlines
-                  axis.line = element_line(color = "black"), # Black axis lines
-                  axis.ticks = element_line(color = "black"),
-                  legend.background = element_rect(fill = "white", color = "black"),
-                  legend.position = "bottom"
-                )
-            )
+            candidate_weights_plot_gt <- ggplot(linkage_pairs_non_missing, aes(x = weight, fill = match_type)) +
+              geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
+              scale_fill_manual(values = c("No" = "red", "Yes" = "blue"), name = "Agreement on Ground Truth") +
+              labs(x = "Weight", y = "Frequency") +
+              geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
+                         color = "black", size = 0.6) +
+              scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
+              guides(linetype = guide_legend(override.aes = list(size = 0.5))) +  # Adjust line size in legend
+              theme_minimal(base_size = 8) +
+              # Set the entire background white with a black border
+              theme(
+                plot.background = element_rect(fill = "white", color = "black", size = 1),
+                panel.background = element_rect(fill = "white", color = "black"),
+                panel.grid = element_blank(), # Remove gridlines
+                axis.line = element_line(color = "black"), # Black axis lines
+                axis.ticks = element_line(color = "black"),
+                legend.background = element_rect(fill = "white", color = "black"),
+                legend.position = "bottom"
+              )
             algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
             iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
             ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
@@ -4505,6 +4499,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
        extra_parameters[["main_report_algorithm"]] > 0){
       main_report_algorithm <- extra_parameters[["main_report_algorithm"]]
     }
+
     performance_measures_df <- data.frame()
     # Try to calculate and export the performance measures
     if(("calculate_performance_measures" %in% names(extra_parameters) && extra_parameters[["calculate_performance_measures"]] == TRUE) &&
