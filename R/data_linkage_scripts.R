@@ -4887,6 +4887,16 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             }
           }
 
+          # Get the definitions and abbreviations (if they were provided)
+          definitions   <- NULL
+          abbreviations <- NULL
+          if("definitions" %in% names(extra_parameters)){
+            definitions <- extra_parameters[["definitions"]]
+          }
+          if("abbreviations" %in% names(extra_parameters)){
+            abbreviations <- extra_parameters[["abbreviations"]]
+          }
+
           # Generate the linkage quality report
           final_linkage_quality_report(output_df, report_title, report_subtitle, datasets$left_dataset_name,
                                        paste0("the ", datasets$right_dataset_name), output_dir, username, "autolink (Record Linkage)",
@@ -4899,7 +4909,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                        considered_algorithm_summary_table_names = considered_algo_summary_table_names, considered_performance_measures = considered_performance_measures,
                                        missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
                                        R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
-                                       report_file_name = report_file_name, threshold = threshold)
+                                       report_file_name = report_file_name, threshold = threshold,
+                                       definitions = definitions, abbreviations = abbreviations)
 
           detach("package:linkrep", unload = TRUE)
         },
@@ -5099,6 +5110,16 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         }
       }
 
+      # Get the definitions and abbreviations (if they were provided)
+      definitions   <- NULL
+      abbreviations <- NULL
+      if("definitions" %in% names(extra_parameters)){
+        definitions <- extra_parameters[["definitions"]]
+      }
+      if("abbreviations" %in% names(extra_parameters)){
+        abbreviations <- extra_parameters[["abbreviations"]]
+      }
+
       # If we have performance measures, include them, otherwise generate a normal report
       if(nrow(intermediate_performance_measures_df) <= 0){
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
@@ -5106,7 +5127,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                             output_dir, username, "autolink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
-                                            report_file_name = report_file_name, threshold = threshold)
+                                            report_file_name = report_file_name, threshold = threshold,
+                                            definitions = definitions, abbreviations = abbreviations)
       }
       else{
         performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
@@ -5119,7 +5141,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                             performance_measures_data = intermediate_performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
                                             ground_truth = ground_truth_fields,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
-                                            report_file_name = report_file_name, threshold = threshold)
+                                            report_file_name = report_file_name, threshold = threshold,
+                                            definitions = definitions, abbreviations = abbreviations)
       }
       detach("package:linkrep", unload = TRUE)
     },

@@ -879,6 +879,8 @@ load_linkage_file <- function(dataset_file){
 #' @param main_report_algorithm A numeric value which specified the algorithm ID of the only report that should be generated. (If the user would like performance values appear in report appendix)
 #' @param report_threshold A numeric value which specifies the minimum of a value in the report can be before being considered a small count. If lower than the threshold, the violating field is removed.
 #' @param extra_summary_parameters A TRUE or FALSE value for whether you'd like extra algorithm summary parameters (FDR & FOR) to appear in the table.
+#' @param definitions A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of terms in the first and their definitions in the second. Will appear in report (if generated).
+#' @param abbreviations A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of abbreviations in the first and their meaning in the second. Will appear in report (if generated).
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
@@ -896,7 +898,9 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          save_audit_performance = FALSE,
                                          main_report_algorithm = NULL,
                                          report_threshold = NULL,
-                                         extra_summary_parameters = FALSE){
+                                         extra_summary_parameters = FALSE,
+                                         definitions = NULL,
+                                         abbreviations = NULL){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -1002,6 +1006,16 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!is.na(report_threshold) && !is.null(report_threshold) &&
      (is.numeric(report_threshold) && length(report_threshold) == 1 && report_threshold >= 1)){
     extra_params_list[["report_threshold"]] <- report_threshold
+  }
+
+  ### Definitions
+  if(!is.na(definitions) && !is.null(definitions) && length(definitions) == 1){
+    extra_params_list[["definitions"]] <- definitions
+  }
+
+  ### Abbreviations
+  if(!is.na(abbreviations) && !is.null(abbreviations) && length(abbreviations) == 1){
+    extra_params_list[["abbreviations"]] <- abbreviations
   }
 
   #----------------------------------------------------------------------------#
