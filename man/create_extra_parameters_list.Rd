@@ -14,11 +14,15 @@ create_extra_parameters_list(
   data_linker = NULL,
   generate_algorithm_summary = FALSE,
   generate_threshold_plots = FALSE,
+  log_scaled_plots = FALSE,
   save_all_linkage_results = FALSE,
   collect_missing_data_indicators = FALSE,
   save_audit_performance = FALSE,
   main_report_algorithm = NULL,
-  report_threshold = NULL
+  report_threshold = NULL,
+  extra_summary_parameters = FALSE,
+  definitions = NULL,
+  abbreviations = NULL
 )
 }
 \arguments{
@@ -40,6 +44,8 @@ create_extra_parameters_list(
 
 \item{generate_threshold_plots}{A TRUE or FALSE value for whether you'd like to export threshold plots for each pass.}
 
+\item{log_scaled_plots}{A TRUE or FALSE value for whether you'd like the exported threshold plots to use log scaling instead of linear by default.}
+
 \item{save_all_linkage_results}{A TRUE or FALSE value for whether you'd like a list of all report data returned after all algorithms have been ran.}
 
 \item{collect_missing_data_indicators}{A TRUE or FALSE value for whether you'd like to have missing data indicators appear of the variables you're keeping as output.}
@@ -49,6 +55,12 @@ create_extra_parameters_list(
 \item{main_report_algorithm}{A numeric value which specified the algorithm ID of the only report that should be generated. (If the user would like performance values appear in report appendix)}
 
 \item{report_threshold}{A numeric value which specifies the minimum of a value in the report can be before being considered a small count. If lower than the threshold, the violating field is removed.}
+
+\item{extra_summary_parameters}{A TRUE or FALSE value for whether you'd like extra algorithm summary parameters (FDR & FOR) to appear in the table.}
+
+\item{definitions}{A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of terms in the first and their definitions in the second. Will appear in report (if generated).}
+
+\item{abbreviations}{A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of abbreviations in the first and their meaning in the second. Will appear in report (if generated).}
 }
 \description{
 The create_extra_parameters_list() function will allow users to modify any of the default
