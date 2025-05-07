@@ -2786,7 +2786,7 @@ linkage_ui <- fluidPage(
               div(style = "display: flex; justify-content: center; align-items: center;",
                 card(
                   width = NULL,  # Remove the width inside the card and control it from the column
-                  height = 366,
+                  height = 521,
                   full_screen = FALSE,
                   card_body(
                     fluidRow(
@@ -2801,6 +2801,18 @@ linkage_ui <- fluidPage(
                       )),
                       column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                         checkboxInput("create_missing_data_indicators", "Missing Data Indicators", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                         helpText("If plots are to be exported, use log scaling for the y-axis instead of linear scaling.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                         checkboxInput("log_scaled_plots", "Log Scaled Plots", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Include FOR and FDR variables in algorithm summaries if ground truth is provided.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("extra_summary_parameters", "Extra Summary Parameters", FALSE)
                       )),
                       column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                         helpText("Collects and saves the linkage performance of the algorithms being ran, to be used for future auditing purposes.")
@@ -2908,6 +2920,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   # Change loading screen
   hideElement("loading_screen")
   showElement("loading_screen_2")
+
+  # Get the computer volumes
+  volumes <- getVolumes()()
 
   #-- HIDING PAGES EVENTS --#
   # Initially hide some tabs we don't need the users to access
@@ -5494,9 +5509,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   published_algorithms_right_dataset_id <- 0
   published_algorithms_return_page      <- "linkage_algorithms_page"
 
-  # Get the computer volumes
-  volumes <- getVolumes()()
-
   # Linkage Output Directory Chooser
   shinyDirChoose(input, 'published_algorithms_output_dir', roots=volumes, filetypes=c('', 'txt'), allowDirCreate = F)
 
@@ -7090,7 +7102,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
              "The 'Categorized Year' field type expects year values such as birth years or data capture years. ",
              "Values are categorized into the following ranges:<br>",
              "<ul>",
-             "<li>&lt;1975</li>",
+             "<li>&lt;1945</li>",
+             "<li>1945-1954</li>",
+             "<li>1955-1964</li>",
+             "<li>1965-1974</li>",
              "<li>1975-1984</li>",
              "<li>1985-1994</li>",
              "<li>1995-2004</li>",
@@ -13671,9 +13686,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     "No Folder Has Been Chosen"
   })
 
-  # Get the computer volumes
-  volumes <- getVolumes()()
-
   # Linkage Output Directory Chooser
   shinyDirChoose(input, 'regenerated_report_output_dir', roots=volumes, filetypes=c('', 'txt'), allowDirCreate = F)
 
@@ -14180,9 +14192,6 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     "No Folder Has Been Chosen"
   })
 
-  # Get the computer volumes
-  volumes <- getVolumes()()
-
   # Linkage Output Directory Chooser
   shinyDirChoose(input, 'linkage_output_dir', roots=volumes, filetypes=c('', 'txt'), allowDirCreate = F)
 
@@ -14235,11 +14244,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       generate_algorithm_summary      <- input$generate_algorithm_summary
       calculate_performance_measures  <- input$calculate_performance_measures
       generate_threshold_plots        <- input$generate_threshold_plots
+      log_scaled_plots                <- input$log_scaled_plots
       save_all_linkage_results        <- input$save_all_linkage_results
       save_missing_data_indicators    <- input$create_missing_data_indicators
       include_unlinked_records        <- input$include_unlinked_records
       save_audit_performance          <- input$save_audit_performance
       report_threshold                <- input$report_threshold
+      extra_summary_parameters        <- input$extra_summary_parameters
       linkage_report_type             <- 1
 
       # Get the folder and file inputs
@@ -14308,9 +14319,10 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       extra_params   <- create_extra_parameters_list(linkage_output_folder = output_dir, output_linkage_iterations = output_linked_iterations_pairs,
                                                      output_unlinked_iteration_pairs = output_unlinked_iteration_pairs, linkage_report_type = linkage_report_type,
                                                      generate_algorithm_summary = generate_algorithm_summary, calculate_performance_measures = calculate_performance_measures,
-                                                     data_linker = username, generate_threshold_plots = generate_threshold_plots, save_all_linkage_results = save_all_linkage_results,
-                                                     collect_missing_data_indicators = save_missing_data_indicators, include_unlinked_records = include_unlinked_records,
-                                                     save_audit_performance = save_audit_performance, main_report_algorithm = main_report_algorithm, report_threshold = report_threshold)
+                                                     data_linker = username, generate_threshold_plots = generate_threshold_plots, log_scaled_plots = log_scaled_plots,
+                                                     save_all_linkage_results = save_all_linkage_results, collect_missing_data_indicators = save_missing_data_indicators,
+                                                     include_unlinked_records = include_unlinked_records, save_audit_performance = save_audit_performance,
+                                                     main_report_algorithm = main_report_algorithm, report_threshold = report_threshold, extra_summary_parameters = extra_summary_parameters)
 
       # Run the algorithms
       try_catch_success <- TRUE

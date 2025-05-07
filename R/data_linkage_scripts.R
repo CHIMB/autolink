@@ -1339,7 +1339,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Create a histogram of the weights with the decision boundary
           if("log_scaled_plots" %in% names(extra_parameters) && extra_parameters[["log_scaled_plots"]] == T){
             decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
-              geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.6) +
+              geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.8) +
               scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
               labs(x = "Weight", y = "Frequency") +
               geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
