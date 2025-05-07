@@ -4396,9 +4396,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
           # FDR (False Discover Rate)
           FDR <- (FP/(FP + TP)) * 100
+          if(is.na(FDR))
+            FDR <- 0.0
 
           # FOR (False Omission Rate)
           FOR <- (FN/(FN + TN)) * 100
+          if(is.na(FOR))
+            FOR <- 0.0
 
           # Create a data frame for the current passes summary
           curr_algo_summary <- data.frame(

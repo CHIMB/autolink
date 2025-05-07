@@ -2786,7 +2786,7 @@ linkage_ui <- fluidPage(
               div(style = "display: flex; justify-content: center; align-items: center;",
                 card(
                   width = NULL,  # Remove the width inside the card and control it from the column
-                  height = 521,
+                  height = 500,
                   full_screen = FALSE,
                   card_body(
                     fluidRow(
@@ -2825,6 +2825,38 @@ linkage_ui <- fluidPage(
                       )),
                       column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                         numericInput("report_threshold", "Report Threshold Cutoff:", NA)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Upload a CSV or RDS file containing two columns, a list of terms in the first and their definitions in the second.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        div(style = "margin-right: 10px;", "Definitions File:")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 500px;",
+                          textOutput("uploaded_definitions_file")
+                        ),
+                        # Upload button
+                        actionButton("add_definitions_file", label = "", shiny::icon("upload")),
+                        # Remove button
+                        actionButton("remove_definitions_file", label = "", shiny::icon("delete-left"))
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Upload a CSV or RDS file containing two columns, a list of abbreviations in the first and their meanings in the second.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        div(style = "margin-right: 10px;", "Abbreviations File:")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 500px;",
+                          textOutput("uploaded_abbreviations_file")
+                        ),
+                        # Upload button
+                        actionButton("add_abbreviations_file", label = "", shiny::icon("upload")),
+                        # Remove button
+                        actionButton("remove_abbreviations_file", label = "", shiny::icon("delete-left")),
                       ))
                     )
                   )
@@ -14195,6 +14227,76 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   # Linkage Output Directory Chooser
   shinyDirChoose(input, 'linkage_output_dir', roots=volumes, filetypes=c('', 'txt'), allowDirCreate = F)
 
+  # Reactive value for the definitions file path
+  definitions_file_path <- reactiveValues(
+    path=NULL
+  )
+
+  # Reactive value for the abbreviations file path
+  abbreviations_file_path <- reactiveValues(
+    path=NULL
+  )
+
+  # Linkage Report Definitions File Chooser
+  observeEvent(input$add_definitions_file,{
+    tryCatch({
+      definitions_file_path$path <- file.choose()
+    },
+    error = function(e){
+      definitions_file_path$path <- NULL
+    })
+  })
+
+  # Linkage Report Definitions File Remover
+  observeEvent(input$remove_definitions_file,{
+    definitions_file_path$path <- NULL
+  })
+
+  # Linkage Report Abbreviations File Chooser
+  observeEvent(input$add_abbreviations_file,{
+    tryCatch({
+      abbreviations_file_path$path <- file.choose()
+    },
+    error = function(e){
+      abbreviations_file_path$path <- NULL
+    })
+  })
+
+  # Linkage Report Abbreviations File Remover
+  observeEvent(input$remove_abbreviations_file,{
+    abbreviations_file_path$path <- NULL
+  })
+
+  # Render the uploaded definition and abbreviation files
+  observe({
+    definitions_file   <- definitions_file_path$path
+    abbreviations_file <- abbreviations_file_path$path
+
+    # Uploaded definitions file
+    if(is.null(definitions_file)){
+      output$uploaded_definitions_file <- renderText({
+        "No File Uploaded"
+      })
+    }
+    else{
+      output$uploaded_definitions_file <- renderText({
+        basename(definitions_file)
+      })
+    }
+
+    # Uploaded abbreviations file
+    if(is.null(abbreviations_file)){
+      output$uploaded_abbreviations_file <- renderText({
+        "No File Uploaded"
+      })
+    }
+    else{
+      output$uploaded_abbreviations_file <- renderText({
+        basename(abbreviations_file)
+      })
+    }
+  })
+
   # Observes which linkage output directory was chosen
   observeEvent(input$linkage_output_dir, {
     # Get the output linkage directory
@@ -14251,6 +14353,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       save_audit_performance          <- input$save_audit_performance
       report_threshold                <- input$report_threshold
       extra_summary_parameters        <- input$extra_summary_parameters
+      definitions                     <- definitions_file_path$path
+      abbreviations                   <- abbreviations_file_path$path
       linkage_report_type             <- 1
 
       # Get the folder and file inputs
@@ -14322,7 +14426,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                      data_linker = username, generate_threshold_plots = generate_threshold_plots, log_scaled_plots = log_scaled_plots,
                                                      save_all_linkage_results = save_all_linkage_results, collect_missing_data_indicators = save_missing_data_indicators,
                                                      include_unlinked_records = include_unlinked_records, save_audit_performance = save_audit_performance,
-                                                     main_report_algorithm = main_report_algorithm, report_threshold = report_threshold, extra_summary_parameters = extra_summary_parameters)
+                                                     main_report_algorithm = main_report_algorithm, report_threshold = report_threshold, extra_summary_parameters = extra_summary_parameters,
+                                                     definitions = definitions, abbreviations = abbreviations)
 
       # Run the algorithms
       try_catch_success <- TRUE
