@@ -211,7 +211,11 @@ linkage_ui <- fluidPage(
     div(
       id = "main_content",
       page_navbar(
-        position = "fixed-top", #Fixes the position of the navbar to also be on screen at the top of the page
+        navbar_options = navbar_options(
+          position = "fixed-top",
+          bg = "#446e9b"
+        ),
+        window_title = "AUTOLINK",
         padding = c(validateCssUnit(100), validateCssUnit(0), validateCssUnit(0), validateCssUnit(0)), # Sets the padding to keep UI just under the navbar
         # Set the theme of the application
         theme = bs_theme(bootswatch = "spacelab"),
@@ -577,11 +581,14 @@ linkage_ui <- fluidPage(
             h6(p(strong("NOTE: "), "For datasets that use the same dataset code/prefix, only one be enabled at a time.")),
 
             fluidRow(
-              column(width = 6, div(style = "display: flex; justify-content: right; align-items: center;",
+              column(width = 4, div(style = "display: flex; justify-content: right; align-items: center;",
                 actionButton("add_dataset_pop_up", "Add Dataset Metadata...", class = "btn-success", width = validateCssUnit(300), icon = shiny::icon("plus")),
               )),
-              column(width = 6, div(style = "display: flex; justify-content: left; align-items: center;",
+              column(width = 4, div(style = "display: flex; justify-content: center; align-items: center;",
                 actionButton("update_dataset_pop_up", "Update Dataset Metadata...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
+              )),
+              column(width = 4, div(style = "display: flex; justify-content: left; align-items: center;",
+                actionButton("define_dataset_time_trend_pop_up", "Time Trend Fields...", class = "btn-warning", width = validateCssUnit(300), icon = shiny::icon("pen")),
               ))
             ),
 
@@ -3469,6 +3476,234 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     ))
   })
 
+  # Observes when the user presses the "Time Trend Fields" modal pop-up
+  observeEvent(input$define_dataset_time_trend_pop_up, {
+    # Pre-populate the input fields based on the row selected by the user
+    row_selected <- input$currently_added_datasets_rows_selected
+
+    # Get the dataset ID of the selected row
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets'))
+    dataset_id <- df[row_selected, "dataset_id"]
+
+    ## Get the currently selected month and year fields
+    # Returns the capture month variable
+    capture_month_field_df <- dbGetQuery(linkage_metadata_conn, "
+    SELECT field_name
+    FROM datasets ds
+    JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
+    WHERE ds.dataset_id = ? AND enabled_for_linkage = 1 AND is_capture_month = 1",
+                                         params = list(dataset_id))
+
+    # Returns the capture year variable
+    capture_year_field_df <- dbGetQuery(linkage_metadata_conn, "
+    SELECT field_name
+    FROM datasets ds
+    JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
+    WHERE ds.dataset_id = ? AND enabled_for_linkage = 1 AND is_capture_year = 1",
+                                        params = list(dataset_id))
+
+    ## Update the text output based on the fields obtained from the statement
+    # Update the selected month field
+    if(nrow(capture_month_field_df) == 0){
+      output$selected_capture_month_field <- renderText({
+        "No Field Selected"
+      })
+    }
+    else{
+      output$selected_capture_month_field <- renderText({
+        str_to_title(str_replace_all(capture_month_field_df$field_name, "[[:punct:]]", " "))
+      })
+    }
+
+    # Update the selected year field
+    if(nrow(capture_year_field_df) == 0){
+      output$selected_capture_year_field <- renderText({
+        "No Field Selected"
+      })
+    }
+    else{
+      output$selected_capture_year_field <- renderText({
+        str_to_title(str_replace_all(capture_year_field_df$field_name, "[[:punct:]]", " "))
+      })
+    }
+
+    ## Create two select inputs for the time trend fields (month & year)
+    # Perform query to get the fields for this dataset
+    data <- dbGetQuery(linkage_metadata_conn, "SELECT * from dataset_fields WHERE dataset_id = ?", params = list(dataset_id))
+
+    # Extract columns from query result (one for month, and one for year)
+    month_choices <- setNames(data$field_id, data$field_name)
+    year_choices  <- setNames(data$field_id, data$field_name)
+
+    # Open up the modalDialog
+    showModal(modalDialog(
+      title = "Select Dataset Time Trend Fields",
+      easyClose = TRUE,
+      footer = NULL,
+      fluidPage(
+        fluidRow(
+          # Label of the currently selected month time trend field
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center;",
+            strong("Capture Month Field:")
+          )),
+          # Label of the currently selected year time trend field
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center;",
+            strong("Capture Year Field:")
+          )),
+          # Text output of the currently selected month time trend field
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center;",
+            div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 300px;
+                         display: flex; justify-content: center; align-items: center;",
+              textOutput("selected_capture_month_field")
+            ),
+          )),
+          # Text output of the currently selected year time trend field
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center;",
+            div(style = "border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 300px;
+                         display: flex; justify-content: center; align-items: center;",
+              textOutput("selected_capture_year_field")
+            ),
+          )),
+          HTML("<br><br><br><br>"),
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center;",
+            # Create select input with dynamic choices
+            span(selectizeInput("capture_month_add", label = "Month Capture Date:",
+                                choices = month_choices, multiple = FALSE, width = validateCssUnit(300),
+                                options = list(
+                                  placeholder = 'Select the Month Capture Date',
+                                  onInitialize = I('function() { this.setValue(""); }')
+                                )))
+          )),
+          column(width = 6, div(style = "display: flex; justify-content: center; align-items: center;",
+            # Create select input with dynamic choices
+            span(selectizeInput("capture_year_add", label = "Year Capture Date:",
+                                choices = year_choices, multiple = FALSE, width = validateCssUnit(300),
+                                options = list(
+                                  placeholder = 'Select the Year Capture Date',
+                                  onInitialize = I('function() { this.setValue(""); }')
+                                )))
+          )),
+          HTML("<br><br><br><br><br><br><br><br><br><br><br><br>"),
+          column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+            actionButton("update_time_trend_fields", "Update Dataset Time Trend Fields", class = "btn-warning", width = validateCssUnit(400), icon = shiny::icon("pen")),
+          ))
+        )
+      ),
+      size = "s"
+    ))
+  })
+
+  # Observes when the user updates the selected datasets time trend fields
+  observeEvent(input$update_time_trend_fields, {
+    # Get the selected row from the user
+    row_selected <- input$currently_added_datasets_rows_selected
+
+    # Get the dataset ID of the selected row
+    df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from datasets'))
+    dataset_id <- df[row_selected, "dataset_id"]
+
+    # Get the selected fields
+    capture_month_field <- input$capture_month_add
+    capture_year_field  <- input$capture_year_add
+
+    # Update the capture dates
+    successful <- TRUE
+    tryCatch({
+      # Start a transaction
+      dbBegin(linkage_metadata_conn)
+
+      # Start by setting all the 'is_capture_month' values to be blank
+      dbExecute(linkage_metadata_conn, "
+        UPDATE dataset_fields
+        SET is_capture_month = ?
+        WHERE dataset_id = ?",
+        params = list(NA, dataset_id))
+
+      # Next, set all the 'is_capture_year' values to be blank
+      dbExecute(linkage_metadata_conn, "
+        UPDATE dataset_fields
+        SET is_capture_year = ?
+        WHERE dataset_id = ?",
+                params = list(NA, dataset_id))
+
+      # Update the selected month field
+      if(capture_month_field != ""){
+        dbExecute(linkage_metadata_conn, "
+        UPDATE dataset_fields
+        SET is_capture_month = ?
+        WHERE dataset_id = ? and field_id = ?",
+                  params = list(1, dataset_id, as.numeric(capture_month_field)))
+      }
+
+      # Update the selected year field
+      if(capture_year_field != ""){
+        dbExecute(linkage_metadata_conn, "
+        UPDATE dataset_fields
+        SET is_capture_year = ?
+        WHERE dataset_id = ? and field_id = ?",
+                  params = list(1, dataset_id, as.numeric(capture_year_field)))
+      }
+
+      # End a transaction
+      dbCommit(linkage_metadata_conn)
+    },
+    error = function (e){
+      # If we throw an error because of timeout, or bad insert, then rollback and return
+      successful <- FALSE
+      dbRollback(linkage_metadata_conn)
+      showNotification("Failed to Update Dataset Time Trend Fields - An Error Occurred While Inserting", type = "error", closeButton = FALSE)
+      return(0)
+    })
+
+    if(successful == FALSE) return()
+
+    ## Get the currently selected month and year fields
+    # Returns the capture month variable
+    capture_month_field_df <- dbGetQuery(linkage_metadata_conn, "
+    SELECT field_name
+    FROM datasets ds
+    JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
+    WHERE ds.dataset_id = ? AND enabled_for_linkage = 1 AND is_capture_month = 1",
+                                         params = list(dataset_id))
+
+    # Returns the capture year variable
+    capture_year_field_df <- dbGetQuery(linkage_metadata_conn, "
+    SELECT field_name
+    FROM datasets ds
+    JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
+    WHERE ds.dataset_id = ? AND enabled_for_linkage = 1 AND is_capture_year = 1",
+                                        params = list(dataset_id))
+
+    ## Update the text output based on the fields obtained from the statement
+    # Update the selected month field
+    if(nrow(capture_month_field_df) == 0){
+      output$selected_capture_month_field <- renderText({
+        "No Field Selected"
+      })
+    }
+    else{
+      output$selected_capture_month_field <- renderText({
+        str_to_title(str_replace_all(capture_month_field_df$field_name, "[[:punct:]]", " "))
+      })
+    }
+
+    # Update the selected year field
+    if(nrow(capture_year_field_df) == 0){
+      output$selected_capture_year_field <- renderText({
+        "No Field Selected"
+      })
+    }
+    else{
+      output$selected_capture_year_field <- renderText({
+        str_to_title(str_replace_all(capture_year_field_df$field_name, "[[:punct:]]", " "))
+      })
+    }
+
+    # If successful, notify the user
+    showNotification("Dataset Time Trend Fields Successfully Updated", type = "message", closeButton = FALSE)
+
+  })
+
   # Observes if the user uploads a file or changes the type to fwf
   observe({
     data_is_fwf <- input$add_dataset_is_fwf
@@ -3924,13 +4159,15 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
   observe({
     row_selected <- input$currently_added_datasets_rows_selected
 
-    # If the row selected is NULL, disable/make the update dataset button un-clickable, otherwise
+    # If the row selected is NULL, disable/make the update dataset & define time trend buttons un-clickable, otherwise
     # make it enabled
     if(is.null(row_selected)){
       disable("update_dataset_pop_up")
+      disable("define_dataset_time_trend_pop_up")
     }
     else{
       enable("update_dataset_pop_up")
+      enable("define_dataset_time_trend_pop_up")
     }
   })
 
