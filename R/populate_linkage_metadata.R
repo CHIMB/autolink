@@ -46,7 +46,9 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       field_id INTEGER PRIMARY KEY,
       field_name VARCHAR(255),
       field_type VARCHAR(255),
-      field_width INTEGER
+      field_width INTEGER,
+      is_capture_month INTEGER,
+      is_capture_year INTEGER
     );
   ")
 
@@ -58,7 +60,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       standardization_file_name VARCHAR(255)
     );
   ")
-  # If Barret and Jess don't like this idea, just replace the file name with the actual file path and grab it from there instead
 
   ### ACCEPTANCE METHODS
   dbExecute(my_db, "
@@ -77,16 +78,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
       description VARCHAR(255)
     );
   ")
-
-  #-- V2 --#
-  # dbExecute(my_db, "
-  #   CREATE TABLE acceptance_rules (
-  #     acceptance_rule_id INTEGER,
-  #     acceptance_method_id INTEGER REFERENCES acceptance_methods(acceptance_method_id),
-  #     parameters TEXT
-  #   );
-  # ")
-  #--------#
 
   #-- V1 --#
   dbExecute(my_db, "
@@ -136,17 +127,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     );
   ")
 
-  #-- V2 --#
-  # dbExecute(my_db, "
-  #   CREATE TABLE comparison_rules (
-  #     comparison_rule_id INTEGER PRIMARY KEY,
-  #     comparison_method_id INTEGER REFERENCES comparison_methods(comparison_method_id),
-  #     parameters TEXT  -- Store as JSON string
-  #   );
-  # ")
-  #--------#
-
-
   #-- V1 --#
   dbExecute(my_db, "
     CREATE TABLE comparison_rules (
@@ -191,17 +171,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     );
   ")
 
-  ### V1
-  # dbExecute(my_db, "
-  #   CREATE TABLE linkage_algorithms_output_fields (
-  #     algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
-  #     parameter_id INTEGER PRIMARY KEY,
-  #     dataset_field_id REFERENCES dataset_fields(field_id),
-  #     dataset_label VARCHAR(255),
-  #     field_type INTEGER
-  #   );
-  # ")
-
   ### V2
   dbExecute(my_db, "
     CREATE TABLE output_fields (
@@ -237,19 +206,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
     );
   ")
 
-  ### AUDITING
-  #-- V1 --#
-  # dbExecute(my_db, "
-  #   CREATE TABLE performance_measures_audit (
-  #     audit_id INTEGER PRIMARY KEY,
-  #     left_dataset_id INTEGER REFERENCES datasets(dataset_id),
-  #     right_dataset_id INTEGER REFERENCES datasets(dataset_id),
-  #     audit_date TEXT,
-  #     performance_measures_json TEXT
-  #   );
-  # ")
-  #--------#
-
   # V2
   dbExecute(my_db, "
     CREATE TABLE performance_measures_audit (
@@ -263,16 +219,6 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   ")
 
   ### GROUND TRUTH VARIABLES
-  #-- V1 --#
-  # dbExecute(my_db, "
-  #   CREATE TABLE ground_truth_variables (
-  #     algorithm_id INTEGER REFERENCES linkage_algorithms(algorithm_id),
-  #     parameter_id INTEGER PRIMARY KEY,
-  #     left_dataset_field_id REFERENCES dataset_fields(field_id),
-  #     right_dataset_field_id REFERENCES dataset_fields(field_id),
-  #     linkage_rule_id INTEGER REFERENCES linkage_rules(linkage_rule_id)
-  #   );
-  # ")
   #-- V2 --#
   dbExecute(my_db, "
     CREATE TABLE ground_truth_variables (

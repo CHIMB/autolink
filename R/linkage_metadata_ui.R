@@ -2809,6 +2809,12 @@ linkage_ui <- fluidPage(
                          checkboxInput("log_scaled_plots", "Log Scaled Plots", FALSE)
                       )),
                       column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Generate time trend plots that appear in the linkage reports using saved capture month and year.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        checkboxInput("generate_time_trend_plot", "Time Trend Plot", FALSE)
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
                         helpText("Include FOR and FDR variables in algorithm summaries if ground truth is provided.")
                       )),
                       column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
@@ -14355,6 +14361,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       extra_summary_parameters        <- input$extra_summary_parameters
       definitions                     <- definitions_file_path$path
       abbreviations                   <- abbreviations_file_path$path
+      generate_time_trend_plot        <- input$generate_time_trend_plot
       linkage_report_type             <- 1
 
       # Get the folder and file inputs
@@ -14427,7 +14434,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                      save_all_linkage_results = save_all_linkage_results, collect_missing_data_indicators = save_missing_data_indicators,
                                                      include_unlinked_records = include_unlinked_records, save_audit_performance = save_audit_performance,
                                                      main_report_algorithm = main_report_algorithm, report_threshold = report_threshold, extra_summary_parameters = extra_summary_parameters,
-                                                     definitions = definitions, abbreviations = abbreviations)
+                                                     definitions = definitions, abbreviations = abbreviations, generate_time_trend_plot = generate_time_trend_plot)
 
       # Run the algorithms
       try_catch_success <- TRUE

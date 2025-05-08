@@ -478,7 +478,7 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
 #' all the metadata, along with an algorithm ID.
 #' A dataframe is returned which contains the dataset fields to keep for gathering missing data indicators.
 #' @param linkage_db A database connection to the linkage metadata.
-#' @param algorithm_id An iteration number.
+#' @param algorithm_id An algorithm ID
 #' @examples
 #' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
 #' linkage_db <- dbConnect(SQLite(), sqlite_file)
@@ -497,6 +497,56 @@ get_linkage_missingness_fields <- function(linkage_db, algorithm_id){
 
   # Return the fields
   return(stored_fields_with_names)
+}
+
+#' Get Linkage Time Trend Fields
+#'
+#' The get_linkage_time_trend_fields() function will take in a linkage database connection
+#' containing all the metadata, along with a dataset code pertaining to a specific dataset entry.
+#' A list of both time trend variables is returned under the 'capture_month' and 'capture_year' variable names.
+#' @param linkage_db A database connection to the linkage metadata
+#' @param dataset_code A character string matching an existing dataset code in the database
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' dataset_code <- "examplecode"
+#' get_linkage_time_trend_fields(linkage_db, dataset_code)
+#' @export
+get_linkage_time_trend_fields <- function(linkage_db, dataset_code){
+  # Returns the capture month variable
+  capture_month_field_df <- dbGetQuery(linkage_db, "
+    SELECT field_name
+    FROM datasets ds
+    JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
+    WHERE dataset_code = ? AND enabled_for_linkage = 1 AND is_capture_month = 1",
+                                    params = list(dataset_code))
+
+  # Returns the capture year variable
+  capture_year_field_df <- dbGetQuery(linkage_db, "
+    SELECT field_name
+    FROM datasets ds
+    JOIN dataset_fields dsf on dsf.dataset_id = ds.dataset_id
+    WHERE dataset_code = ? AND enabled_for_linkage = 1 AND is_capture_year = 1",
+                                   params = list(dataset_code))
+
+  # Check if the fields exist, if not, replace with null
+  if(nrow(capture_month_field_df) == 0){
+    capture_month_field <- NULL
+  }
+  else{
+    capture_month_field <- capture_month_field_df$field_name
+  }
+
+  if(nrow(capture_year_field_df) == 0){
+    capture_year_field <- NULL
+  }
+  else{
+    capture_year_field <- capture_year_field_df$field_name
+  }
+
+  # Create our capture fields list, then return it
+  capture_fields_list <- list(capture_month = capture_month_field, capture_year = capture_year_field)
+  return(capture_fields_list)
 }
 #----
 #------------------------------------------------------------#
@@ -882,6 +932,7 @@ load_linkage_file <- function(dataset_file){
 #' @param extra_summary_parameters A TRUE or FALSE value for whether you'd like extra algorithm summary parameters (FDR & FOR) to appear in the table.
 #' @param definitions A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of terms in the first and their definitions in the second. Will appear in report (if generated).
 #' @param abbreviations A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of abbreviations in the first and their meaning in the second. Will appear in report (if generated).
+#' @param generate_time_trend_plot A TRUE or FALSE value for whether you'd like a time trend plot to be included in the generated linkage report. Requires marking which fields in the database are the capture month and capture year.
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
@@ -902,7 +953,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          report_threshold = NULL,
                                          extra_summary_parameters = FALSE,
                                          definitions = NULL,
-                                         abbreviations = NULL){
+                                         abbreviations = NULL,
+                                         generate_time_trend_plot = FALSE){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -1001,6 +1053,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!isFALSE(extra_summary_parameters) && !is.na(extra_summary_parameters) && !is.null(extra_summary_parameters) &&
      (isTRUE(extra_summary_parameters) || extra_summary_parameters == "TRUE")){
     extra_params_list[["extra_summary_parameters"]] <- TRUE
+  }
+
+  ### Extra Summary Parameters
+  if(!isFALSE(generate_time_trend_plot) && !is.na(generate_time_trend_plot) && !is.null(generate_time_trend_plot) &&
+     (isTRUE(generate_time_trend_plot) || generate_time_trend_plot == "TRUE")){
+    extra_params_list[["generate_time_trend_plot"]] <- TRUE
   }
 
   #-- Main Report Algorithm Options --#

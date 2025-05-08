@@ -9,7 +9,7 @@ get_linkage_missingness_fields(linkage_db, algorithm_id)
 \arguments{
 \item{linkage_db}{A database connection to the linkage metadata.}
 
-\item{algorithm_id}{An iteration number.}
+\item{algorithm_id}{An algorithm ID}
 }
 \description{
 The get_linkage_missingness_fields() function will take in a linkage database connection containing

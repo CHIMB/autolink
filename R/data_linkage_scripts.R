@@ -1185,6 +1185,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Append the stage to keep
         fields_to_keep <- append(fields_to_keep, "stage")
+        if("capture_month_time_trend_field" %in% colnames(linked_dataset) && "capture_year_time_trend_field" %in% colnames(linked_dataset)){
+          fields_to_keep <- append(fields_to_keep, c("capture_month_time_trend_field", "capture_year_time_trend_field"))
+        }
 
         # Select only those columns from linked_dataset that match the fields_to_keep
         filtered_data <- linked_dataset %>% select(all_of(fields_to_keep))
@@ -2488,6 +2491,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Append the stage to keep
         fields_to_keep <- append(fields_to_keep, "stage")
+        if("capture_month_time_trend_field" %in% colnames(linked_dataset) && "capture_year_time_trend_field" %in% colnames(linked_dataset)){
+          fields_to_keep <- append(fields_to_keep, c("capture_month_time_trend_field", "capture_year_time_trend_field"))
+        }
 
         # Select only those columns from linked_dataset that match the fields_to_keep
         filtered_data <- linked_dataset %>% select(all_of(fields_to_keep))
@@ -3631,6 +3637,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         # Append the stage to keep
         fields_to_keep <- append(fields_to_keep, "stage")
+        if("capture_month_time_trend_field" %in% colnames(linked_dataset) && "capture_year_time_trend_field" %in% colnames(linked_dataset)){
+          fields_to_keep <- append(fields_to_keep, c("capture_month_time_trend_field", "capture_year_time_trend_field"))
+        }
 
         # Select only those columns from linked_dataset that match the fields_to_keep
         filtered_data <- linked_dataset %>% select(all_of(fields_to_keep))
@@ -3988,6 +3997,24 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         # Save intermediate missing indicators
         intermediate_missing_indicators_df <- missing_data_indicators
       }
+    }
+
+    # If the user would like us to include a time trend plot in the generated report, then get and duplicate the required fields
+    if("generate_time_trend_plot" %in% names(extra_parameters) && extra_parameters[["generate_time_trend_plot"]] == T){
+      # Get the capture month and capture year
+      time_trend_fields <- get_linkage_time_trend_fields(linkage_metadata_db, left_dataset_code)
+
+      # Error check to make sure the month and year are actually recorded, otherwise stop
+      if(is.null(time_trend_fields[[1]]) || is.null(time_trend_fields[[2]])){
+        dbDisconnect(linkage_metadata_db)
+        stop("Error: Make sure the Data Capture Month and Year are properly recorded before attempting to generate time trend plot.")
+      }
+
+      # Duplicate the month and year fields
+      month_field <- time_trend_fields[[1]]
+      year_field  <- time_trend_fields[[2]]
+      left_dataset[["capture_month_time_trend_field"]] <- left_dataset[[month_field]]
+      left_dataset[["capture_year_time_trend_field"]]  <- left_dataset[[year_field]]
     }
     #----
 
@@ -4608,6 +4635,9 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     output_fields  <- get_linkage_output_fields(linkage_metadata_db, algorithm_id)
     fields_to_keep <- output_fields$field_name
     fields_to_keep <- append(fields_to_keep, "stage")
+    if("capture_month_time_trend_field" %in% colnames(left_dataset) && "capture_year_time_trend_field" %in% colnames(left_dataset)){
+      fields_to_keep <- append(fields_to_keep, c("capture_month_time_trend_field", "capture_year_time_trend_field"))
+    }
     fields_to_keep <- unique(fields_to_keep)
 
     # Keep the output fields specified by the user
@@ -4915,6 +4945,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           strata_vars <- colnames(output_df)
           strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
           strata_vars <- strata_vars[! strata_vars %in% c('link_indicator')] # Drop the 'link_indicator' field
+          strata_vars <- strata_vars[! strata_vars %in% c('capture_month_time_trend_field')] # Drop the 'capture_month_time_trend_field' field
+          strata_vars <- strata_vars[! strata_vars %in% c('capture_year_time_trend_field')] # Drop the 'capture_year_time_trend_field' field
 
           # Load the 'linkrep' library and generate a linkage quality report
           library("linkrep")
@@ -5001,6 +5033,16 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             abbreviations <- extra_parameters[["abbreviations"]]
           }
 
+          # Get the time trend values
+          if("capture_month_time_trend_field" %in% colnames(left_dataset) && "capture_year_time_trend_field" %in% colnames(left_dataset)){
+            capture_month_time_trend_field <- "capture_month_time_trend_field"
+            capture_year_time_trend_field  <- "capture_year_time_trend_field"
+          }
+          else{
+            capture_month_time_trend_field <- NULL
+            capture_year_time_trend_field  <- NULL
+          }
+
           # Generate the linkage quality report
           final_linkage_quality_report(output_df, report_title, report_subtitle, datasets$left_dataset_name,
                                        paste0("the ", datasets$right_dataset_name), output_dir, username, "autolink (Record Linkage)",
@@ -5014,7 +5056,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                        missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
                                        R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
                                        report_file_name = report_file_name, threshold = threshold,
-                                       definitions = definitions, abbreviations = abbreviations)
+                                       definitions = definitions, abbreviations = abbreviations,
+                                       acquisition_month_var = capture_month_time_trend_field, acquisition_year_var = capture_year_time_trend_field)
 
           detach("package:linkrep", unload = TRUE)
         },
@@ -5181,6 +5224,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       strata_vars <- colnames(linked_data_list[[1]])
       strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
       strata_vars <- strata_vars[! strata_vars %in% c('link_indicator')] # Drop the 'link_indicator' field
+      strata_vars <- strata_vars[! strata_vars %in% c('capture_month_time_trend_field')] # Drop the 'capture_month_time_trend_field' field
+      strata_vars <- strata_vars[! strata_vars %in% c('capture_year_time_trend_field')] # Drop the 'capture_year_time_trend_field' field
 
       # Make sure the missing data indicators were provided
       missing_data_indicators  <- intermediate_missing_indicators_df
