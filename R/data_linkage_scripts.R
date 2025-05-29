@@ -788,25 +788,26 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
           # Create the second plot of the subset of candidate pair records (IF GROUND TRUTH IS PROVIDED)
           ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+          comparison_rules_list_gt <- list()
           if(nrow(ground_truth_df) > 0){
             # First, check if the blocking or matching keys is using the ground truth
             for(index in 1:nrow(ground_truth_df)){
               # Check if the column is one of our blocking or matching keys, if not, then keep it as is, if so, rename it
               if(paste0(ground_truth_df$left_dataset_field[index], "_renamed") %in% matching_keys_df$left_dataset_field){
                 ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
               }
               else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed") %in% blocking_keys_df$left_dataset_field){
                 ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
               }
               else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed_alt_match") %in% matching_keys_df$left_dataset_field){
                 ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
               }
               else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed_alt_block") %in% blocking_keys_df$left_dataset_field){
                 ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+                ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
               }
             }
 
@@ -823,6 +824,170 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
               # Rename the right dataset field to match the field it's going to be matching with
               names(right_dataset)[names(right_dataset) == right_dataset_field_name] <- left_dataset_field_name
+
+              # Get the comparison rules for the current row
+              comparison_rules_json <- row$comparison_rules
+
+              # Make sure the comparison rules aren't NA
+              if(!is.na(comparison_rules_json)){
+                comparison_rules <- jsonlite::fromJSON(comparison_rules_json)
+
+                # Get the field we'll apply the comparison rules to
+                dataset_field <- row$left_dataset_field
+
+                # Based on the comparison rule, map it to the appropriate function
+                if("jw_score" %in% names(comparison_rules)){
+                  # "jw_score" uses the Reclin2 cmp_jarowinkler function, so get the value
+                  threshold <- comparison_rules[["jw_score"]]
+
+                  # Keep track of this comparison rule
+                  comparison_rules_list_gt[[dataset_field]] <- reclin2::cmp_jarowinkler(threshold)
+                }
+                else if ("numeric_tolerance" %in% names(comparison_rules)){
+                  # custom "numeric error tolerance" function
+                  numeric_error_tolerance <- function(tolerance){
+                    function(x , y){
+                      if(!missing(x) && !missing(y)){
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   abs(x - y) <= tolerance)
+                        return(within_tolerance)
+                      }
+                      else{
+                        return(FALSE)
+                      }
+                    }
+                  }
+
+                  # Get the tolerance value
+                  tolerance <- comparison_rules[["numeric_tolerance"]]
+
+                  # Keep track of this comparison rule
+                  comparison_rules_list_gt[[dataset_field]] <- numeric_error_tolerance(tolerance)
+                }
+                else if ("date_tolerance" %in% names(comparison_rules)){
+                  # Custom "date error tolerance" function
+                  date_error_tolerance <- function(tolerance){
+                    function(x , y){
+                      if(!missing(x) && !missing(y)){
+                        # Convert values to dates
+                        x = as.Date(x)
+                        y = as.Date(y)
+
+                        # Determine if the date is within error tolerance
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   abs(x - y) <= tolerance)
+                        return(within_tolerance)
+                      }
+                      else{
+                        return(FALSE)
+                      }
+                    }
+                  }
+
+                  # Get the tolerance value
+                  tolerance <- comparison_rules[["date_tolerance"]]
+
+                  # Keep track of this comparison rule
+                  comparison_rules_list_gt[[dataset_field]] <- date_error_tolerance(tolerance)
+                }
+                else if ("levenshtein_string_cost" %in% names(comparison_rules)){
+                  # Custom "levenshtein distance" function
+                  levenshtein_string_dist <- function(dist){
+                    function(x, y){
+                      if(!missing(x) && !missing(y)){
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   stringdist::stringdist(x, y, method = "lv") <= dist)
+                        return(within_tolerance)
+                      }
+                      else{
+                        return(FALSE)
+                      }
+                    }
+                  }
+
+                  # Get the levenshtein distance value
+                  dist <- comparison_rules[["levenshtein_string_cost"]]
+
+                  # Keep track of this comparison rule
+                  comparison_rules_list_gt[[dataset_field]] <- levenshtein_string_dist(dist)
+                }
+                else if ("damerau_levenshtein_string_cost" %in% names(comparison_rules)){
+                  # Custom "damerau levenshtein distance" function
+                  damerau_levenshtein_string_dist <- function(dist){
+                    function(x, y){
+                      if(!missing(x) && !missing(y)){
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   stringdist::stringdist(x, y, method = "dl") <= dist)
+                        return(within_tolerance)
+                      }
+                      else{
+                        return(FALSE)
+                      }
+                    }
+                  }
+
+                  # Get the levenshtein distance value
+                  dist <- comparison_rules[["damerau_levenshtein_string_cost"]]
+
+                  # Keep track of this comparison rule
+                  comparison_rules_list_gt[[dataset_field]] <- damerau_levenshtein_string_dist(dist)
+                }
+                else if ("to_soundex" %in% names(comparison_rules)){
+                  # Custom "soundex match" function
+                  soundex_dist <- function(){
+                    function(x, y){
+                      if(!missing(x) && !missing(y)){
+                        within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                   FALSE,
+                                                   stringdist::stringdist(x, y, method = "soundex") == 0)
+                        return(within_tolerance)
+                      }
+                      else{
+                        return(FALSE)
+                      }
+                    }
+                  }
+
+                  # Keep track of this comparison rule
+                  comparison_rules_list_gt[[dataset_field]] <- soundex_dist()
+                }
+                else if ("reference_val_index" %in% names(comparison_rules) && "relative_diff_tolerance" %in% names(comparison_rules)){
+                  # custom "relative difference tolerance" function
+                  relative_difference_tolerance <- function(tolerance, index){
+                    function(x , y){
+                      if(!missing(x) && !missing(y)){
+                        if(index == 1){
+                          within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                     FALSE,
+                                                     (abs(x - y)/x) <= tolerance)
+                          return(within_tolerance)
+                        }
+                        else if (index == 2){
+                          within_tolerance <- ifelse(is.na(x) | is.na(y),
+                                                     FALSE,
+                                                     (abs(x - y)/y) <= tolerance)
+                          return(within_tolerance)
+                        }
+                        else return(FALSE)
+                      }
+                      else{
+                        return(FALSE)
+                      }
+                    }
+                  }
+
+                  # Get the tolerance value
+                  tolerance <- comparison_rules[["relative_diff_tolerance"]]
+                  ref_index <- comparison_rules[["reference_val_index"]]
+
+                  # Keep track of this comparison rule
+                  comparison_rules_list_gt[[dataset_field]] <- relative_difference_tolerance(tolerance, ref_index)
+                }
+              }
             }
 
             # Get the left fields
@@ -830,9 +995,32 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # Get the right fields
             right_ground_truth_fields <- ground_truth_df$right_dataset_field
+            #right_ground_truth_fields <- ground_truth_df$left_dataset_field # They're being renamed to match anyways so why not modify this?
 
-            # Compare variables to get the truth
-            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+            # For each of the ground truth fields, check if that ground truth is true, combine all truth values afterwards
+            for(i in seq_along(left_ground_truth_fields)){
+              # Get the field name
+              field_name_left <- left_ground_truth_fields[i]
+              field_name_right <- right_ground_truth_fields[i]
+
+              # Check if comparator function exists
+              comparator_function <- comparison_rules_list_gt[[field_name_left]]
+
+              # If NULL, there is no comparator function, otherwise, use it
+              if(!is.null(comparator_function)){
+                linkage_pairs <- compare_vars(linkage_pairs, variable = paste0("truth_", i), on_x = field_name_left, on_y = field_name_right,
+                                              comparator = comparator_function)
+              }
+              else{
+                linkage_pairs <- compare_vars(linkage_pairs, variable = paste0("truth_", i), on_x = field_name_left, on_y = field_name_right)
+              }
+            }
+
+            ## Create a final 'truth' column based on all the truth values (truth_1, truth_2, ...), then drop the temp truth columns
+            # Get the list of temporary truth columns
+            truth_columns <- paste0("truth_", seq_along(left_ground_truth_fields))
+            suppressWarnings(linkage_pairs[, truth := Reduce(`&`, .SD), .SDcols = truth_columns])
+            linkage_pairs[, (truth_columns) := NULL]
 
             # Filter out pairs with missing ground truth
             linkage_pairs_non_missing <- linkage_pairs[!is.na(linkage_pairs$truth),] # Works for now, more testing should be done
@@ -894,19 +1082,19 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             # Check if the column is one of our blocking or matching keys, if not, then keep it as is, if so, rename it
             if(paste0(ground_truth_df$left_dataset_field[index], "_renamed") %in% matching_keys_df$left_dataset_field){
               ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
             }
             else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed") %in% blocking_keys_df$left_dataset_field){
               ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
             }
             else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed_alt_match") %in% matching_keys_df$left_dataset_field){
               ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
             }
             else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed_alt_block") %in% blocking_keys_df$left_dataset_field){
               ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
             }
           }
 
@@ -1094,15 +1282,41 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
           # Get the right fields
           right_ground_truth_fields <- ground_truth_df$right_dataset_field
+          #right_ground_truth_fields <- ground_truth_df$left_dataset_field # They're being renamed to match anyways so why not modify this?
 
-          # Compare variables to get the truth
-          if(length(comparison_rules_list_gt) > 0){
-            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields,
-                                          comparator = comparison_rules_list_gt)
+          # For each of the ground truth fields, check if that ground truth is true, combine all truth values afterwards
+          for(i in seq_along(left_ground_truth_fields)){
+            # Get the field name
+            field_name_left <- left_ground_truth_fields[i]
+            field_name_right <- right_ground_truth_fields[i]
+
+            # Check if comparator function exists
+            comparator_function <- comparison_rules_list_gt[[field_name_left]]
+
+            # If NULL, there is no comparator function, otherwise, use it
+            if(!is.null(comparator_function)){
+              linkage_pairs <- compare_vars(linkage_pairs, variable = paste0("truth_", i), on_x = field_name_left, on_y = field_name_right,
+                                            comparator = comparator_function)
+            }
+            else{
+              linkage_pairs <- compare_vars(linkage_pairs, variable = paste0("truth_", i), on_x = field_name_left, on_y = field_name_right)
+            }
           }
-          else{
-            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
-          }
+
+          ## Create a final 'truth' column based on all the truth values (truth_1, truth_2, ...), then drop the temp truth columns
+          # Get the list of temporary truth columns
+          truth_columns <- paste0("truth_", seq_along(left_ground_truth_fields))
+          suppressWarnings(linkage_pairs[, truth := Reduce(`&`, .SD), .SDcols = truth_columns])
+          linkage_pairs[, (truth_columns) := NULL]
+
+          ## Compare variables to get the truth
+          #if(length(comparison_rules_list_gt) > 0){
+          #  linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields,
+          #                                comparator = comparison_rules_list_gt)
+          #}
+          #else{
+          #  linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+          #}
         }
         #--------------------------#
 
@@ -2204,19 +2418,19 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             # Check if the column is one of our blocking or matching keys, if not, then keep it as is, if so, rename it
             if(paste0(ground_truth_df$left_dataset_field[index], "_renamed") %in% matching_keys_df$left_dataset_field){
               ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
             }
             else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed") %in% blocking_keys_df$left_dataset_field){
               ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
             }
             else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed_alt_match") %in% matching_keys_df$left_dataset_field){
               ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
             }
             else if(paste0(ground_truth_df$left_dataset_field[index], "_renamed_alt_block") %in% blocking_keys_df$left_dataset_field){
               ground_truth_df$left_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index], "_renamed")
-              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$right_dataset_field[index], "_renamed")
+              ground_truth_df$right_dataset_field[index] <- paste0(ground_truth_df$left_dataset_field[index])
             }
           }
 
@@ -2404,15 +2618,41 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
           # Get the right fields
           right_ground_truth_fields <- ground_truth_df$right_dataset_field
+          #right_ground_truth_fields <- ground_truth_df$left_dataset_field # They're being renamed to match anyways so why not modify this?
 
-          # Compare variables to get the truth
-          if(length(comparison_rules_list_gt) > 0){
-            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields,
-                                          comparator = comparison_rules_list_gt)
+          # For each of the ground truth fields, check if that ground truth is true, combine all truth values afterwards
+          for(i in seq_along(left_ground_truth_fields)){
+            # Get the field name
+            field_name_left <- left_ground_truth_fields[i]
+            field_name_right <- right_ground_truth_fields[i]
+
+            # Check if comparator function exists
+            comparator_function <- comparison_rules_list_gt[[field_name_left]]
+
+            # If NULL, there is no comparator function, otherwise, use it
+            if(!is.null(comparator_function)){
+              linkage_pairs <- compare_vars(linkage_pairs, variable = paste0("truth_", i), on_x = field_name_left, on_y = field_name_right,
+                                            comparator = comparator_function)
+            }
+            else{
+              linkage_pairs <- compare_vars(linkage_pairs, variable = paste0("truth_", i), on_x = field_name_left, on_y = field_name_right)
+            }
           }
-          else{
-            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
-          }
+
+          ## Create a final 'truth' column based on all the truth values (truth_1, truth_2, ...), then drop the temp truth columns
+          # Get the list of temporary truth columns
+          truth_columns <- paste0("truth_", seq_along(left_ground_truth_fields))
+          suppressWarnings(linkage_pairs[, truth := Reduce(`&`, .SD), .SDcols = truth_columns])
+          linkage_pairs[, (truth_columns) := NULL]
+
+          ## Compare variables to get the truth
+          #if(length(comparison_rules_list_gt) > 0){
+          #  linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields,
+          #                                comparator = comparison_rules_list_gt[1])
+          #}
+          #else{
+          #  linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+          #}
         }
         #--------------------------#
 
@@ -3414,14 +3654,38 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Get the right fields
           right_ground_truth_fields <- ground_truth_df$right_dataset_field
 
-          # Compare variables to get the truth
-          if(length(comparison_rules_list_gt) > 0){
-            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields,
-                                          comparator = comparison_rules_list_gt)
+          # For each of the ground truth fields, check if that ground truth is true, combine all truth values afterwards
+          for(i in seq_along(left_ground_truth_fields)){
+            # Get the field name
+            field_name <- left_ground_truth_fields[i]
+
+            # Check if comparator function exists
+            comparator_function <- comparison_rules_list_gt[[field_name]]
+
+            # If NULL, there is no comparator function, otherwise, use it
+            if(!is.null(comparator_function)){
+              linkage_pairs <- compare_vars(linkage_pairs, variable = paste0("truth_", i), on_x = field_name, on_y = field_name,
+                                            comparator = comparator_function)
+            }
+            else{
+              linkage_pairs <- compare_vars(linkage_pairs, variable = paste0("truth_", i), on_x = field_name, on_y = field_name)
+            }
           }
-          else{
-            linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
-          }
+
+          ## Create a final 'truth' column based on all the truth values (truth_1, truth_2, ...), then drop the temp truth columns
+          # Get the list of temporary truth columns
+          truth_columns <- paste0("truth_", seq_along(left_ground_truth_fields))
+          linkage_pairs[, truth := Reduce(`&`, .SD), .SDcols = truth_columns]
+          linkage_pairs[, (truth_columns) := NULL]
+
+          ## Compare variables to get the truth
+          #if(length(comparison_rules_list_gt) > 0){
+          #  linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields,
+          #                                comparator = comparison_rules_list_gt)
+          #}
+          #else{
+          #  linkage_pairs <- compare_vars(linkage_pairs, variable = "truth", on_x = left_ground_truth_fields, on_y = right_ground_truth_fields)
+          #}
         }
         #---------------------------#
 
