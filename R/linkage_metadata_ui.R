@@ -6244,8 +6244,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
     # Error handling - don't allow user to have two algorithms enabled with the same name
     #----#
-    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms WHERE algorithm_name = ? AND archived = 0 AND published = 0;')
-    dbBind(get_query, list(algorithm_name))
+    get_query <- dbSendQuery(linkage_metadata_conn, 'SELECT * FROM linkage_algorithms
+                             WHERE dataset_id_left = ? AND dataset_id_right = ? AND algorithm_name = ? AND archived = 0 AND published = 0;')
+    dbBind(get_query, list(left_dataset_id, right_dataset_id, algorithm_name))
     output_df <- dbFetch(get_query)
     enabled_databases <- nrow(output_df)
     dbClearResult(get_query)
