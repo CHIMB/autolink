@@ -4672,7 +4672,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     selected_row     <- input$currently_added_linkage_algorithms_rows_selected
 
     # If no row is selected, or a null row is selected, return
-    if(is.null(selected_row)) return()
+    if(is.null(selected_row) || left_dataset_id == '' || right_dataset_id == '') return()
 
     # Query to get the algorithms we could select from
     df <- dbGetQuery(linkage_metadata_conn, paste('SELECT * from linkage_algorithms
