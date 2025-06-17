@@ -2747,6 +2747,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # Store the filtered data for return
         return_list[["output_linkage_df"]] <- filtered_data
 
+        # Store the unlinked pairs for return
+        return_list[['unlinked_dataset_pairs']] <- linkage_pairs
+
         # Clean up
         rm(linkage_pairs, linked_dataset, filtered_data)
         gc()
