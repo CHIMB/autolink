@@ -5508,7 +5508,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
       # Report title and subtitle
       report_title    <- "Data Linkage Quality Report"
-      report_subtitle <- paste0("Linkage of ", datasets$left_dataset_name, " with the ", datasets$right_dataset_name)
+      report_subtitle <- paste0("Linkage of ", datasets$left_dataset_name, " with ", datasets$right_dataset_name)
 
       # Get the threshold
       threshold <- NULL
