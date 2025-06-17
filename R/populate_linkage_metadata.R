@@ -6,11 +6,10 @@
 #' file will be output.
 #' @param file_name The file name for what the new .sqlite metadata file will be called.
 #' @param output_folder A path to the output folder, where the new metadata file will be output.
-#' @param datastan_file A path to an existing `datastan` SQLite file which is an optional parameter which will import the existing datasets to avoid needing to recreate them.
 #' @examples
 #' create_new_metadata("my_new_metadata", "path/to/folder")
 #' @export
-create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
+create_new_metadata <- function(file_name, output_folder){
   # Error handling to ensure the file name and output folder is all valid
   #----
   if(is.null(file_name) || is.null(output_folder) || is.na(file_name) || is.na(output_folder)){
@@ -263,17 +262,17 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   #~~~~
   linkage_methods_insert <- function(){
     new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, implementation_desc, version)',
-                             'VALUES(1, "D", "Reclin2Linkage", "Deterministic linkage pass using the Reclin2 package.", "v1");')
+                             'VALUES(1, "D", "Reclin2Linkage", "Deterministic linkage pass", "v1");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, implementation_desc, version)',
-                             'VALUES(2, "P", "Reclin2Linkage", "Probabilistic linkage pass using the Reclin2 package.", "v1");')
+                             'VALUES(2, "P", "Reclin2Linkage", "Probabilistic linkage pass", "v1");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 
     new_entry_query <- paste('INSERT INTO linkage_methods (linkage_method_id, technique_label, implementation_name, implementation_desc, version)',
-                             'VALUES(3, "M", "Reclin2Linkage", "Machine learning linkage pass using the Reclin2 package.", "v1");')
+                             'VALUES(3, "M", "Reclin2Linkage", "Machine learning linkage pass", "v1");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
   }
@@ -671,7 +670,7 @@ create_new_metadata <- function(file_name, output_folder, datastan_file = NULL){
   #~~~~
   comparison_methods_insert <- function(){
     new_entry_query <- paste('INSERT INTO comparison_methods (comparison_method_id, method_name, description)',
-                             'VALUES(1, "Reclin-Jarowinkler", "Jaro-Winkler similarity from the Reclin2 package");')
+                             'VALUES(1, "Reclin-Jarowinkler", "Jaro-Winkler similarity");')
     new_entry <- dbSendStatement(my_db, new_entry_query)
     dbClearResult(new_entry)
 

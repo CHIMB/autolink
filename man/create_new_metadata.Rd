@@ -4,14 +4,12 @@
 \alias{create_new_metadata}
 \title{Create New Metadata}
 \usage{
-create_new_metadata(file_name, output_folder, datastan_file = NULL)
+create_new_metadata(file_name, output_folder)
 }
 \arguments{
 \item{file_name}{The file name for what the new .sqlite metadata file will be called.}
 
 \item{output_folder}{A path to the output folder, where the new metadata file will be output.}
-
-\item{datastan_file}{A path to an existing `datastan` SQLite file which is an optional parameter which will import the existing datasets to avoid needing to recreate them.}
 }
 \description{
 The create_new_metadata() function will run all the insert and create queries to build
