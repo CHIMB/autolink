@@ -627,8 +627,8 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
 
       # Apply Ranges for age cutoffs
       output_df[[new_field_name]] <- cut(output_df[[old_field_name]],
-                                         breaks = c(-Inf, 18, 35, 65, 81, Inf),
-                                         labels = c("<18", "18-34", "35-64", "65-80", "81+"),
+                                         breaks = c(-Inf, 18, 35, 65, 80, Inf),
+                                         labels = c("<18", "18-34", "35-64", "65-79", "80+"),
                                          right = FALSE)
 
       # Apply the column label
@@ -699,8 +699,8 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       # Calculate the age by taking the difference of [1: CAPTURE DATE] & [2: DATE OF BIRTH] and then apply cutoffs
       age <- as.numeric(floor(difftime(as.Date(output_df[[old_field_name_cdate]]), as.Date(output_df[[old_field_name_bdate]]), unit="weeks") / 52.25))
       output_df[[new_field_name]] <- cut(age,
-                                         breaks = c(-Inf, 18, 35, 65, 81, Inf),
-                                         labels = c("<18", "18-34", "35-64", "65-80", "81+"),
+                                         breaks = c(-Inf, 18, 35, 65, 80, Inf),
+                                         labels = c("<18", "18-34", "35-64", "65-79", "80+"),
                                          right = FALSE)
 
       # Apply the column label

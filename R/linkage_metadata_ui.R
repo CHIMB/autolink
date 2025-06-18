@@ -7397,8 +7397,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
              "<li>&lt;18</li>",
              "<li>18-34</li>",
              "<li>35-64</li>",
-             "<li>65-80</li>",
-             "<li>81+</li>",
+             "<li>65-79</li>",
+             "<li>80+</li>",
              "</ul>"
            ),
            "4" = paste0(
@@ -7430,8 +7430,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
              "<li>&lt;18</li>",
              "<li>18-34</li>",
              "<li>35-64</li>",
-             "<li>65-80</li>",
-             "<li>81+</li>",
+             "<li>65-79</li>",
+             "<li>80+</li>",
              "</ul>"
            ),
            "8" = paste0(
