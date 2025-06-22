@@ -736,11 +736,6 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         #-------------------------#
 
         #-- STEP 4: SELECT PAIRS --#
-        # Would we like to grab the ground truth variables and see if they match for the algorithm?
-        # # Attach a variable showing if R PHIN matches SAMIN PHIN
-        # pairs <- compare_vars(pairs, "truth", on_x = "id", on_y = "id")
-        # table(pairs$truth, pairs$threshold)
-
         # Get the acceptance threshold for this iteration
         acceptance_threshold <- get_acceptence_thresholds(linkage_metadata_db, iteration_id)
 
@@ -1046,7 +1041,27 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               )
             algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
             iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
-            ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
+
+            # Get the ground truth fields
+            ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+            ground_truth_fields <- ""
+            ground_truth_fields_vector <- c()
+            if(nrow(ground_truth_df) > 0){
+              for(j in 1:nrow(ground_truth_df)){
+                # First, get the dataset field name
+                field_name <- ground_truth_df$left_dataset_field[j]
+
+                # Convert the field name to either upper, lower, or title case
+                field_name <- convert_name_case(field_name)
+
+                # Append the field name to the list of ground truth fields
+                ground_truth_fields_vector <- append(ground_truth_fields_vector, field_name)
+              }
+            }
+
+            # Collapse the ground truth fields into a single string
+            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+
             caption <- paste0("Weight distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
                               "matching and non-matching ground truth fields (", ground_truth_fields, ").")
             plot_list[["candidate_weights_plot_ground_truth"]] <- candidate_weights_plot_gt
@@ -1538,7 +1553,27 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
             iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
-            ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
+
+            # Get the ground truth fields
+            ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+            ground_truth_fields <- ""
+            ground_truth_fields_vector <- c()
+            if(nrow(ground_truth_df) > 0){
+              for(j in 1:nrow(ground_truth_df)){
+                # First, get the dataset field name
+                field_name <- ground_truth_df$left_dataset_field[j]
+
+                # Convert the field name to either upper, lower, or title case
+                field_name <- convert_name_case(field_name)
+
+                # Append the field name to the list of ground truth fields
+                ground_truth_fields_vector <- append(ground_truth_fields_vector, field_name)
+              }
+            }
+
+            # Collapse the ground truth fields into a single string
+            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+
             caption <- paste0("Posterior score distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
                               "matching and non-matching ground truth fields (", ground_truth_fields, ").")
             plot_list[["decision_boundary_plot_ground_truth"]] <- candidate_weights_plot_gt
@@ -1660,7 +1695,27 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
             iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
-            ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
+
+            # Get the ground truth fields
+            ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+            ground_truth_fields <- ""
+            ground_truth_fields_vector <- c()
+            if(nrow(ground_truth_df) > 0){
+              for(j in 1:nrow(ground_truth_df)){
+                # First, get the dataset field name
+                field_name <- ground_truth_df$left_dataset_field[j]
+
+                # Convert the field name to either upper, lower, or title case
+                field_name <- convert_name_case(field_name)
+
+                # Append the field name to the list of ground truth fields
+                ground_truth_fields_vector <- append(ground_truth_fields_vector, field_name)
+              }
+            }
+
+            # Collapse the ground truth fields into a single string
+            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+
             caption <- paste0("Weight distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
                               "matching and non-matching ground truth fields (", ground_truth_fields, ").")
             plot_list[["decision_boundary_plot_ground_truth"]] <- candidate_weights_plot_gt
@@ -3800,7 +3855,27 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               )
             algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
             iteration_name <- get_iteration_name(linkage_metadata_db, iteration_id)
-            ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
+
+            # Get the ground truth fields
+            ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+            ground_truth_fields <- ""
+            ground_truth_fields_vector <- c()
+            if(nrow(ground_truth_df) > 0){
+              for(j in 1:nrow(ground_truth_df)){
+                # First, get the dataset field name
+                field_name <- ground_truth_df$left_dataset_field[j]
+
+                # Convert the field name to either upper, lower, or title case
+                field_name <- convert_name_case(field_name)
+
+                # Append the field name to the list of ground truth fields
+                ground_truth_fields_vector <- append(ground_truth_fields_vector, field_name)
+              }
+            }
+
+            # Collapse the ground truth fields into a single string
+            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+
             caption <- paste0("Probability distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
                               "matching and non-matching ground truth fields (", ground_truth_fields, ").")
             plot_list[["candidate_weights_plot_ground_truth"]] <- candidate_weights_plot_gt
@@ -4072,7 +4147,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   label(intermediate_performance_measures_df$negative_predictive_value) <- "NPV"
   label(intermediate_performance_measures_df$sensitivity) <- "Sensitivity"
   label(intermediate_performance_measures_df$specificity) <- "Specificity"
-  label(intermediate_performance_measures_df$f1_score) <- "F1-Score"
+  label(intermediate_performance_measures_df$f1_score) <- "F1 Score"
   label(intermediate_performance_measures_df$linkage_rate) <- "Linkage Rate"
   #----
 
@@ -4093,7 +4168,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
   label(considered_performance_measures_df$negative_predictive_value) <- "NPV"
   label(considered_performance_measures_df$sensitivity) <- "Sensitivity"
   label(considered_performance_measures_df$specificity) <- "Specificity"
-  label(considered_performance_measures_df$f1_score) <- "F1-Score"
+  label(considered_performance_measures_df$f1_score) <- "F1 Score"
   label(considered_performance_measures_df$linkage_rate) <- "Linkage Rate"
 
   # List of considered algorithm summaries
@@ -4428,7 +4503,11 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             sapply(words, function(word) {
               if (tolower(word) %in% c("of", "and", "the", "in", "on", "at", "to", "with")) {
                 tolower(word)
-              } else {
+              }
+              else if (tolower(word) %in% c('id', 'phin', 'guid', 'cid')){
+                toupper(word)
+              }
+              else {
                 str_to_title(word)
               }
             }),
@@ -4436,7 +4515,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           )
           if(tolower(field_name) == "phin"){
             field_name <- "PHIN"
-            algo_summary_footnotes <- append(algo_summary_footnotes, "PHIN=Personal Health Identification Number")
+            algo_summary_footnotes <- append(algo_summary_footnotes, "PHIN = Personal Health Identification Number")
             algo_summary_footnotes <- unique(algo_summary_footnotes)
           }
 
@@ -4578,7 +4657,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           if(!is.na(comparison_rule_id)){
             # Define the direction of comparison for each method
             comparison_directions <- list(
-              "Reclin-Jarowinkler" = "≥",
+              "Reclin-JaroWinkler" = "≥",
               "Stringdist-OSA" = "≤",
               "RecordLinkage-Levenshtein" = "≤",
               "Soundex" = "=",
@@ -4622,7 +4701,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             field_name <- paste0(field_name, " (", method_name, direction, params_str, ")")
 
             # Save the method and description as a footnote
-            algo_summary_footnotes <- append(algo_summary_footnotes, paste0(method_name, "=", description))
+            algo_summary_footnotes <- append(algo_summary_footnotes, paste0(method_name, " = ", description))
             algo_summary_footnotes <- unique(algo_summary_footnotes)
           }
 
@@ -4946,8 +5025,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
     # Relabel the algo summary
     if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
-      label(algo_summary$pass) <- "Pass"
-      label(algo_summary$linkage_rate_pass) <- "Within Pass Linkage Rate (%)"
+      label(algo_summary$pass) <- "Step"
+      label(algo_summary$linkage_rate_pass) <- "Linkage Rate (%)"
       label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
       label(algo_summary$blocking_variables) <- "Blocking Scheme"
       label(algo_summary$matching_variables) <- "Matching Criteria"
@@ -4956,8 +5035,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       label(algo_summary$FDR) <- "FDR (%)"
       label(algo_summary$FOR) <- "FOR (%)"
     } else {
-      label(algo_summary$pass) <- "Pass"
-      label(algo_summary$linkage_rate_pass) <- "Within Pass Linkage Rate (%)"
+      label(algo_summary$pass) <- "Step"
+      label(algo_summary$linkage_rate_pass) <- "Linkage Rate (%)"
       label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
       label(algo_summary$blocking_variables) <- "Blocking Scheme"
       label(algo_summary$matching_variables) <- "Matching Criteria"
@@ -5027,13 +5106,14 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # Create a performance measures data frame to store all the information
       performance_measures_df <- data.frame(
         algorithm_name = algorithm_name,
-        positive_predictive_value = PPV,
-        negative_predictive_value = NPV,
         sensitivity = SENS,
         specificity = SPEC,
+        positive_predictive_value = PPV,
+        negative_predictive_value = NPV,
         f1_score = F1_SCORE,
         linkage_rate = linkage_rate
       )
+
 
       # Apply labels to the performance measures data frame
       label(performance_measures_df$algorithm_name) <- "Algorithm Name"
@@ -5041,7 +5121,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       label(performance_measures_df$negative_predictive_value) <- "NPV"
       label(performance_measures_df$sensitivity) <- "Sensitivity"
       label(performance_measures_df$specificity) <- "Specificity"
-      label(performance_measures_df$f1_score) <- "F1-Score"
+      label(performance_measures_df$f1_score) <- "F1 Score"
       label(performance_measures_df$linkage_rate) <- "Linkage Rate"
 
       # Get the output directory
@@ -5140,7 +5220,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       label(performance_measures_df$negative_predictive_value) <- "NPV"
       label(performance_measures_df$sensitivity) <- "Sensitivity"
       label(performance_measures_df$specificity) <- "Specificity"
-      label(performance_measures_df$f1_score) <- "F1-Score"
+      label(performance_measures_df$f1_score) <- "F1 Score"
       label(performance_measures_df$linkage_rate) <- "Linkage Rate"
     }
 
@@ -5220,12 +5300,30 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
 
           ### Verify the performance measures info is valid
           ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
-          ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
+          ground_truth_fields <- ""
+          ground_truth_fields_vector <- c()
           performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
           if(nrow(performance_measures_df) <= 0){
             performance_measures_df <- NULL
             performance_measures_footnotes <- NULL
             ground_truth_fields <- NULL
+          }
+          else{
+            if(nrow(ground_truth_df) > 0){
+              for(j in 1:nrow(ground_truth_df)){
+                # First, get the dataset field name
+                field_name <- ground_truth_df$left_dataset_field[j]
+
+                # Convert the field name to either upper, lower, or title case
+                field_name <- convert_name_case(field_name)
+
+                # Append the field name to the list of ground truth fields
+                ground_truth_fields_vector <- append(ground_truth_fields_vector, field_name)
+              }
+            }
+
+            # Collapse the ground truth fields into a single string
+            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
           }
 
           ### Verify the plot information is valid
@@ -5548,8 +5646,29 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       }
       else{
         performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
+
+        ### Verify the performance measures info is valid
         ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
-        ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
+        ground_truth_fields <- ""
+        ground_truth_fields_vector <- c()
+        if(nrow(ground_truth_df) > 0){
+          for(j in 1:nrow(ground_truth_df)){
+            # First, get the dataset field name
+            field_name <- ground_truth_df$left_dataset_field[j]
+
+            # Convert the field name to either upper, lower, or title case
+            field_name <- convert_name_case(field_name)
+
+            # Append the field name to the list of ground truth fields
+            ground_truth_fields_vector <- append(ground_truth_fields_vector, field_name)
+          }
+        }
+
+        # Collapse the ground truth fields into a single string
+        ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+
+        #ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+        #ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
                                             report_title, report_subtitle, datasets$left_dataset_name, datasets$right_dataset_name,
                                             output_dir, username, "autolink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,

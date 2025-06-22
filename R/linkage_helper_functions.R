@@ -811,6 +811,42 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
   # Return the output dataframe
   return(output_df)
 }
+
+#' Convert Name Cases
+#'
+#' The convert_name_case() function will take in a single string value, and convert it to
+#' either lower case, upper case, or title case depending on how it should be displayed in
+#' a report
+#' @param string_to_convert A string value that is the word being converted.
+#' @examples
+#' converted_word <- convert_name_case('phin')
+#' print(converted_word) # Prints PHIN
+#' @export
+convert_name_case <- function(string_to_convert){
+  # Remove punctuation
+  field_name <- str_replace_all(string_to_convert, "[[:punct:]]", " ")
+
+  # Split up the words of the string, and convert them to title case, except for
+  # words like "of", "and", etc.
+  words <- str_split(field_name, "\\s+")[[1]]
+  field_name <- str_c(
+    sapply(words, function(word) {
+      if (tolower(word) %in% c("of", "and", "the", "in", "on", "at", "to", "with")) {
+        tolower(word)
+      }
+      else if (tolower(word) %in% c('id', 'phin', 'guid', 'cid')){
+        toupper(word)
+      }
+      else {
+        str_to_title(word)
+      }
+    }),
+    collapse = " "
+  )
+
+  # Return the case-converted word
+  return(field_name)
+}
 #----------------------------------------#
 
 #-- HELPER FUNCTIONS FOR LINKAGE RULES --#
