@@ -5114,7 +5114,6 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         linkage_rate = linkage_rate
       )
 
-
       # Apply labels to the performance measures data frame
       label(performance_measures_df$algorithm_name) <- "Algorithm Name"
       label(performance_measures_df$positive_predictive_value) <- "PPV"
@@ -5174,12 +5173,6 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # F1-Score
       F1_SCORE <- (TP/(TP + (0.5 * (FP + FN)))) * 100
 
-      # FDR (False Discover Rate) WE CAN CHOOSE TO ADD IT LATER
-      #FDR <- (FP/(FP + TP)) * 100
-
-      # FOR (False Omission Rate) WE CAN CHOOSE TO ADD IT LATER
-      #FOR <- (FN/(FN + TN)) * 100
-
       # Calculate the linkage rate
       linkage_rate <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
 
@@ -5206,10 +5199,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # Create a performance measures data frame to store all the information
       performance_measures_df <- data.frame(
         algorithm_name = algorithm_name,
-        positive_predictive_value = PPV,
-        negative_predictive_value = NPV,
         sensitivity = SENS,
         specificity = SPEC,
+        positive_predictive_value = PPV,
+        negative_predictive_value = NPV,
         f1_score = F1_SCORE,
         linkage_rate = linkage_rate
       )
