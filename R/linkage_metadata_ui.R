@@ -7731,15 +7731,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       }
 
       # Change the field type by replacing it with values
-      df$field_type[df$field_type == 1]  <- 'General/Pass-Through'
-      df$field_type[df$field_type == 2]  <- 'Date'
-      df$field_type[df$field_type == 3]  <- 'Age'
-      df$field_type[df$field_type == 4]  <- 'Postal Code Initials'
-      df$field_type[df$field_type == 5]  <- 'Name Length'
-      df$field_type[df$field_type == 6] <- 'Number of Names'
-      df$field_type[df$field_type == 7]  <- 'Derived Age'
+      df$field_type[df$field_type == 1] <- 'General/Pass-Through'
+      df$field_type[df$field_type == 2] <- 'Categorized Year'
+      df$field_type[df$field_type == 3] <- 'Categorized Age'
+      df$field_type[df$field_type == 4] <- 'Substring Initial'
+      df$field_type[df$field_type == 5] <- 'Word Length'
+      df$field_type[df$field_type == 6] <- 'Number of Words'
+      df$field_type[df$field_type == 7] <- 'Derived Age'
       df$field_type[df$field_type == 8] <- 'Standardized Values'
-      df$field_type[df$field_type == 9] <- 'Forward Sortation Area (FSA)'
+      df$field_type[df$field_type == 9] <- 'Canadian Forward Sortation Area (FSA)'
+      df$field_type[df$field_type == 10] <- 'Missingness'
 
       # With our data frame, we'll rename some of the columns to look better
       names(df)[names(df) == 'field_name'] <- 'Field Source Name(s)'

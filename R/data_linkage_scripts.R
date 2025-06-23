@@ -1493,8 +1493,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
           algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
           ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
-          caption <- paste0("Posterior distribution of ", trimws(iteration_name), "'s linked pairs for ", algorithm_name, " with the selected posterior acceptance threshold",
-                            " of ", acceptance_threshold, ".")
+          linkage_pairs_count <- nrow(linkage_pairs)
+          caption <- paste0('Posterior distribution for candidate record pairs (N=', linkage_pairs_count, ') that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
           plot_list[["decision_boundary_plot"]] <- decision_boundary
           plot_caps_list <- append(plot_caps_list, caption)
 
@@ -1574,8 +1574,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             # Collapse the ground truth fields into a single string
             ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
 
-            caption <- paste0("Posterior score distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
-                              "matching and non-matching ground truth fields (", ground_truth_fields, ").")
+            # Get the count of non missing ground truth fields for the candidate pairs
+            ground_truth_non_missing_count <- nrow(linkage_pairs_non_missing)
+            linkage_pairs_count            <- nrow(linkage_pairs)
+            ground_truth_non_missing_pct   <- round((ground_truth_non_missing_count/linkage_pairs_count) * 100, 1)
+
+            caption <- paste0('Posterior distribution for candidate record pairs with non-missing ground truth information (', ground_truth_fields, ', ',
+                              'N=', ground_truth_non_missing_count, ', ', ground_truth_non_missing_pct, '%) that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+
             plot_list[["decision_boundary_plot_ground_truth"]] <- candidate_weights_plot_gt
             plot_caps_list <- append(plot_caps_list, caption)
           }
@@ -1593,7 +1599,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
               geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.8) +
               scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
-              labs(x = "Weight", y = "Frequency") +
+              labs(x = "Match Weight", y = "Frequency") +
               geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
                          color = "black", size = 0.6) +
               scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
@@ -1615,7 +1621,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
               geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
               scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
-              labs(x = "Weight", y = "Frequency") +
+              labs(x = "Match Weight", y = "Frequency") +
               geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
                          color = "black", size = 0.6) +
               scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
@@ -1635,15 +1641,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
           algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
           ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
-          caption <- paste0("Weight distribution of ", trimws(iteration_name), "'s linked pairs for ", algorithm_name, " with the selected weight acceptance threshold",
-                            " of ", acceptance_threshold, ".")
+          linkage_pairs_count <- nrow(linkage_pairs)
+          caption <- paste0('Match weight distribution for candidate record pairs (N=', linkage_pairs_count, ') that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
           plot_list[["decision_boundary_plot"]] <- decision_boundary
           plot_caps_list <- append(plot_caps_list, caption)
 
           # Create the second plot of the subset of candidate pair records (IF GROUND TRUTH IS PROVIDED)
           if(has_ground_truth){
             # Filter out pairs with missing ground truth
-            linkage_pairs_non_missing <- linkage_pairs[!is.na(linkage_pairs$truth),] # Works for now, more testing should be done
+            linkage_pairs_non_missing <- linkage_pairs[!is.na(linkage_pairs$truth),]
 
             # Add a "Match Type" column to identify what we color the plot as
             linkage_pairs_non_missing$match_type <- ifelse(linkage_pairs_non_missing$truth == TRUE, "Yes", "No")
@@ -1653,7 +1659,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               candidate_weights_plot_gt <- ggplot(linkage_pairs_non_missing, aes(x = weight, fill = match_type)) +
                 geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.8) +
                 scale_fill_manual(values = c("No" = "red", "Yes" = "blue"), name = "Agreement on Ground Truth") +
-                labs(x = "Weight", y = "Frequency") +
+                labs(x = "Match Weight", y = "Frequency") +
                 geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
                            color = "black", size = 0.6) +
                 scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
@@ -1675,7 +1681,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               candidate_weights_plot_gt <- ggplot(linkage_pairs_non_missing, aes(x = weight, fill = match_type)) +
                 geom_histogram(binwidth = 0.05, position = "stack", alpha = 0.8) +
                 scale_fill_manual(values = c("No" = "red", "Yes" = "blue"), name = "Agreement on Ground Truth") +
-                labs(x = "Weight", y = "Frequency") +
+                labs(x = "Match Weight", y = "Frequency") +
                 geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
                            color = "black", size = 0.6) +
                 scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
@@ -1716,8 +1722,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             # Collapse the ground truth fields into a single string
             ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
 
-            caption <- paste0("Weight distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
-                              "matching and non-matching ground truth fields (", ground_truth_fields, ").")
+            # Get the count of non missing ground truth fields for the candidate pairs
+            ground_truth_non_missing_count <- nrow(linkage_pairs_non_missing)
+            linkage_pairs_count            <- nrow(linkage_pairs)
+            ground_truth_non_missing_pct   <- round((ground_truth_non_missing_count/linkage_pairs_count) * 100, 1)
+
+            caption <- paste0('Match weight distribution for candidate record pairs with non-missing ground truth information (', ground_truth_fields, ', ',
+                              'N=', ground_truth_non_missing_count, ', ', ground_truth_non_missing_pct, '%) that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+
             plot_list[["decision_boundary_plot_ground_truth"]] <- candidate_weights_plot_gt
             plot_caps_list <- append(plot_caps_list, caption)
           }
@@ -4194,6 +4206,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     plot_captions   <- c()
     algorithm_num   <- algorithm_num + 1
 
+    # Ground truth no-zero count and total records count
+    ground_truth_non_zero <- NULL
+    total_record_count <- NULL
+
     # Missing data indicators data frame
     missing_data_indicators <- data.frame()
 
@@ -4357,6 +4373,17 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       year_field  <- time_trend_fields[[2]]
       left_dataset[["capture_month_time_trend_field"]] <- left_dataset[[month_field]]
       left_dataset[["capture_year_time_trend_field"]]  <- left_dataset[[year_field]]
+    }
+
+    # If there is ground truth available for this algorithm/dataset pair, obtain the total row counts of the left data set and the non-missing ground truth
+    gt_fields <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
+    if(nrow(gt_fields) > 0){
+      # First obtain the number of rows in the left data set
+      total_record_count <- nrow(left_dataset)
+
+      # Second, using the ground truth fields, how many rows have non-missing ground truth values for ALL fields
+      required_fields <- gt_fields$left_dataset_field
+      ground_truth_non_zero <- sum(complete.cases(left_dataset[, ..required_fields]))
     }
     #----
 
@@ -5346,6 +5373,23 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             considered_performance_measures <- NULL
           }
 
+          # Add this algorithm to our list of considered algorithms if at least one was provided
+          if(!is.null(considered_algo_summary_list) && length(considered_algo_summary_list) > 0){
+            # Save the performance measures information
+            if(!is.null(performance_measures_df) && nrow(performance_measures_df) > 0){
+              considered_performance_measures <- rbind(considered_performance_measures, performance_measures_df)
+            }
+
+            # Save the algorithm summary
+            considered_algo_summary_list[[length(considered_algo_summary_list)+1]] <- algo_summary
+
+            # Save the algorithm footnotes
+            considered_algo_summary_footnotes_list[[length(considered_algo_summary_footnotes_list)+1]] <- algo_summary_footnotes
+
+            # Save the algorithm table name
+            considered_algo_summary_table_names <- append(considered_algo_summary_table_names, get_algorithm_name(linkage_metadata_db, algorithm_id))
+          }
+
           # Check to see if we have missing data indicators
           display_missing_data_ind <- T
           if(nrow(missing_data_indicators) <= 0){
@@ -5415,7 +5459,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                        R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
                                        report_file_name = report_file_name, threshold = threshold,
                                        definitions = definitions, abbreviations = abbreviations,
-                                       acquisition_month_var = capture_month_time_trend_field, acquisition_year_var = capture_year_time_trend_field)
+                                       acquisition_month_var = capture_month_time_trend_field, acquisition_year_var = capture_year_time_trend_field,
+                                       num_pairs_non_missing_ground_truth = ground_truth_non_zero, num_record_pairs = total_record_count)
 
           detach("package:linkrep", unload = TRUE)
         },
