@@ -79,3 +79,5 @@ extra_params  <- create_extra_parameters_list(...) # Any number of optional/extr
 For more details on how the architecture of the package is structured and how the stored algorithms are pulled and used to link data, consider reading the [<b>Developer Facing Documentation (474KB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/DEVELOPER_DOCUMENTATION_AUTOMATED_LINKAGE.pdf).
 
 For more details on how to work function calls, how to navigate the pages of the user interface, and how to make changes, or add new information to the metadata, consider reading the [<b>User Facing Documentation (978KB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/USER_DOCUMENTATION_AUTOMATED_LINKAGE.pdf).
+
+For examples of reports that can be generated using both the `autolink` and `linkrep` package, download and view the sample [Final Report](https://github.com/CHIMB/autolink/raw/main/docs/Sample Final Report.pdf) and [Sensitivity Analysis Report](https://github.com/CHIMB/autolink/raw/main/docs/Sample Sensitivity Analysis Report.pdf) which uses fake/synthetic data to better help showcase the elements that make up each report.

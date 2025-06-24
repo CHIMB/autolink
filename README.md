@@ -109,3 +109,11 @@ pages of the user interface, and how to make changes, or add new
 information to the metadata, consider reading the [<b>User Facing
 Documentation
 (978KB)</b>](https://github.com/CHIMB/autolink/blob/main/docs/USER_DOCUMENTATION_AUTOMATED_LINKAGE.pdf).
+
+For examples of reports that can be generated using both the `autolink`
+and `linkrep` package, download and view the sample [Final
+Report](https://github.com/CHIMB/autolink/raw/main/docs/Sample%20Final%20Report.pdf)
+and [Sensitivity Analysis
+Report](https://github.com/CHIMB/autolink/raw/main/docs/Sample%20Sensitivity%20Analysis%20Report.pdf)
+which uses fake/synthetic data to better help showcase the elements that
+make up each report.
