@@ -594,8 +594,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                 function(x , y){
                   if(!missing(x) && !missing(y)){
                     # Convert values to dates
-                    x = as.Date(x)
-                    y = as.Date(y)
+                    x = as.Date(x, format = "%m/%d/%Y")
+                    y = as.Date(y, format = "%m/%d/%Y")
 
                     # Determine if the date is within error tolerance
                     within_tolerance <- ifelse(is.na(x) | is.na(y),
@@ -866,8 +866,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                     function(x , y){
                       if(!missing(x) && !missing(y)){
                         # Convert values to dates
-                        x = as.Date(x)
-                        y = as.Date(y)
+                        x = as.Date(x, format = "%m/%d/%Y")
+                        y = as.Date(y, format = "%m/%d/%Y")
 
                         # Determine if the date is within error tolerance
                         within_tolerance <- ifelse(is.na(x) | is.na(y),
@@ -1173,8 +1173,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                   function(x , y){
                     if(!missing(x) && !missing(y)){
                       # Convert values to dates
-                      x = as.Date(x)
-                      y = as.Date(y)
+                      x = as.Date(x, format = "%m/%d/%Y")
+                      y = as.Date(y, format = "%m/%d/%Y")
 
                       # Determine if the date is within error tolerance
                       within_tolerance <- ifelse(is.na(x) | is.na(y),
@@ -2330,8 +2330,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                 function(x , y){
                   if(!missing(x) && !missing(y)){
                     # Convert values to dates
-                    x = as.Date(x)
-                    y = as.Date(y)
+                    x = as.Date(x, format = "%m/%d/%Y")
+                    y = as.Date(y, format = "%m/%d/%Y")
 
                     # Determine if the date is within error tolerance
                     within_tolerance <- ifelse(is.na(x) | is.na(y),
@@ -2561,8 +2561,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                   function(x , y){
                     if(!missing(x) && !missing(y)){
                       # Convert values to dates
-                      x = as.Date(x)
-                      y = as.Date(y)
+                      x = as.Date(x, format = "%m/%d/%Y")
+                      y = as.Date(y, format = "%m/%d/%Y")
 
                       # Determine if the date is within error tolerance
                       within_tolerance <- ifelse(is.na(x) | is.na(y),
@@ -3405,8 +3405,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                 function(x , y){
                   if(!missing(x) && !missing(y)){
                     # Convert values to dates
-                    x = as.Date(x)
-                    y = as.Date(y)
+                    x = as.Date(x, format = "%m/%d/%Y")
+                    y = as.Date(y, format = "%m/%d/%Y")
 
                     # Determine if the date is within error tolerance
                     within_tolerance <- ifelse(is.na(x) | is.na(y),
@@ -3599,8 +3599,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
                   function(x , y){
                     if(!missing(x) && !missing(y)){
                       # Convert values to dates
-                      x = as.Date(x)
-                      y = as.Date(y)
+                      x = as.Date(x, format = "%m/%d/%Y")
+                      y = as.Date(y, format = "%m/%d/%Y")
 
                       # Determine if the date is within error tolerance
                       within_tolerance <- ifelse(is.na(x) | is.na(y),

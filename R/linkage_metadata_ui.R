@@ -14355,6 +14355,9 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                    'ORDER BY algorithm_id ASC;')
     df <- dbGetQuery(linkage_metadata_conn, query)
 
+    # Return if empty
+    if(nrow(df) <= 0) return()
+
     # Extract columns from query result
     choices <- setNames(df$algorithm_id, df$algorithm_name)
 
