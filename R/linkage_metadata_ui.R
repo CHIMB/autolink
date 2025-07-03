@@ -2870,6 +2870,22 @@ linkage_ui <- fluidPage(
                         actionButton("add_abbreviations_file", label = "", shiny::icon("upload")),
                         # Remove button
                         actionButton("remove_abbreviations_file", label = "", shiny::icon("delete-left")),
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        helpText("Upload a PNG of a study flow diagram.")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: left; align-items: left;",
+                        div(style = "margin-right: 10px;", "Study Flow Diagram Image:")
+                      )),
+                      column(width = 12, div(style = "display: flex; justify-content: center; align-items: center;",
+                        # Boxed text output for showing the uploaded file name
+                        div(style = "flex-grow: 1; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 500px;",
+                          textOutput("uploaded_study_flow_diagram")
+                        ),
+                        # Upload button
+                        actionButton("add_study_flow_diagram", label = "", shiny::icon("upload")),
+                        # Remove button
+                        actionButton("remove_study_flow_diagram", label = "", shiny::icon("delete-left")),
                       ))
                     )
                   )
@@ -14485,6 +14501,12 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     path=NULL
   )
 
+  # Reactive value for the study flow diagram
+  study_flow_diagram_file_path <- reactiveValues(
+    path=NULL
+  )
+
+
   # Linkage Report Definitions File Chooser
   observeEvent(input$add_definitions_file,{
     tryCatch({
@@ -14515,10 +14537,26 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     abbreviations_file_path$path <- NULL
   })
 
+  # Linkage Report Abbreviations File Chooser
+  observeEvent(input$add_study_flow_diagram,{
+    tryCatch({
+      study_flow_diagram_file_path$path <- file.choose()
+    },
+    error = function(e){
+      study_flow_diagram_file_path$path <- NULL
+    })
+  })
+
+  # Linkage Report Abbreviations File Remover
+  observeEvent(input$remove_study_flow_diagram,{
+    study_flow_diagram_file_path$path <- NULL
+  })
+
   # Render the uploaded definition and abbreviation files
   observe({
     definitions_file   <- definitions_file_path$path
     abbreviations_file <- abbreviations_file_path$path
+    study_flow_diagram <- study_flow_diagram_file_path$path
 
     # Uploaded definitions file
     if(is.null(definitions_file)){
@@ -14541,6 +14579,18 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     else{
       output$uploaded_abbreviations_file <- renderText({
         basename(abbreviations_file)
+      })
+    }
+
+    # Uploaded abbreviations file
+    if(is.null(study_flow_diagram)){
+      output$uploaded_study_flow_diagram <- renderText({
+        "No File Uploaded"
+      })
+    }
+    else{
+      output$uploaded_study_flow_diagram <- renderText({
+        basename(study_flow_diagram)
       })
     }
   })
@@ -14603,6 +14653,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       extra_summary_parameters        <- input$extra_summary_parameters
       definitions                     <- definitions_file_path$path
       abbreviations                   <- abbreviations_file_path$path
+      study_flow_diagram              <- study_flow_diagram_file_path$path
       generate_time_trend_plot        <- input$generate_time_trend_plot
       linkage_report_type             <- 1
 
@@ -14676,7 +14727,8 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                                                      save_all_linkage_results = save_all_linkage_results, collect_missing_data_indicators = save_missing_data_indicators,
                                                      include_unlinked_records = include_unlinked_records, save_audit_performance = save_audit_performance,
                                                      main_report_algorithm = main_report_algorithm, report_threshold = report_threshold, extra_summary_parameters = extra_summary_parameters,
-                                                     definitions = definitions, abbreviations = abbreviations, generate_time_trend_plot = generate_time_trend_plot)
+                                                     definitions = definitions, abbreviations = abbreviations, generate_time_trend_plot = generate_time_trend_plot,
+                                                     study_flow_diagram = study_flow_diagram)
 
       # Run the algorithms
       try_catch_success <- TRUE

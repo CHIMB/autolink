@@ -969,6 +969,7 @@ load_linkage_file <- function(dataset_file){
 #' @param definitions A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of terms in the first and their definitions in the second. Will appear in report (if generated).
 #' @param abbreviations A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of abbreviations in the first and their meaning in the second. Will appear in report (if generated).
 #' @param generate_time_trend_plot A TRUE or FALSE value for whether you'd like a time trend plot to be included in the generated linkage report. Requires marking which fields in the database are the capture month and capture year.
+#' @param study_flow_diagram A file path to a PNG image of a study flow diagram that will appear in linkage reports (if generated).
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
@@ -990,7 +991,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          extra_summary_parameters = FALSE,
                                          definitions = NULL,
                                          abbreviations = NULL,
-                                         generate_time_trend_plot = FALSE){
+                                         generate_time_trend_plot = FALSE,
+                                         study_flow_diagram = NULL){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -1118,6 +1120,11 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   ### Abbreviations
   if(!is.na(abbreviations) && !is.null(abbreviations) && length(abbreviations) == 1){
     extra_params_list[["abbreviations"]] <- abbreviations
+  }
+
+  ### Study Flow Diagram
+  if(!is.na(study_flow_diagram) && !is.null(study_flow_diagram) && length(study_flow_diagram) == 1){
+    extra_params_list[["study_flow_diagram"]] <- study_flow_diagram
   }
 
   #----------------------------------------------------------------------------#

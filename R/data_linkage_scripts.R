@@ -5425,14 +5425,18 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             }
           }
 
-          # Get the definitions and abbreviations (if they were provided)
-          definitions   <- NULL
-          abbreviations <- NULL
+          # Get the definitions, abbreviations, and study flow diagram (if they were provided)
+          definitions        <- NULL
+          abbreviations      <- NULL
+          study_flow_diagram <- NULL
           if("definitions" %in% names(extra_parameters)){
             definitions <- extra_parameters[["definitions"]]
           }
           if("abbreviations" %in% names(extra_parameters)){
             abbreviations <- extra_parameters[["abbreviations"]]
+          }
+          if("study_flow_diagram" %in% names(extra_parameters)){
+            study_flow_diagram <- extra_parameters[["study_flow_diagram"]]
           }
 
           # Get the time trend values
@@ -5458,7 +5462,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                        missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
                                        R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
                                        report_file_name = report_file_name, threshold = threshold,
-                                       definitions = definitions, abbreviations = abbreviations,
+                                       definitions = definitions, abbreviations = abbreviations, flow_chart_path = study_flow_diagram,
                                        acquisition_month_var = capture_month_time_trend_field, acquisition_year_var = capture_year_time_trend_field,
                                        num_pairs_non_missing_ground_truth = ground_truth_non_zero, num_record_pairs = total_record_count)
 
@@ -5662,14 +5666,18 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         }
       }
 
-      # Get the definitions and abbreviations (if they were provided)
-      definitions   <- NULL
-      abbreviations <- NULL
+      # Get the definitions, abbreviations, and study flow diagram (if they were provided)
+      definitions        <- NULL
+      abbreviations      <- NULL
+      study_flow_diagram <- NULL
       if("definitions" %in% names(extra_parameters)){
         definitions <- extra_parameters[["definitions"]]
       }
       if("abbreviations" %in% names(extra_parameters)){
         abbreviations <- extra_parameters[["abbreviations"]]
+      }
+      if("study_flow_diagram" %in% names(extra_parameters)){
+        study_flow_diagram <- extra_parameters[["study_flow_diagram"]]
       }
 
       # If we have performance measures, include them, otherwise generate a normal report
@@ -5680,7 +5688,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                             algorithm_summary_data_list = linkage_algorithm_summary_list, algorithm_summary_tbl_footnotes_list = linkage_algorithm_footnote_list,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
                                             report_file_name = report_file_name, threshold = threshold,
-                                            definitions = definitions, abbreviations = abbreviations)
+                                            definitions = definitions, abbreviations = abbreviations, flow_chart_path = study_flow_diagram)
       }
       else{
         performance_measures_footnotes <- c("PPV = Positive predictive value, NPV = Negative predictive value.")
@@ -5715,7 +5723,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                             ground_truth = ground_truth_fields,
                                             R_version = as.character(getRversion()), linkrep_package_version = as.character(packageVersion("linkrep")),
                                             report_file_name = report_file_name, threshold = threshold,
-                                            definitions = definitions, abbreviations = abbreviations)
+                                            definitions = definitions, abbreviations = abbreviations, flow_chart_path = study_flow_diagram)
       }
       detach("package:linkrep", unload = TRUE)
     },
