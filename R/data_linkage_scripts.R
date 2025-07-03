@@ -4725,7 +4725,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             }
 
             # Create the final string "method_name (key1=value1, key2=value2)"
-            field_name <- paste0(field_name, " (", method_name, direction, params_str, ")")
+            if(method_name == 'DET'){
+              field_name <- paste0(field_name, " ", direction, params_str, " days")
+            }
+            else{
+              field_name <- paste0(field_name, " (", method_name, direction, params_str, ")")
+            }
 
             # Save the method and description as a footnote
             algo_summary_footnotes <- append(algo_summary_footnotes, paste0(method_name, " = ", description))
