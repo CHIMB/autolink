@@ -4799,6 +4799,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       linkage_rate_cumulative_numer <- linkage_rate_cumulative_numer + linkage_rate_pass_numer
       linkage_rate_cumulative <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
 
+      # Format string
+      linkage_rate_pass_str <- sprintf("%d (%.1f%%)", linkage_rate_pass_numer, linkage_rate_pass)
+      linkage_rate_cumulative_str <- sprintf("%d (%.1f%%)", linkage_rate_cumulative_numer, linkage_rate_cumulative)
+
       # Create a data frame for the current passes algorithm summary
       if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
         if("performance_measure_variables" %in% names(results)){
@@ -4828,8 +4832,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             blocking_variables = blocking_fields,
             matching_variables = matching_fields,
             acceptance_threshold = acceptance_threshold,
-            linkage_rate_pass = linkage_rate_pass,
-            linkage_rate_cumulative = linkage_rate_cumulative,
+            linkage_rate_pass = linkage_rate_pass_str,
+            linkage_rate_cumulative = linkage_rate_cumulative_str,
             FDR = FDR,
             FOR = FOR
           )
@@ -4844,8 +4848,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             blocking_variables = blocking_fields,
             matching_variables = matching_fields,
             acceptance_threshold = acceptance_threshold,
-            linkage_rate_pass = linkage_rate_pass,
-            linkage_rate_cumulative = linkage_rate_cumulative,
+            linkage_rate_pass = linkage_rate_pass_str,
+            linkage_rate_cumulative = linkage_rate_cumulative_str,
             FDR = NA,
             FOR = NA
           )
@@ -4862,8 +4866,8 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           blocking_variables = blocking_fields,
           matching_variables = matching_fields,
           acceptance_threshold = acceptance_threshold,
-          linkage_rate_pass = linkage_rate_pass,
-          linkage_rate_cumulative = linkage_rate_cumulative
+          linkage_rate_pass = linkage_rate_pass_str,
+          linkage_rate_cumulative = linkage_rate_cumulative_str
         )
 
         # Bind this to our full algorithm summary
@@ -5070,22 +5074,22 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # Relabel the algo summary
     if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
       label(algo_summary$pass) <- "Step"
-      label(algo_summary$linkage_rate_pass) <- "Linkage Rate (%)"
+      label(algo_summary$linkage_rate_pass) <- "Linkage Rate N (%)"
       label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
       label(algo_summary$blocking_variables) <- "Blocking Scheme"
       label(algo_summary$matching_variables) <- "Matching Criteria"
       label(algo_summary$linkage_implementation) <- "Linkage Technique"
-      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate (%)"
+      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate N (%)"
       label(algo_summary$FDR) <- "FDR (%)"
       label(algo_summary$FOR) <- "FOR (%)"
     } else {
       label(algo_summary$pass) <- "Step"
-      label(algo_summary$linkage_rate_pass) <- "Linkage Rate (%)"
+      label(algo_summary$linkage_rate_pass) <- "Linkage Rate N (%)"
       label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
       label(algo_summary$blocking_variables) <- "Blocking Scheme"
       label(algo_summary$matching_variables) <- "Matching Criteria"
       label(algo_summary$linkage_implementation) <- "Linkage Technique"
-      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate (%)"
+      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate N (%)"
     }
     #----
 
