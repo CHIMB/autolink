@@ -4577,7 +4577,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             # Next we'll handle "Name Substring"
             name_substring <- method_df$substring_length
             if(!is.na(name_substring)){
-              field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+              substr_num <- as.integer(name_substring)
+              if(substr_num > 1){
+                field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+              }
+              else{
+                field_name <- paste0(field_name, " (First character)")
+              }
             }
 
             # Next we'll handle the "Standardize Names" rule
@@ -4667,7 +4673,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             # Next we'll handle "Name Substring"
             name_substring <- method_df$substring_length
             if(!is.na(name_substring)){
-              field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+              substr_num <- as.integer(name_substring)
+              if(substr_num > 1){
+                field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+              }
+              else{
+                field_name <- paste0(field_name, " (First character)")
+              }
             }
 
             # Next we'll handle the "Standardize Names" rule

@@ -5517,7 +5517,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                 # Next we'll handle "Name Substring"
                 name_substring <- method_df$substring_length
                 if(!is.na(name_substring)){
-                  field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+                  substr_num <- as.integer(name_substring)
+                  if(substr_num > 1){
+                    field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+                  }
+                  else{
+                    field_name <- paste0(field_name, " (First character)")
+                  }
                 }
 
                 # Next we'll handle the "Standardize Names" rule
@@ -5608,7 +5614,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                 # Next we'll handle "Name Substring"
                 name_substring <- method_df$substring_length
                 if(!is.na(name_substring)){
-                  field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+                  substr_num <- as.integer(name_substring)
+                  if(substr_num > 1){
+                    field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+                  }
+                  else{
+                    field_name <- paste0(field_name, " (First character)")
+                  }
                 }
 
                 # Next we'll handle the "Standardize Names" rule
@@ -6046,7 +6058,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                 # Next we'll handle "Name Substring"
                 name_substring <- method_df$substring_length
                 if(!is.na(name_substring)){
-                  field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+                  substr_num <- as.integer(name_substring)
+                  if(substr_num > 1){
+                    field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+                  }
+                  else{
+                    field_name <- paste0(field_name, " (First character)")
+                  }
                 }
 
                 # Next we'll handle the "Standardize Names" rule
@@ -6137,7 +6155,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
                 # Next we'll handle "Name Substring"
                 name_substring <- method_df$substring_length
                 if(!is.na(name_substring)){
-                  field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+                  substr_num <- as.integer(name_substring)
+                  if(substr_num > 1){
+                    field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+                  }
+                  else{
+                    field_name <- paste0(field_name, " (First character)")
+                  }
                 }
 
                 # Next we'll handle the "Standardize Names" rule
@@ -8349,7 +8373,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
               # Next we'll handle "Name Substring"
               name_substring <- method_df$substring_length
               if(!is.na(name_substring)){
-                field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+                substr_num <- as.integer(name_substring)
+                if(substr_num > 1){
+                  field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+                }
+                else{
+                  field_name <- paste0(field_name, " (First character)")
+                }
               }
 
               # Next we'll handle the "Standardize Names" rule
@@ -8440,7 +8470,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
               # Next we'll handle "Name Substring"
               name_substring <- method_df$substring_length
               if(!is.na(name_substring)){
-                field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+                substr_num <- as.integer(name_substring)
+                if(substr_num > 1){
+                  field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+                }
+                else{
+                  field_name <- paste0(field_name, " (First character)")
+                }
               }
 
               # Next we'll handle the "Standardize Names" rule
@@ -8709,7 +8745,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
               # Next we'll handle "Name Substring"
               name_substring <- method_df$substring_length
               if(!is.na(name_substring)){
-                field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+                substr_num <- as.integer(name_substring)
+                if(substr_num > 1){
+                  field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+                }
+                else{
+                  field_name <- paste0(field_name, " (First character)")
+                }
               }
 
               # Next we'll handle the "Standardize Names" rule
@@ -8800,7 +8842,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
               # Next we'll handle "Name Substring"
               name_substring <- method_df$substring_length
               if(!is.na(name_substring)){
-                field_name <- paste0(field_name, " - First ", name_substring, " character(s)")
+                substr_num <- as.integer(name_substring)
+                if(substr_num > 1){
+                  field_name <- paste0(field_name, " (First ", name_substring, " characters)")
+                }
+                else{
+                  field_name <- paste0(field_name, " (First character)")
+                }
               }
 
               # Next we'll handle the "Standardize Names" rule
@@ -9774,7 +9822,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           # Next we'll handle "Name Substring"
           name_substring <- method_df$substring_length
           if(!is.na(name_substring)){
-            method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+            substr_num <- as.integer(name_substring)
+            if(substr_num > 1){
+              method_df$substring_length <- paste0("First ", name_substring, " characters")
+            }
+            else{
+              method_df$substring_length <- paste0("First character")
+            }
           }
 
           # With standardized names, we'll replace the [0, 1] with [No, Yes]
@@ -9900,7 +9954,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
           # Next we'll handle "Name Substring"
           name_substring <- method_df$substring_length
           if(!is.na(name_substring)){
-            method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+            substr_num <- as.integer(name_substring)
+            if(substr_num > 1){
+              method_df$substring_length <- paste0("First ", name_substring, " characters")
+            }
+            else{
+              method_df$substring_length <- paste0("First character")
+            }
           }
 
           # With standardized names, we'll replace the [0, 1] with [No, Yes]
@@ -10648,7 +10708,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       # Next we'll handle "Name Substring"
       name_substring <- method_df$substring_length
       if(!is.na(name_substring)){
-        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+        substr_num <- as.integer(name_substring)
+        if(substr_num > 1){
+          method_df$substring_length <- paste0("First ", name_substring, " characters")
+        }
+        else{
+          method_df$substring_length <- paste0("First character")
+        }
       }
 
       # With standardized names, we'll replace the [0, 1] with [No, Yes]
@@ -10986,7 +11052,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
         # Next we'll handle "Name Substring"
         name_substring <- method_df$substring_length
         if(!is.na(name_substring)){
-          method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+          substr_num <- as.integer(name_substring)
+          if(substr_num > 1){
+            method_df$substring_length <- paste0("First ", name_substring, " characters")
+          }
+          else{
+            method_df$substring_length <- paste0("First character")
+          }
         }
 
         # With standardized names, we'll replace the [0, 1] with [No, Yes]
@@ -11104,7 +11176,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       # Next we'll handle "Name Substring"
       name_substring <- method_df$substring_length
       if(!is.na(name_substring)){
-        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+        substr_num <- as.integer(name_substring)
+        if(substr_num > 1){
+          method_df$substring_length <- paste0("First ", name_substring, " characters")
+        }
+        else{
+          method_df$substring_length <- paste0("First character")
+        }
       }
 
       # With standardized names, we'll replace the [0, 1] with [No, Yes]
@@ -11299,7 +11377,13 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       # Next we'll handle "Name Substring"
       name_substring <- method_df$substring_length
       if(!is.na(name_substring)){
-        method_df$substring_length <- paste0("First ", name_substring, " character(s)")
+        substr_num <- as.integer(name_substring)
+        if(substr_num > 1){
+          method_df$substring_length <- paste0("First ", name_substring, " characters")
+        }
+        else{
+          method_df$substring_length <- paste0("First character")
+        }
       }
 
       # With standardized names, we'll replace the [0, 1] with [No, Yes]
