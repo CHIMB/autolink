@@ -4315,6 +4315,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           # Get the column name
           col_name <- output_field
 
+          # First replace trimmed empty strings with NA
+          source_missing[[col_name]][trimws(source_missing[[col_name]]) == ""] <- NA
+          left_dataset[[col_name]][trimws(left_dataset[[col_name]]) == ""] <- NA
+
           # Replace blank, missing, NA, etc. values for the column with 0, otherwise replace with 1
           source_missing[[col_name]] <- ifelse(is.na(source_missing[[col_name]]) | is.null(source_missing[[col_name]]) | trimws(source_missing[[col_name]]) == "",
                                                1, 0)
@@ -5329,12 +5333,17 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           # Get the username
           username <- extra_parameters[["data_linker"]]
 
+          # Obtain the non-stratification variables
+          non_strata_fields <- get_linkage_non_stratification_fields(linkage_metadata_db, algorithm_id)
+          non_strata_vars   <- non_strata_fields$field_name
+
           # Get the output variables that we'll be using
           strata_vars <- colnames(output_df)
           strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
           strata_vars <- strata_vars[! strata_vars %in% c('link_indicator')] # Drop the 'link_indicator' field
           strata_vars <- strata_vars[! strata_vars %in% c('capture_month_time_trend_field')] # Drop the 'capture_month_time_trend_field' field
           strata_vars <- strata_vars[! strata_vars %in% c('capture_year_time_trend_field')] # Drop the 'capture_year_time_trend_field' field
+          strata_vars <- strata_vars[! strata_vars %in% non_strata_vars] # Drop the non-stratification variables
 
           # Load the 'linkrep' library and generate a linkage quality report
           library("linkrep")
@@ -5648,12 +5657,17 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       # Get the username
       username <- extra_parameters[["data_linker"]]
 
+      # Obtain the non-stratification variables
+      non_strata_fields <- get_linkage_non_stratification_fields(linkage_metadata_db, algorithm_ids[1])
+      non_strata_vars   <- non_strata_fields$field_name
+
       # Get the strata variables
       strata_vars <- colnames(linked_data_list[[1]])
       strata_vars <- strata_vars[! strata_vars %in% c('stage')] # Drop the 'stage'/'Passes' field
       strata_vars <- strata_vars[! strata_vars %in% c('link_indicator')] # Drop the 'link_indicator' field
       strata_vars <- strata_vars[! strata_vars %in% c('capture_month_time_trend_field')] # Drop the 'capture_month_time_trend_field' field
       strata_vars <- strata_vars[! strata_vars %in% c('capture_year_time_trend_field')] # Drop the 'capture_year_time_trend_field' field
+      strata_vars <- strata_vars[! strata_vars %in% non_strata_vars] # Drop the non-stratification variables
 
       # Make sure the missing data indicators were provided
       missing_data_indicators  <- intermediate_missing_indicators_df

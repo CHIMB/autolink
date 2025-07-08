@@ -483,7 +483,7 @@ get_linkage_output_fields <- function(linkage_db, algorithm_id){
 #' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
 #' linkage_db <- dbConnect(SQLite(), sqlite_file)
 #' algorithm_id <- 1
-#' get_linkage_output_fields(linkage_db, algorithm_id)
+#' get_linkage_missingness_fields(linkage_db, algorithm_id)
 #' @export
 get_linkage_missingness_fields <- function(linkage_db, algorithm_id){
   # Get output fields
@@ -493,6 +493,33 @@ get_linkage_missingness_fields <- function(linkage_db, algorithm_id){
     JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
     JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
     WHERE of.algorithm_id = ? AND of.field_type == 10
+    ORDER BY ofp.parameter_id", params = list(algorithm_id))
+
+  # Return the fields
+  return(stored_fields_with_names)
+}
+
+#' Get Algorithm Non-Stratification Fields
+#'
+#' The get_linkage_non_stratification_fields() function will take in a linkage database connection containing
+#' all the metadata, along with an algorithm ID.
+#' A dataframe is returned which contains the dataset fields of non-stratification field/column names.
+#' @param linkage_db A database connection to the linkage metadata.
+#' @param algorithm_id An algorithm ID
+#' @examples
+#' sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
+#' linkage_db <- dbConnect(SQLite(), sqlite_file)
+#' algorithm_id <- 1
+#' get_linkage_non_stratification_fields(linkage_db, algorithm_id)
+#' @export
+get_linkage_non_stratification_fields <- function(linkage_db, algorithm_id){
+  # Get output fields
+  stored_fields_with_names <- dbGetQuery(linkage_db, "
+    SELECT of.dataset_label, df.field_name
+    FROM output_fields of
+    JOIN output_field_parameters ofp ON of.output_field_id = ofp.output_field_id
+    JOIN dataset_fields df ON ofp.dataset_field_id = df.field_id
+    WHERE of.algorithm_id = ? AND of.field_type == 11
     ORDER BY ofp.parameter_id", params = list(algorithm_id))
 
   # Return the fields

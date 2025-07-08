@@ -23,7 +23,8 @@ create_extra_parameters_list(
   extra_summary_parameters = FALSE,
   definitions = NULL,
   abbreviations = NULL,
-  generate_time_trend_plot = FALSE
+  generate_time_trend_plot = FALSE,
+  study_flow_diagram = NULL
 )
 }
 \arguments{
@@ -64,6 +65,8 @@ create_extra_parameters_list(
 \item{abbreviations}{A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of abbreviations in the first and their meaning in the second. Will appear in report (if generated).}
 
 \item{generate_time_trend_plot}{A TRUE or FALSE value for whether you'd like a time trend plot to be included in the generated linkage report. Requires marking which fields in the database are the capture month and capture year.}
+
+\item{study_flow_diagram}{A file path to a PNG image of a study flow diagram that will appear in linkage reports (if generated).}
 }
 \description{
 The create_extra_parameters_list() function will allow users to modify any of the default

@@ -20,5 +20,5 @@ A dataframe is returned which contains the dataset fields to keep for gathering 
 sqlite_file <- file.choose() # Select the '.sqlite' linkage metadata file
 linkage_db <- dbConnect(SQLite(), sqlite_file)
 algorithm_id <- 1
-get_linkage_output_fields(linkage_db, algorithm_id)
+get_linkage_missingness_fields(linkage_db, algorithm_id)
 }

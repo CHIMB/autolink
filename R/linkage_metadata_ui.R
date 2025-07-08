@@ -1737,7 +1737,8 @@ linkage_ui <- fluidPage(
                                            "Derived Age" = 7,
                                            "Standardized Values" = 8,
                                            "Canadian Forward Sortation Area (FSA)" = 9,
-                                           "Missingness" = 10),
+                                           "Missingness" = 10,
+                                           "Non-Stratification Variable" = 11),
                             options = list(
                               placeholder = 'Select a Field Output Type',
                               onInitialize = I('function() { this.setValue(""); }')
@@ -7489,12 +7490,16 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
              "Values are mapped to their standardized forms based on the lookup table provided for the specific field."
            ),
            "9" = paste0(
-             "The 'Canadian Forward Sortation Area' field type standardizes the first character of a postal code to canadian geographical areas. ",
+             "The 'Canadian Forward Sortation Area' field type standardizes the first character of a postal code to Canadian geographical areas. ",
              "For example, 'A' corresponds to Newfoundland and Labrador, and 'R' corresponds to Manitoba."
            ),
            "10" = paste0(
             "The individual values of the selected field will be ignored, instead the field will have its values replaced by indicators which specify ",
             "if each record within the field contains a value or not."
+           ),
+           "11" = paste0(
+            "For variables that should appear in the resulting data frame after using autolink, but will not appear as stratification variables in ",
+            "generated linkage reports."
            ),
            "Unknown field type.")  # Default fallback
   })
@@ -7561,6 +7566,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
     df$field_type[df$field_type == 8] <- 'Standardized Values'
     df$field_type[df$field_type == 9] <- 'Canadian Forward Sortation Area (FSA)'
     df$field_type[df$field_type == 10] <- 'Missingness'
+    df$field_type[df$field_type == 11] <- 'Non-Stratification Variable'
 
     # With our data frame, we'll rename some of the columns to look better
     names(df)[names(df) == 'field_name'] <- 'Field Source Name(s)'
@@ -7791,6 +7797,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
       df$field_type[df$field_type == 8] <- 'Standardized Values'
       df$field_type[df$field_type == 9] <- 'Canadian Forward Sortation Area (FSA)'
       df$field_type[df$field_type == 10] <- 'Missingness'
+      df$field_type[df$field_type == 11] <- 'Non-Stratification Variable'
 
       # With our data frame, we'll rename some of the columns to look better
       names(df)[names(df) == 'field_name'] <- 'Field Source Name(s)'
