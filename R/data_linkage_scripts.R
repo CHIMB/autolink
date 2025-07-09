@@ -4851,9 +4851,12 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       linkage_rate_pass_str <- sprintf("%s (%.1f%%)", linkage_rate_pass_numer_str, linkage_rate_pass)
       linkage_rate_cumulative_str <- sprintf("%s (%.1f%%)", linkage_rate_cumulative_numer_str, linkage_rate_cumulative)
 
+      # Get the linkage technique
+      linkage_technique <- get_linkage_technique(linkage_metadata_db, curr_iteration_id)
+
       # Create a data frame for the current passes algorithm summary
       if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
-        if("performance_measure_variables" %in% names(results)){
+        if("performance_measure_variables" %in% names(results) && linkage_technique != "D"){
           # Get the performance measure values
           iteration_performance_measures <- results[["performance_measure_variables"]]
 
