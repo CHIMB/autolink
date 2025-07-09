@@ -4863,11 +4863,6 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
           FP <- iteration_performance_measures[3]
           FN <- iteration_performance_measures[4]
 
-          TP <- performance_measures[1] + iteration_performance_measures[1]
-          TN <- performance_measures[2] + iteration_performance_measures[2]
-          FP <- performance_measures[3] + iteration_performance_measures[3]
-          FN <- performance_measures[4] + iteration_performance_measures[4]
-
           # FDR (False Discover Rate)
           FDR <- (1 - (TP/(TP + FP))) * 100
           if(is.na(FDR))
