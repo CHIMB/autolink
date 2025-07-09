@@ -4803,9 +4803,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       linkage_rate_cumulative_numer <- linkage_rate_cumulative_numer + linkage_rate_pass_numer
       linkage_rate_cumulative <- (linkage_rate_cumulative_numer/linkage_rate_cumulative_denom) * 100
 
-      # Format string
-      linkage_rate_pass_str <- sprintf("%d (%.1f%%)", linkage_rate_pass_numer, linkage_rate_pass)
-      linkage_rate_cumulative_str <- sprintf("%d (%.1f%%)", linkage_rate_cumulative_numer, linkage_rate_cumulative)
+      # Format numerators with commas
+      linkage_rate_pass_numer_str <- format(linkage_rate_pass_numer, big.mark = ",", scientific = FALSE)
+      linkage_rate_cumulative_numer_str <- format(linkage_rate_cumulative_numer, big.mark = ",", scientific = FALSE)
+
+      # Format the entire string now
+      linkage_rate_pass_str <- sprintf("%s (%.1f%%)", linkage_rate_pass_numer_str, linkage_rate_pass)
+      linkage_rate_cumulative_str <- sprintf("%s (%.1f%%)", linkage_rate_cumulative_numer_str, linkage_rate_cumulative)
 
       # Create a data frame for the current passes algorithm summary
       if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
