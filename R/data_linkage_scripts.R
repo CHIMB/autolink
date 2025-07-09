@@ -1336,8 +1336,23 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         #--------------------------#
 
         #-- STEP 5: LINK THE PAIRS --#
-        # Call the link() function to finally get our linked dataset
-        linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "weight", "mpost"))
+
+        # Obtain datasets for both linked and unlinked pairs
+        linkage_pairs[["not_selected"]] <- !linkage_pairs[["selected"]]
+        if(has_ground_truth){
+          linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "weight", "mpost", "selected", "truth"))
+          unlinked_dataset <- link(linkage_pairs, selection = "not_selected", keep_from_pairs = c(".x", ".y", "weight", "mpost", "not_selected", "truth"))
+          names(unlinked_dataset)[names(unlinked_dataset) == "not_selected"] <- "selected"
+          unlinked_dataset[["selected"]] <- !unlinked_dataset[["selected"]]
+          unlinked_dataset <- rbind(linked_dataset, unlinked_dataset)
+        }
+        else{
+          linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "weight", "mpost", "selected"))
+          unlinked_dataset <- link(linkage_pairs, selection = "not_selected", keep_from_pairs = c(".x", ".y", "weight", "mpost", "not_selected"))
+          names(unlinked_dataset)[names(unlinked_dataset) == "not_selected"] <- "selected"
+          unlinked_dataset[["selected"]] <- !unlinked_dataset[["selected"]]
+          unlinked_dataset <- rbind(linked_dataset, unlinked_dataset)
+        }
 
         # Attach the linkage name/pass name to the records for easier identification later
         stage_name <- get_iteration_name(linkage_metadata_db, iteration_id)
@@ -1357,7 +1372,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         return_list[["linked_indices"]] <- linked_indices
 
         ### Returned the greedy select dataset
-        return_list[["unlinked_dataset_pairs"]] <- linkage_pairs
+        return_list[["unlinked_dataset_pairs"]] <- unlinked_dataset
 
         ### Return specificity variables if ground truth was provided
         if(has_ground_truth){
@@ -1742,7 +1757,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         }
 
         # Clean up
-        rm(linkage_pairs, linked_dataset, filtered_data)
+        rm(linkage_pairs, linked_dataset, filtered_data, unlinked_dataset)
         gc()
 
         ### Return our list of return values
@@ -2468,10 +2483,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         #-- STEP 4: SELECT PAIRS --#
         # There is no need for a user defined acceptance rule since it is a deterministic pass
-        # which means our threshold for "score" is just 1 (either it links or it doesn't)
-        #select_greedy(linkage_pairs, "selected", "score", threshold = 1, include_ties = TRUE, inplace = TRUE) #v1
-        select_greedy(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T) #v2
-        #select_threshold(linkage_pairs, variable = "selected", score = "score", threshold = length(matching_keys), include_ties = TRUE, inplace = TRUE) #IF WE WANT DUPES
+        select_greedy(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T)
 
         # Now, if a ground truth is provided get the ground truth variables to calculate specificity later on
         ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
@@ -2724,8 +2736,22 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         #--------------------------#
 
         #-- STEP 5: LINK THE PAIRS --#
-        # Call the link() function to finally get our linked dataset
-        linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "score"))
+        # Obtain the datasets for linked and unlinked pairs
+        linkage_pairs[["not_selected"]] <- !linkage_pairs[["selected"]]
+        if(has_ground_truth){
+          linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "score", "selected", "truth"))
+          unlinked_dataset <- link(linkage_pairs, selection = "not_selected", keep_from_pairs = c(".x", ".y", "score", "not_selected", "truth"))
+          names(unlinked_dataset)[names(unlinked_dataset) == "not_selected"] <- "selected"
+          unlinked_dataset[["selected"]] <- !unlinked_dataset[["selected"]]
+          unlinked_dataset <- rbind(linked_dataset, unlinked_dataset)
+        }
+        else{
+          linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "score", "selected"))
+          unlinked_dataset <- link(linkage_pairs, selection = "not_selected", keep_from_pairs = c(".x", ".y", "score", "not_selected"))
+          names(unlinked_dataset)[names(unlinked_dataset) == "not_selected"] <- "selected"
+          unlinked_dataset[["selected"]] <- !unlinked_dataset[["selected"]]
+          unlinked_dataset <- rbind(linked_dataset, unlinked_dataset)
+        }
 
         # Attach the linkage name/pass name to the records for easier identification later
         stage_name <- get_iteration_name(linkage_metadata_db, iteration_id)
@@ -2815,10 +2841,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         return_list[["output_linkage_df"]] <- filtered_data
 
         # Store the unlinked pairs for return
-        return_list[['unlinked_dataset_pairs']] <- linkage_pairs
+        return_list[['unlinked_dataset_pairs']] <- unlinked_dataset
 
         # Clean up
-        rm(linkage_pairs, linked_dataset, filtered_data)
+        rm(linkage_pairs, linked_dataset, filtered_data, unlinked_dataset)
         gc()
 
         ### Return our list of return values
@@ -3913,8 +3939,22 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         #------------------------------------------#
 
         #-- STEP 5: LINK THE PAIRS --#
-        # Call the link() function to finally get our linked dataset
-        linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "prob"))
+        # Obtain the datasets for linked and unlinked pairs
+        linkage_pairs[["not_selected"]] <- !linkage_pairs[["selected"]]
+        if(has_ground_truth){
+          linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "prob", "selected", "truth"))
+          unlinked_dataset <- link(linkage_pairs, selection = "not_selected", keep_from_pairs = c(".x", ".y", "prob", "not_selected", "truth"))
+          names(unlinked_dataset)[names(unlinked_dataset) == "not_selected"] <- "selected"
+          unlinked_dataset[["selected"]] <- !unlinked_dataset[["selected"]]
+          unlinked_dataset <- rbind(linked_dataset, unlinked_dataset)
+        }
+        else{
+          linked_dataset <- link(linkage_pairs, selection = "selected", keep_from_pairs = c(".x", ".y", "prob", "selected"))
+          unlinked_dataset <- link(linkage_pairs, selection = "not_selected", keep_from_pairs = c(".x", ".y", "prob", "not_selected"))
+          names(unlinked_dataset)[names(unlinked_dataset) == "not_selected"] <- "selected"
+          unlinked_dataset[["selected"]] <- !unlinked_dataset[["selected"]]
+          unlinked_dataset <- rbind(linked_dataset, unlinked_dataset)
+        }
 
         # Attach the linkage name/pass name to the records for easier identification later
         stage_name <- get_iteration_name(linkage_metadata_db, iteration_id)
@@ -3934,7 +3974,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         return_list[["linked_indices"]] <- linked_indices
 
         ### Returned the greedy select dataset
-        return_list[["unlinked_dataset_pairs"]] <- linkage_pairs
+        return_list[["unlinked_dataset_pairs"]] <- unlinked_dataset
 
         ### Return specificity variables if ground truth was provided
         if(has_ground_truth){
@@ -4058,7 +4098,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         }
 
         # Clean up
-        rm(linkage_pairs, linked_dataset, filtered_data)
+        rm(linkage_pairs, linked_dataset, filtered_data, unlinked_dataset)
         gc()
 
         ### Return our list of return values
