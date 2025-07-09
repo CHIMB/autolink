@@ -5679,7 +5679,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
                 # Create the final string "method_name (key1=value1, key2=value2)"
                 if(method_name == 'DET'){
-                  field_name <- paste0(field_name, " ", direction, params_str, " days")
+                  field_name <- paste0(field_name, " ", direction, " ", params_str, " days")
                 }
                 else{
                   field_name <- paste0(field_name, " (", method_name, direction, params_str, ")")
@@ -6220,7 +6220,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
                 # Create the final string "method_name (key1=value1, key2=value2)"
                 if(method_name == 'DET'){
-                  field_name <- paste0(field_name, " ", direction, params_str, " days")
+                  field_name <- paste0(field_name, " ", direction, " ", params_str, " days")
                 }
                 else{
                   field_name <- paste0(field_name, " (", method_name, direction, params_str, ")")
@@ -8541,7 +8541,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
               # Create the final string "method_name (key1=value1, key2=value2)"
               if(method_name == 'DET'){
-                field_name <- paste0(field_name, " ", direction, params_str, " days")
+                field_name <- paste0(field_name, " ", direction, " ", params_str, " days")
               }
               else{
                 field_name <- paste0(field_name, " (", method_name, direction, params_str, ")")
@@ -8913,7 +8913,7 @@ linkage_server <- function(input, output, session, linkage_metadata_conn, metada
 
               # Create the final string "method_name (key1=value1, key2=value2)"
               if(method_name == 'DET'){
-                field_name <- paste0(field_name, " ", direction, params_str, " days")
+                field_name <- paste0(field_name, " ", direction, " ", params_str, " days")
               }
               else{
                 field_name <- paste0(field_name, " (", method_name, direction, params_str, ")")
