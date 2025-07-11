@@ -620,8 +620,9 @@ apply_output_cutoffs <- function(linkage_db, algorithm_id, output_df) {
       old_field_name <- field_info$field_name
       new_field_name <- paste0(old_field_name, "_untouched_categ")
 
-      # Get the column, and apply the column label
+      # Get the column, apply the column label, and convert to character
       output_df[[new_field_name]] <- output_df[[old_field_name]]
+      output_df[[new_field_name]] <- as.character(output_df[[new_field_name]])
       label(output_df[[new_field_name]]) <- field_label
 
       # Add this column as one we will be keeping
