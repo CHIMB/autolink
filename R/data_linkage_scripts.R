@@ -5804,8 +5804,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         # Collapse the ground truth fields into a single string
         ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
 
-        #ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)
-        #ground_truth_fields <- paste(ground_truth_df$left_dataset_field, collapse = ", ")
+        # Generate intermediate report
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,
                                             report_title, report_subtitle, datasets$left_dataset_name, datasets$right_dataset_name,
                                             output_dir, username, "autolink (Record Linkage)","link_indicator", strata_vars, strata_vars, save_linkage_rate = F,
