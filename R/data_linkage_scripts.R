@@ -4339,6 +4339,13 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
       stop("Error: Columns Do Not Match In Right Dataset.")
     }
 
+    # If we have a 'linkable' flag/column in the left dataset, and the user wants to remove unlinkable records, then remove those records
+    if("remove_unlinkable_records" %in% names(extra_parameters) && extra_parameters[["remove_unlinkable_records"]] == T){
+      # Remove all unlinkable records
+      left_dataset <- left_dataset[!left_dataset[['linkable']] == FALSE, ]
+      left_dataset <- left_dataset[!left_dataset[['linkable']] == 0, ]
+    }
+
     # If the user would like us to collect missing data indicators, then collect them
     if("collect_missing_data_indicators" %in% names(extra_parameters) && extra_parameters[["collect_missing_data_indicators"]] == T){
       # Obtain the output variables

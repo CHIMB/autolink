@@ -998,6 +998,7 @@ load_linkage_file <- function(dataset_file){
 #' @param abbreviations A data frame, a file path to an rds file that contains a data frame or a file path to a csv file. Data must contain two columns: the list of abbreviations in the first and their meaning in the second. Will appear in report (if generated).
 #' @param generate_time_trend_plot A TRUE or FALSE value for whether you'd like a time trend plot to be included in the generated linkage report. Requires marking which fields in the database are the capture month and capture year.
 #' @param study_flow_diagram A file path to a PNG image of a study flow diagram that will appear in linkage reports (if generated).
+#' @param remove_unlinkable_records A TRUE of FALSE value that checks if the provided left dataset has a column named "linkable", if so, remove all records containing FALSE or 0.
 #' @examples
 #' extra_params <- create_extra_parameters_list(output_linkage_iterations = TRUE, linkage_report_type = 3, data_linker = "John Doe")
 #' @export
@@ -1020,7 +1021,8 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
                                          definitions = NULL,
                                          abbreviations = NULL,
                                          generate_time_trend_plot = FALSE,
-                                         study_flow_diagram = NULL){
+                                         study_flow_diagram = NULL,
+                                         remove_unlinkable_records = FALSE){
 
   ### Create a List to Store the Extra Parameters
   extra_params_list <- list()
@@ -1125,6 +1127,12 @@ create_extra_parameters_list <- function(linkage_output_folder = NULL,
   if(!isFALSE(generate_time_trend_plot) && !is.na(generate_time_trend_plot) && !is.null(generate_time_trend_plot) &&
      (isTRUE(generate_time_trend_plot) || generate_time_trend_plot == "TRUE")){
     extra_params_list[["generate_time_trend_plot"]] <- TRUE
+  }
+
+  ### Remove unlinkable records
+  if(!isFALSE(remove_unlinkable_records) && !is.na(remove_unlinkable_records) && !is.null(remove_unlinkable_records) &&
+     (isTRUE(remove_unlinkable_records) || remove_unlinkable_records == "TRUE")){
+    extra_params_list[["remove_unlinkable_records"]] <- TRUE
   }
 
   #-- Main Report Algorithm Options --#
