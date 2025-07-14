@@ -744,13 +744,13 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           posterior_threshold <- acceptance_threshold[["posterior_threshold"]]
           # Filter out rows with NA in 'mpost'
           linkage_pairs <- linkage_pairs[!is.na(linkage_pairs$mpost), ]
-          select_greedy(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE)
-          #select_threshold(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE) #IF WE WANT DUPES
+          #select_greedy(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE)
+          select_threshold(linkage_pairs, variable = "selected", score = "mpost", threshold = posterior_threshold, include_ties = TRUE, inplace = TRUE)
         }
         else if ("match_weight" %in% names(acceptance_threshold)){
           linkage_weight <- acceptance_threshold[["match_weight"]]
-          select_greedy(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE)
-          #select_threshold(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE) #IF WE WANT DUPES
+          #select_greedy(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE)
+          select_threshold(linkage_pairs, variable = "selected", score = "weight", threshold = linkage_weight, include_ties = TRUE, inplace = TRUE)
         }
         else{
           # Create a list of plots and captions that we'll return
@@ -2483,7 +2483,8 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
         #-- STEP 4: SELECT PAIRS --#
         # There is no need for a user defined acceptance rule since it is a deterministic pass
-        select_greedy(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T)
+        #select_greedy(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T)
+        select_threshold(linkage_pairs, "selected", "score", threshold = length(matching_keys), include_ties = T, inplace = T)
 
         # Now, if a ground truth is provided get the ground truth variables to calculate specificity later on
         ground_truth_df <- get_ground_truth_fields(linkage_metadata_db, algorithm_id)

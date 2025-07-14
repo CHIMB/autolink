@@ -1,0 +1,151 @@
+person_id,given_name,surname,sex,address,zip_code,birth_day,birth_month,birth_year,data_capture_day,data_capture_month,data_capture_year,geographic_region,birth_date,data_capture_date,income_quantile,residence_locality
+1,Jennifer Rebecca,Haynes,Female,2000 Christina Motorway Suite 665,06103,1,11,1942,24,9,2025,Northeast,1942-11-01,2025-09-24,5 (Highest),Urban
+2,Joseph,Jacobs Baxter,Male,741 Mack Springs,,15,12,1943,9,4,2024,Northeast,1943-12-15,2024-04-09,5 (Highest),Rural
+3,Elizabeth Taylor,Hayes,Female,13717 Colin Overpass,,22,2,1944,10,10,2025,Northeast,1944-02-22,2025-10-10,5 (Highest),Rural
+4,Michael,Taylor Lautner,Male,,,21,8,1940,1,5,2025,Northeast,1940-08-21,2025-05-01,4,Urban
+5,Robert,Winters,Male,46737 Bridges Avenue,07030,17,9,1941,14,12,2025,Northeast,1941-09-17,2025-12-14,5 (Highest),Rural
+6,Jessica Rothe,Pittman Roy,Female,7921 Webb Circles,10001,2,7,1940,12,2,2025,Northeast,1940-07-02,2025-02-12,3,Rural
+7,John,Rojas,Male,,11201,4,9,1942,8,5,2025,Northeast,1942-09-04,2025-05-08,5 (Highest),Rural
+8,Jennifer,Kelly,Female,0719 Jessica Squares,,24,1,1941,10,8,2024,Northeast,1941-01-24,2024-08-10,5 (Highest),Urban
+9,James Janisse,Mitchell Cameron,Male,82737 Gillespie Tunnel,19104,26,8,1944,28,10,2025,Northeast,1944-08-26,2025-10-28,5 (Highest),Urban
+10,Susan Sarandon,Wyatt,Female,,,16,11,1943,21,2,2025,Northeast,1943-11-16,2025-02-21,2,Rural
+11,Sarah,Huerta,Female,987 Shawn Points Suite 843,02840,24,7,1942,11,8,2025,Northeast,1942-07-24,2025-08-11,5 (Highest),Rural
+12,Sarah,Baker,Female,3174 Amy Road,02903,6,2,1940,27,7,2024,Northeast,1940-02-06,2024-07-27,5 (Highest),Rural
+13,Sarah,Joel Miller ,Female,,,22,7,1941,16,6,2025,Northeast,1941-07-22,2025-06-16,2,Urban
+14,Karen Elizabeth Susan,Morris Gonzalez Wood,Female,0674 Sarah Lake,03431,26,4,1943,20,11,2025,Northeast,1943-04-26,2025-11-20,2,Urban
+15,Mary,Toby Turner,Female,,,4,6,1942,11,12,2024,Northeast,1942-06-04,2024-12-11,2,Urban
+16,Patricia Thompson,Cabrera,Female,32946 Matthew Vista Apt. 433,02360,17,4,1944,18,7,2025,Northeast,1944-04-17,2025-07-18,5 (Highest),Urban
+17,Barbara,Smith,Female,,06444,6,1,1940,4,4,2024,Northeast,1940-01-06,2024-04-04,1 (Lowest),Rural
+18,Robert,Smith Jeffery,Male,993 King Mills,,3,1,1940,17,10,2024,Northeast,1940-01-03,2024-10-17,3,Urban
+19,Linda Blair,Owens,Female,2936 Odom Expressway Apt. 656,07310,21,7,1943,13,3,2024,Northeast,1943-07-21,2024-03-13,5 (Highest),Urban
+20,Mary,Garrison Ford,Female,24307 Jasmine Stravenue,10590,25,7,1941,24,12,2025,Northeast,1941-07-25,2025-12-24,4,Rural
+21,Joseph Aaron,Diaz,Male,,,7,2,1942,17,8,2025,Northeast,1942-02-07,2025-08-17,2,Rural
+22,Patricia Williams,Hunter Evers,Female,114 Patricia Squares,18052,5,1,1944,15,11,2025,Northeast,1944-01-05,2025-11-15,5 (Highest),Urban
+23,Linda,Lee Everett,Female,,,3,5,1940,12,3,2024,Northeast,1940-05-03,2024-03-12,2,Urban
+24,Richard,Wells,Female,990 Jeremy Meadows Suite 158,04102,6,4,1941,8,4,2025,Northeast,1941-04-06,2025-04-08,5 (Highest),Urban
+25,Barbara Crampton,Johns,Female,,,27,3,1943,30,7,2024,Northeast,1943-03-27,2024-07-30,3,Rural
+26,Joseph,Phillip Graves,Male,473 Jessica Curve Suite 113,03901,15,2,1955,27,10,2024,Northeast,1955-02-15,2024-10-27,1 (Lowest),Rural
+27,Thomas John,Norris Pacheco Porter,Male,572 Nguyen Lakes Apt. 189,06790,8,3,1956,21,8,2024,Northeast,1956-03-08,2024-08-21,4,Rural
+28,Jessika Sarah Mary,Clark Long Blackwell,Female,1564 Michael Cliffs Suite 478,02543,18,9,1947,9,11,2025,Northeast,1947-09-18,2025-11-09,3,Rural
+29,Susan,Gentry Andrews,Female,,07047,25,1,1951,17,2,2025,Northeast,1951-01-25,2025-02-17,2,Urban
+30,Susan,Hartman,Female,855 Bentley Parks Suite 447,08854,13,6,1949,17,6,2025,Northeast,1949-06-13,2025-06-17,2,Rural
+31,James,Marty Mcmahon,Male,09244 Christensen Lake,10901,4,10,1954,20,12,2025,Northeast,1954-10-04,2025-12-20,2,Rural
+32,Susan,Summers,Female,4746 Peterson Crescent Suite 489,,21,5,1953,1,2,2025,Northeast,1953-05-21,2025-02-01,5 (Highest),Rural
+33,Mary Elizabeth,Gonzalez,Female,,15401,5,9,1945,11,4,2024,Northeast,1945-09-05,2024-04-11,3,Rural
+34,Linda,Heather Graham,Female,362 Darin Hill Apt. 361,02860,29,12,1957,16,3,2025,Northeast,1957-12-29,2025-03-16,1 (Lowest),Rural
+35,Richard Brake,Hamilton,Male,829 Castro Freeway,05641,15,1,1950,15,12,2025,Northeast,1950-01-15,2025-12-15,1 (Lowest),Urban
+36,Susan,Singh,Female,,,22,12,1959,3,2,2024,Northeast,1959-12-22,2024-02-03,1 (Lowest),Urban
+37,Susan,Sims,Female,098 Kristine Point,03561,4,6,1958,11,11,2024,Northeast,1958-06-04,2024-11-11,3,Urban
+38,Barbara,George Romero,Female,,04240,16,12,1952,12,12,2025,Northeast,1952-12-16,2025-12-12,3,Rural
+39,Karen Gillan,Hubbard Bogart,Female,80764 Matthews Pass Apt. 848,,3,5,1948,14,10,2025,Northeast,1948-05-03,2025-10-14,2,Urban
+40,Linda,Dorsey,Female,,18201,17,8,1956,25,9,2025,Northeast,1956-08-17,2025-09-25,1 (Lowest),Rural
+41,Karen,Williamson,Female,51700 Jeremy Well Suite 162,60601,6,12,1960,14,10,2025,Midwest,1960-12-06,2025-10-14,4,Urban
+42,Charles Danse,Johnson Liam,Male,2875 Butler Pines,,15,7,1955,23,3,2024,Midwest,1955-07-15,2024-03-23,1 (Lowest),Urban
+43,Barbara,Morales,Female,,50309,15,1,1946,12,3,2024,Midwest,1946-01-15,2024-03-12,2,Urban
+44,James,Knight,Female,,66101,3,1,1958,16,7,2024,Midwest,1958-01-03,2024-07-16,1 (Lowest),Rural
+45,James,Blair Bill,Male,75374 White Corner,49007,9,1,1954,15,9,2024,Midwest,1954-01-09,2024-09-15,4,Urban
+46,Susan Jessica,Haynes Murphy Travis,Female,7367 Mason Cove,,30,4,1950,29,6,2025,Midwest,1950-04-30,2025-06-29,4,Rural
+47,Sarah,Jessica Long,Female,4521 Michael Fort Suite 099,63101,19,3,1953,2,11,2025,Midwest,1953-03-19,2025-11-02,2,Rural
+48,James,Kim Coakes,Male,05138 Maria Bypass,68102,31,5,1956,12,3,2024,Midwest,1956-05-31,2024-03-12,1 (Lowest),Rural
+49,Sera,Will Smith,Male,,58201,22,4,1960,13,7,2025,Midwest,1960-04-22,2025-07-13,4,Urban
+50,Susan,Dexter Harris,Female,946 Fowler Shoal,44702,26,11,1957,30,5,2025,Midwest,1957-11-26,2025-05-30,1 (Lowest),Rural
+51,Karen,Courtney Cox,Female,3487 Brown Walk,57104,17,3,1980,19,4,2025,Midwest,1980-03-17,2025-04-19,4,Rural
+52,Sera Rivera,Salinas,Female,,,10,12,1970,21,11,2024,Midwest,1970-12-10,2024-11-21,3,Urban
+53,Charles,Duran,Male,1697 Hanson Station Suite 411,,26,12,1985,10,2,2024,Midwest,1985-12-26,2024-02-10,5 (Highest),Rural
+54,Elizabeth,Miller,Female,6957 Lee Estates Suite 057,46802,17,8,1965,5,5,2025,Midwest,1965-08-17,2025-05-05,2,Rural
+55,Jessika,Webster,Female,7899 Cantu Branch,,7,7,1983,1,1,2025,Midwest,1983-07-07,2025-01-01,3,Urban
+56,Joseph,Harry Stone,Male,28553 Coleman Mountains,67401,10,12,1975,2,12,2025,Midwest,1975-12-10,2025-12-02,4,Rural
+57,David Mason,Morales,Male,,48201,28,2,1974,27,1,2024,Midwest,1974-02-28,2024-01-27,1 (Lowest),Rural
+58,Jason,Johnson,Male,,,7,9,1982,26,6,2024,Midwest,1982-09-07,2024-06-26,1 (Lowest),Rural
+59,Richard,George Washington,Male,,64101,5,4,1971,7,1,2024,Midwest,1971-04-05,2024-01-07,4,Rural
+60,Joseph,Mayer,Male,8765 Samuel Bridge,,5,8,1984,18,7,2024,Midwest,1984-08-05,2024-07-18,4,Urban
+61,James Charles,Richardson Chambers,Male,,58102,21,8,1968,25,8,2025,Midwest,1968-08-21,2025-08-25,5 (Highest),Rural
+62,Barbara,Church,Female,501 Gina Fields,44114,29,12,1979,1,10,2025,Midwest,1979-12-29,2025-10-01,4,Rural
+63,Jennifer,Watson,Female,55740 Crawford Mews,,5,5,1986,27,6,2024,Midwest,1986-05-05,2024-06-27,4,Urban
+64,Joseph Taylor,Ross,Female,,53202,16,10,1964,13,2,2024,Midwest,1964-10-16,2024-02-13,5 (Highest),Rural
+65,Sera,Estrada,Female,114 William Spurs Suite 932,61350,7,11,1981,18,4,2024,Midwest,1981-11-07,2024-04-18,3,Urban
+66,Dana,Soto,Female,57300 Jessica Forges Apt. 271,,13,4,1972,25,12,2025,Midwest,1972-04-13,2025-12-25,3,Urban
+67,Wiliam,Reilly,Male,,50010,25,8,1967,14,7,2024,Midwest,1967-08-25,2024-07-14,4,Rural
+68,David,Peter Parker,Male,97012 Taylor Walk Suite 511,67202,31,12,1978,20,3,2025,Midwest,1978-12-31,2025-03-20,3,Urban
+69,Michael Myers,Wells,Male,53684 Kayla Falls Suite 558,48912,13,1,1969,10,10,2024,Midwest,1969-01-13,2024-10-10,4,Rural
+70,Thomas Taylor,Wolf,Male,,56301,9,11,1977,18,6,2024,Midwest,1977-11-09,2024-06-18,2,Rural
+71,Susan,Johnson,Male,02845 Pham Village,,7,1,1963,8,1,2025,Midwest,1963-01-07,2025-01-08,4,Rural
+72,Joseph,Davis,Male,81434 Barry Plains,68310,13,6,1982,21,11,2025,Midwest,1982-06-13,2025-11-21,1 (Lowest),Rural
+73,David Mikel Richard,Walton Davenport Oliver,Male,,58501,13,2,1966,31,3,2025,Midwest,1966-02-13,2025-03-31,1 (Lowest),Rural
+74,Charles Richard,Adams Branch,Male,536 William Burg,45202,9,12,1986,20,6,2024,Midwest,1986-12-09,2024-06-20,5 (Highest),Urban
+75,Elisabeth,Perry,Female,,57401,26,7,1984,22,3,2025,Midwest,1984-07-26,2025-03-22,3,Urban
+76,Elizabeth Karen Mary,Levine Wright,Female,650 Micheal Knoll,54401,14,6,1985,27,3,2024,Midwest,1985-06-14,2024-03-27,4,Rural
+77,Hermione,Clements,Female,99986 John Road,62401,5,4,1963,29,1,2025,Midwest,1963-04-05,2025-01-29,3,Rural
+78,Patricia Linda,Wilkins Young Moore,Female,1400 Jasmine Rapids Apt. 763,46055,8,2,1986,6,3,2024,Midwest,1986-02-08,2024-03-06,1 (Lowest),Urban
+79,Jennifer,Sandra Williams,Female,010 Richard Courts Suite 725,,2,2,1961,7,1,2025,Midwest,1961-02-02,2025-01-07,1 (Lowest),Rural
+80,Todd Wiliam,Murray,Male,2576 Calderon Mountain Apt. 311,67301,13,12,1980,31,10,2025,Midwest,1980-12-13,2025-10-31,5 (Highest),Rural
+81,Susan,Juarez Fischer Ellis,Female,,,26,4,1962,16,1,2024,South,1962-04-26,2024-01-16,4,Rural
+82,Paul Robert,Whitney,Male,272 Norris Well,72201,14,11,1985,2,6,2025,South,1985-11-14,2025-06-02,2,Urban
+83,Janet Barbara,Bell,Female,,19701,6,5,1971,4,7,2025,South,1971-05-06,2025-07-04,2,Urban
+84,Karen,Brennan,Female,387 Barrett Circles,20001,3,5,1985,28,7,2025,South,1985-05-03,2025-07-28,4,Urban
+85,Robert,Dina Carpenter,Male,138 Jeffrey Oval Apt. 011,33130,14,4,1963,21,1,2024,South,1963-04-14,2024-01-21,4,Rural
+86,Jennifer,Martinez,Female,,,12,11,1960,1,3,2025,South,1960-11-12,2025-03-01,2,Rural
+87,Karen Karen Linda,Cain Vargas,Male,3889 Larson Gardens,40202,25,7,1962,12,9,2025,South,1962-07-25,2025-09-12,1 (Lowest),Rural
+88,Jessica,Bruce Campbell,Female,,70112,2,2,1970,17,11,2025,South,1970-02-02,2025-11-17,4,Urban
+89,Joseph,Estrada,Male,4896 Jennifer River,21201,27,9,1984,6,4,2024,South,1984-09-27,2024-04-06,1 (Lowest),Rural
+90,Will Byers,Seth Green,Male,66637 Kidd Brooks,39201,19,1,1962,17,3,2025,South,1962-01-19,2025-03-17,3,Urban
+91,Jessica,Sullivan,Female,8050 Parrish Centers,,12,9,1992,18,5,2025,South,1992-09-12,2025-05-18,3,Rural
+92,Richard Robbert James,Rose Ramsey Gallagher,Male,629 Joshua Corner Suite 800,73102,10,3,1993,8,9,2024,South,1993-03-10,2024-09-08,3,Rural
+93,Paula Barbara,Park Randalls,Female,,29201,11,3,1997,7,2,2024,South,1997-03-11,2024-02-07,2,Rural
+94,Karen,Murphy Eddie,Female,,,9,8,2007,28,3,2025,South,2007-08-09,2025-03-28,2,Rural
+95,Linda,Boyd,Male,0949 Guzman Ports Suite 199,73301,21,7,1993,17,12,2025,South,1993-07-21,2025-12-17,2,Rural
+96,Barbara,Boyer,Female,6635 Robert Dale,,29,5,1991,18,10,2024,South,1991-05-29,2024-10-18,5 (Highest),Rural
+97,Tracy Patricia,Campbell Floyd,Female,54065 Benjamin Mountains Suite 963,25301,26,5,1995,30,1,2024,South,1995-05-26,2024-01-30,5 (Highest),Rural
+98,Mary,Keith,Female,,36066,21,5,1990,27,9,2025,South,1990-05-21,2025-09-27,1 (Lowest),Rural
+99,Sarah Eliza,Shao Khan,Male,88656 Torres Mall,71901,8,10,1992,4,10,2025,South,1992-10-08,2025-10-04,3,Urban
+100,Keke,Palmer,Female,,19711,4,1,1998,10,8,2025,South,1998-01-04,2025-08-10,4,Rural
+101,John Rob Thomas,Carpenter Crawford Wilkinson,Male,0968 Misty Land,,25,1,1994,6,6,2024,South,1994-01-25,2024-06-06,5 (Highest),Urban
+102,Patricia,Hobbs,Female,491 Cole Spurs,32301,16,12,1996,9,11,2025,South,1996-12-16,2025-11-09,2,Rural
+103,Joseph,Maynard Vincent,Male,164 Cox Tunnel,31401,18,10,1999,16,5,2025,South,1999-10-18,2025-05-16,2,Rural
+104,Jessica,Gallegos,Female,553 Andrew Mountains Suite 168,,16,8,1991,25,6,2024,South,1991-08-16,2024-06-25,1 (Lowest),Urban
+105,Christie Elizabeth,Williams,Female,5224 Stephen Passage,70501,29,10,1990,5,12,2025,South,1990-10-29,2025-12-05,3,Urban
+106,Barbara,Lawrence Fishburn,Female,7317 Nguyen Tunnel,21401,26,3,1992,17,3,2025,South,1992-03-26,2025-03-17,1 (Lowest),Urban
+107,Christine Thomas,Payne,Female,56107 Ryan Rest,39530,16,12,1993,28,12,2024,South,1993-12-16,2024-12-28,4,Rural
+108,Dave,Hall,Male,,27607,13,10,1995,29,12,2025,South,1995-10-13,2025-12-29,1 (Lowest),Urban
+109,Sandra,Paula,Female,4529 Anderson Stream Suite 753,73107,8,7,2000,15,2,2024,South,2000-07-08,2024-02-15,5 (Highest),Rural
+110,Cole Robert,Navarro,Male,00829 Michael Hollow,29601,18,12,1996,30,3,2025,South,1996-12-18,2025-03-30,1 (Lowest),Rural
+111,William,Hayes Paul,Male,,38103,27,10,1997,20,10,2025,South,1997-10-27,2025-10-20,3,Urban
+112,Winchester John,Davis,Male,8241 Grimes Brooks Apt. 074,75201,26,4,2002,2,7,2025,South,2002-04-26,2025-07-02,1 (Lowest),Urban
+113,Jessica,Rabbit,Female,006 Jeff Village,,9,9,1991,2,11,2025,South,1991-09-09,2025-11-02,4,Urban
+114,Jared Robert,Wilson,Male,,25401,6,3,1993,2,12,2024,South,1993-03-06,2024-12-02,4,Rural
+115,John,Robert Anderson,Male,843 Jill Key Suite 045,35801,10,11,1998,12,1,2024,South,1998-11-10,2024-01-12,3,Urban
+116,Julia Karen,Wilkinson,Female,048 Laura Pike Apt. 901,72301,6,9,2001,24,1,2025,South,2001-09-06,2025-01-24,1 (Lowest),Rural
+117,David,Johnson,Male,,19801,6,12,1994,11,10,2024,South,1994-12-06,2024-10-11,3,Urban
+118,Gideon Charles,Blair,Male,285 Matthew Lock Apt. 466,20008,9,2,1995,30,4,2024,South,1995-02-09,2024-04-30,4,Rural
+119,Paulie John,Galvan Wheel,Male,284 Lisa Pike,34201,13,10,1997,14,5,2025,South,1997-10-13,2025-05-14,3,Urban
+120,Donna Patricia,Watson,Female,147 Erica Overpass,,5,4,1999,24,7,2025,South,1999-04-05,2025-07-24,3,Rural
+121,Jon,Reid,Male,,99501,18,12,1992,30,11,2024,West,1992-12-18,2024-11-30,3,Rural
+122,Joseph,Lewis,Male,58307 Howell Flats Suite 071,85001,4,11,1996,26,5,2025,West,1996-11-04,2025-05-26,1 (Lowest),Rural
+123,Joseph,Koch,Male,22197 Bradley Rest,90001,2,5,1998,2,11,2024,West,1998-05-02,2024-11-02,2,Rural
+124,Brodie Thomas,Greene,Male,,94102,3,3,2000,1,5,2025,West,2000-03-03,2025-05-01,1 (Lowest),Rural
+125,Robbie William,Smith,Male,176 Amy Heights Apt. 638,80202,14,5,1993,24,2,2024,West,1993-05-14,2024-02-24,2,Rural
+126,William,Campbell,Male,,,12,1,1995,23,9,2024,West,1995-01-12,2024-09-23,2,Rural
+127,Barbara,Dina Robbins,Female,056 Carlos Turnpike Suite 393,83702,28,11,1997,21,5,2025,West,1997-11-28,2025-05-21,3,Rural
+128,Thomas,Walsh Whitman,Female,290 Kim Forks Apt. 864,59101,2,9,2003,3,2,2024,West,2003-09-02,2024-02-03,5 (Highest),Rural
+129,Jessica,Amy Wright,Female,8475 Ramirez Canyon Apt. 812,89101,24,10,1999,9,8,2024,West,1999-10-24,2024-08-09,5 (Highest),Urban
+130,James,Smith,Male,820 Vargas Crest Apt. 849,87501,16,3,1996,17,8,2025,West,1996-03-16,2025-08-17,1 (Lowest),Rural
+131,Zoe Karen,Nacho Vargas,Female,6767 Dixon Village Apt. 497,97201,21,12,1994,5,5,2024,West,1994-12-21,2024-05-05,2,Urban
+132,Thomas,Johnson,Male,612 John Ridge Apt. 346,84101,14,8,2004,7,3,2024,West,2004-08-14,2024-03-07,2,Urban
+133,Susan,Flores Justine,Female,,,16,2,1992,8,11,2025,West,1992-02-16,2025-11-08,1 (Lowest),Rural
+134,Danny Mikel,Wolfe,Male,92984 Nancy Extensions,82001,23,6,2005,11,6,2025,West,2005-06-23,2025-06-11,4,Urban
+135,Jesse Richard,Thompson,Male,8146 Nancy Road Apt. 294,90210,26,9,2001,16,1,2024,West,2001-09-26,2024-01-16,3,Urban
+136,Karen,Strode,Female,,92101,15,2,1995,20,12,2024,West,1995-02-15,2024-12-20,5 (Highest),Urban
+137,Jennifer,Gardner,Female,0470 Michael Valley Apt. 808,85701,17,4,1997,31,7,2025,West,1997-04-17,2025-07-31,2,Rural
+138,Jessica,Dalton,Female,,80203,20,6,2000,8,8,2024,West,2000-06-20,2024-08-08,5 (Highest),Urban
+139,Joel David,Wilson,Male,9881 Lin Mission Apt. 099,,8,7,1991,1,4,2025,West,1991-07-08,2025-04-01,4,Urban
+140,John,Silva,Male,99640 Clark Street,83705,31,5,1993,15,9,2024,West,1993-05-31,2024-09-15,4,Urban
+141,James Michael,McGrath,Male,,59102,25,9,1994,25,2,2025,West,1994-09-25,2025-02-25,2,Rural
+142,Jane,Rivera,Female,7564 Benjamin Harbors,89701,27,1,1998,5,2,2024,West,1998-01-27,2024-02-05,3,Rural
+143,Michael,Rivera,Male,,87505,1,4,2002,1,5,2024,West,2002-04-01,2024-05-01,3,Urban
+144,David,Nick Valentine,Male,46927 Brian Mews Apt. 014,97203,1,11,2003,11,1,2025,West,2003-11-01,2025-01-11,3,Rural
+145,James,Rose,Male,,84105,23,11,1996,27,3,2025,West,1996-11-23,2025-03-27,1 (Lowest),Rural
+146,Myers Micheal,Rodriguez,Male,0247 Maria Avenue Suite 365,98109,10,6,1997,17,11,2024,West,1997-06-10,2024-11-17,2,Rural
+147,Sara,Curry,Female,717 Wendy View Suite 065,82007,27,12,2001,25,9,2024,West,2001-12-27,2024-09-25,4,Rural
+148,Karen,Jessica,Female,,99587,15,4,2000,26,6,2025,West,2000-04-15,2025-06-26,3,Rural
+149,Jessica,Ward,Female,28599 Christine Cliff,,25,11,2004,6,6,2025,West,2004-11-25,2025-06-06,2,Urban
+150,Tim William,Gates,Male,,85003,27,5,2006,17,1,2024,West,2006-05-27,2024-01-17,5 (Highest),Rural
