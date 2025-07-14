@@ -763,7 +763,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           # Create the first plot of all candidate pair records
           candidate_weights_plot <- ggplot(linkage_pairs, mapping = aes(weight)) +
             geom_histogram(binwidth = 0.05, fill = "gray", colour = "black") +
-            labs(x = "Weight", y = "Frequency") +
+            labs(x = "Match Weight", y = "Frequency") +
             theme_minimal(base_size = 8) +
             # Set the entire background white with a black border
             theme(
@@ -1463,14 +1463,12 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           acceptance_threshold <- acceptance_threshold[["posterior_threshold"]]
           # Create a histogram of the posterior thresholds with the decision boundary
           if("log_scaled_plots" %in% names(extra_parameters) && extra_parameters[["log_scaled_plots"]] == T){
-            decision_boundary <- ggplot(linkage_pairs, aes(x = mpost, fill = selected_label)) +
-              geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.6) +
-              scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+            decision_boundary <- ggplot(linkage_pairs, mapping = aes(mpost)) +
+              geom_histogram(binwidth = 0.05, position = "identity", fill = "gray", colour = "black") +
               labs(x = "Posterior Score", y = "Frequency") +
               geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
                          color = "black", size = 0.6) +
               scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
-              guides(linetype = guide_legend(override.aes = list(size = 0.5))) +
               scale_y_log10(oob = scales::squish_infinite) + # This line stops the 0 values from appearing at the bottom
               theme_minimal(base_size = 8) +
               # Set the entire background white with a black border
@@ -1485,14 +1483,12 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               )
           }
           else{
-            decision_boundary <- ggplot(linkage_pairs, aes(x = mpost, fill = selected_label)) +
-              geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.6) +
-              scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+            decision_boundary <- ggplot(linkage_pairs, mapping = aes(mpost)) +
+              geom_histogram(binwidth = 0.05, position = "identity", fill = "gray", colour = "black") +
               labs(x = "Posterior Score", y = "Frequency") +
               geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
                          color = "black", size = 0.6) +
               scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
-              guides(linetype = guide_legend(override.aes = list(size = 0.5))) +
               theme_minimal(base_size = 8) +
               # Set the entire background white with a black border
               theme(
@@ -1611,14 +1607,12 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           acceptance_threshold <- acceptance_threshold[["match_weight"]]
           # Create a histogram of the weights with the decision boundary
           if("log_scaled_plots" %in% names(extra_parameters) && extra_parameters[["log_scaled_plots"]] == T){
-            decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
-              geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.6) +
-              scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+            decision_boundary <- ggplot(linkage_pairs, mapping = aes(weight)) +
+              geom_histogram(binwidth = 0.05, position = "identity", fill = "gray", colour = "black") +
               labs(x = "Match Weight", y = "Frequency") +
               geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
                          color = "black", size = 0.6) +
               scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
-              guides(linetype = guide_legend(override.aes = list(size = 0.5))) +
               scale_y_log10(oob = scales::squish_infinite) + # This line stops the 0 values from appearing at the bottom
               theme_minimal(base_size = 8) +
               # Set the entire background white with a black border
@@ -1633,14 +1627,12 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
               )
           }
           else{
-            decision_boundary <- ggplot(linkage_pairs, aes(x = weight, fill = selected_label)) +
-              geom_histogram(binwidth = 0.05, position = "identity", alpha = 0.6) +
-              scale_fill_manual(values = c("Miss" = "red", "Match" = "blue"), name = "Selection Status") +
+            decision_boundary <- ggplot(linkage_pairs, mapping = aes(weight)) +
+              geom_histogram(binwidth = 0.05, position = "identity", fill = "gray", colour = "black") +
               labs(x = "Match Weight", y = "Frequency") +
               geom_vline(aes(xintercept = acceptance_threshold, linetype = "Acceptance Threshold"),
                          color = "black", size = 0.6) +
               scale_linetype_manual(values = c("Acceptance Threshold" = "dashed"), name = "") +
-              guides(linetype = guide_legend(override.aes = list(size = 0.5))) +
               theme_minimal(base_size = 8) +
               # Set the entire background white with a black border
               theme(
