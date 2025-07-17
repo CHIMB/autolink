@@ -1366,6 +1366,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
         # Create a list for plots and captions
         plot_list <- list()
         plot_caps_list <- c()
+        plot_titles_list <- c()
 
         ### Get the linked indices
         linked_indices <- linked_dataset$.x
@@ -1505,7 +1506,10 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
           ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
           linkage_pairs_count <- nrow(linkage_pairs)
-          caption <- paste0('Posterior distribution for candidate record pairs (N=', linkage_pairs_count, ') that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+          linkage_pairs_count_str <- format(linkage_pairs_count, big.mark = ",", scientific = FALSE)
+          caption <- paste0('Posterior distribution for candidate record pairs (N=', linkage_pairs_count_str, ') that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+          title <- paste0('Posterior Distribution for ', iteration_name, ' of the Linkage Algorithm')
+          plot_titles_list <- append(plot_titles_list, title)
           plot_list[["decision_boundary_plot"]] <- decision_boundary
           plot_caps_list <- append(plot_caps_list, caption)
 
@@ -1587,11 +1591,14 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # Get the count of non missing ground truth fields for the candidate pairs
             ground_truth_non_missing_count <- nrow(linkage_pairs_non_missing)
+            ground_truth_non_missing_count_str <- format(ground_truth_non_missing_count, big.mark = ",", scientific = FALSE)
             linkage_pairs_count            <- nrow(linkage_pairs)
             ground_truth_non_missing_pct   <- round((ground_truth_non_missing_count/linkage_pairs_count) * 100, 1)
 
             caption <- paste0('Posterior distribution for candidate record pairs with non-missing ground truth information (', ground_truth_fields, ', ',
-                              'N=', ground_truth_non_missing_count, ', ', ground_truth_non_missing_pct, '%) that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+                              'N=', ground_truth_non_missing_count_str, ', ', ground_truth_non_missing_pct, '%) that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+            title <- paste0('Posterior Distribution for ', iteration_name, ' of the Linkage Algorithm, with Ground Truth')
+            plot_titles_list <- append(plot_titles_list, title)
 
             plot_list[["decision_boundary_plot_ground_truth"]] <- candidate_weights_plot_gt
             plot_caps_list <- append(plot_caps_list, caption)
@@ -1602,6 +1609,9 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
           ### Returned the plot captions
           return_list[["plot_captions"]] <- plot_caps_list
+
+          ### Return the plot titles
+          return_list[["plot_titles"]] <- plot_titles_list
         }
         else if ("match_weight" %in% names(acceptance_threshold)){
           acceptance_threshold <- acceptance_threshold[["match_weight"]]
@@ -1649,9 +1659,12 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           algorithm_name <- get_algorithm_name(linkage_metadata_db, algorithm_id)
           ground_truth_fields <- paste(get_ground_truth_fields(linkage_metadata_db, algorithm_id)$left_dataset_field, collapse = ", ")
           linkage_pairs_count <- nrow(linkage_pairs)
-          caption <- paste0('Match weight distribution for candidate record pairs (N=', linkage_pairs_count, ') that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+          linkage_pairs_count_str <- format(linkage_pairs_count, big.mark = ",", scientific = FALSE)
+          caption <- paste0('Match weight distribution for candidate record pairs (N=', linkage_pairs_count_str, ') that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
           plot_list[["decision_boundary_plot"]] <- decision_boundary
           plot_caps_list <- append(plot_caps_list, caption)
+          title <- paste0('Match Weight Distribution for ', iteration_name, ' of the Linkage Algorithm')
+          plot_titles_list <- append(plot_titles_list, title)
 
           # Create the second plot of the subset of candidate pair records (IF GROUND TRUTH IS PROVIDED)
           if(has_ground_truth){
@@ -1731,11 +1744,15 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
 
             # Get the count of non missing ground truth fields for the candidate pairs
             ground_truth_non_missing_count <- nrow(linkage_pairs_non_missing)
+            ground_truth_non_missing_count_str <- format(ground_truth_non_missing_count, big.mark = ",", scientific = FALSE)
             linkage_pairs_count            <- nrow(linkage_pairs)
             ground_truth_non_missing_pct   <- round((ground_truth_non_missing_count/linkage_pairs_count) * 100, 1)
 
             caption <- paste0('Match weight distribution for candidate record pairs with non-missing ground truth information (', ground_truth_fields, ', ',
-                              'N=', ground_truth_non_missing_count, ', ', ground_truth_non_missing_pct, '%) that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+                              'N=', ground_truth_non_missing_count_str, ', ', ground_truth_non_missing_pct, '%) that were classified using an acceptance threshold of ', acceptance_threshold, ' in ', iteration_name, ' of the linkage algorithm.')
+            title <- paste0('Match Weight Distribution for ', iteration_name, ' of the Linkage Algorithm, with Ground Truth')
+            plot_titles_list <- append(plot_titles_list, title)
+
 
             plot_list[["decision_boundary_plot_ground_truth"]] <- candidate_weights_plot_gt
             plot_caps_list <- append(plot_caps_list, caption)
@@ -1744,8 +1761,11 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
           ### Return the plot list
           return_list[["threshold_plots"]] <- plot_list
 
-          ### Returned the plot captions
+          ### Return the plot captions
           return_list[["plot_captions"]] <- plot_caps_list
+
+          ### Return the plot titles
+          return_list[["plot_titles"]] <- plot_titles_list
         }
 
         # Clean up
@@ -4237,6 +4257,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # List of plots and captions
     algorithm_plots <- c()
     plot_captions   <- c()
+    plot_titles     <- c()
     algorithm_num   <- algorithm_num + 1
 
     # Ground truth no-zero count and total records count
@@ -5070,6 +5091,10 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         # Save the captions afterwards
         captions <- results[["plot_captions"]]
         plot_captions <- append(plot_captions, captions)
+
+        # Save the title afterwards
+        titles <- results[["plot_titles"]]
+        plot_titles <- append(plot_titles, titles)
       }
     }
 
@@ -5134,22 +5159,22 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
     # Relabel the algo summary
     if(("extra_summary_parameters" %in% names(extra_parameters) && extra_parameters[["extra_summary_parameters"]] == TRUE)){
       label(algo_summary$pass) <- "Step"
-      label(algo_summary$linkage_rate_pass) <- "Linkage Rate N (%)"
+      label(algo_summary$linkage_rate_pass) <- "N (%) Linked"
       label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
       label(algo_summary$blocking_variables) <- "Blocking Scheme"
       label(algo_summary$matching_variables) <- "Matching Criteria"
       label(algo_summary$linkage_implementation) <- "Linkage Technique"
-      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate N (%)"
+      label(algo_summary$linkage_rate_cumulative) <- "N (%) Linked Cumulatively"
       label(algo_summary$FDR) <- "FDR (%)"
       label(algo_summary$FOR) <- "FOR (%)"
     } else {
       label(algo_summary$pass) <- "Step"
-      label(algo_summary$linkage_rate_pass) <- "Linkage Rate N (%)"
+      label(algo_summary$linkage_rate_pass) <- "N (%) Linked"
       label(algo_summary$acceptance_threshold) <- "Acceptance Threshold"
       label(algo_summary$blocking_variables) <- "Blocking Scheme"
       label(algo_summary$matching_variables) <- "Matching Criteria"
       label(algo_summary$linkage_implementation) <- "Linkage Technique"
-      label(algo_summary$linkage_rate_cumulative) <- "Cumulative Linkage Rate N (%)"
+      label(algo_summary$linkage_rate_cumulative) <- "N (%) Linked Cumulatively"
     }
     #----
 
@@ -5542,7 +5567,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
                                        algorithm_summary_data = algo_summary, algorithm_summary_tbl_footnotes = algo_summary_footnotes,
                                        performance_measures_data = performance_measures_df, performance_measures_tbl_footnotes = performance_measures_footnotes,
                                        ground_truth = ground_truth_fields,
-                                       threshold_plots = algorithm_plots, threshold_plot_captions = plot_captions,
+                                       threshold_plots = algorithm_plots, threshold_plot_captions = plot_captions, threshold_plot_titles = plot_titles,
                                        considered_algorithm_summary_data = considered_algo_summary_list, considered_algorithm_summary_tbl_footnotes = considered_algo_summary_footnotes_list,
                                        considered_algorithm_summary_table_names = considered_algo_summary_table_names, considered_performance_measures = considered_performance_measures,
                                        missing_data_indicators = missing_data_indicators, display_missingness_table = display_missing_data_ind,
