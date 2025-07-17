@@ -1060,7 +1060,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             }
 
             # Collapse the ground truth fields into a single string
-            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+            ground_truth_fields <- collapse_with_and(ground_truth_fields_vector)
 
             caption <- paste0("Weight distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
                               "matching and non-matching ground truth fields (", ground_truth_fields, ").")
@@ -1583,7 +1583,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             }
 
             # Collapse the ground truth fields into a single string
-            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+            ground_truth_fields <- collapse_with_and(ground_truth_fields_vector)
 
             # Get the count of non missing ground truth fields for the candidate pairs
             ground_truth_non_missing_count <- nrow(linkage_pairs_non_missing)
@@ -1727,7 +1727,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             }
 
             # Collapse the ground truth fields into a single string
-            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+            ground_truth_fields <- collapse_with_and(ground_truth_fields_vector)
 
             # Get the count of non missing ground truth fields for the candidate pairs
             ground_truth_non_missing_count <- nrow(linkage_pairs_non_missing)
@@ -3905,7 +3905,7 @@ Reclin2Linkage <- R6::R6Class("Reclin2Linkage",
             }
 
             # Collapse the ground truth fields into a single string
-            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+            ground_truth_fields <- collapse_with_and(ground_truth_fields_vector)
 
             caption <- paste0("Probability distribution of ", trimws(iteration_name), "'s unlinked pairs for ", algorithm_name, " with the coloured ",
                               "matching and non-matching ground truth fields (", ground_truth_fields, ").")
@@ -5429,7 +5429,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
             }
 
             # Collapse the ground truth fields into a single string
-            ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+            ground_truth_fields <- collapse_with_and(ground_truth_fields_vector)
           }
 
           ### Verify the plot information is valid
@@ -5802,7 +5802,7 @@ run_main_linkage <- function(left_dataset_file, right_dataset_file, linkage_meta
         }
 
         # Collapse the ground truth fields into a single string
-        ground_truth_fields <- paste(ground_truth_fields_vector, collapse = ", ")
+        ground_truth_fields <- collapse_with_and(ground_truth_fields_vector)
 
         # Generate intermediate report
         intermediate_linkage_quality_report(main_data_list = linked_data_list, main_data_algorithm_names = linked_data_algorithm_names,

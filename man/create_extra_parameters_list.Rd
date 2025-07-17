@@ -24,7 +24,8 @@ create_extra_parameters_list(
   definitions = NULL,
   abbreviations = NULL,
   generate_time_trend_plot = FALSE,
-  study_flow_diagram = NULL
+  study_flow_diagram = NULL,
+  remove_unlinkable_records = FALSE
 )
 }
 \arguments{
@@ -67,6 +68,8 @@ create_extra_parameters_list(
 \item{generate_time_trend_plot}{A TRUE or FALSE value for whether you'd like a time trend plot to be included in the generated linkage report. Requires marking which fields in the database are the capture month and capture year.}
 
 \item{study_flow_diagram}{A file path to a PNG image of a study flow diagram that will appear in linkage reports (if generated).}
+
+\item{remove_unlinkable_records}{A TRUE of FALSE value that checks if the provided left dataset has a column named "linkable", if so, remove all records containing FALSE or 0.}
 }
 \description{
 The create_extra_parameters_list() function will allow users to modify any of the default

@@ -875,6 +875,30 @@ convert_name_case <- function(string_to_convert){
   # Return the case-converted word
   return(field_name)
 }
+
+#' Collapse With And
+#'
+#' The collapse_with_and() function will paste a vector of values together, separating all
+#' values with comma except for the last value which will be separated with an "And"
+#' @param input A vector of values to collapse into a singular string
+#' @examples
+#' collapsed_ground_truth <- collapse_with_and(c('PHIN', 'GUID'))
+#'
+#' @export
+collapse_with_and <- function(input) {
+  # Get length of the vector (# of elements)
+  n <- length(input)
+  if (n == 0) {
+    return("")
+  } else if (n == 1) {
+    return(input)
+  } else if (n == 2) {
+    return(paste(input, collapse = " and "))
+  } else {
+    return(paste(paste(input[1:(n - 1)], collapse = ", "), "and", input[n]))
+  }
+}
+
 #----------------------------------------#
 
 #-- HELPER FUNCTIONS FOR LINKAGE RULES --#
